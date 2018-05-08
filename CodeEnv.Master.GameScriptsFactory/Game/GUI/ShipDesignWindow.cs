@@ -59,8 +59,8 @@ public class ShipDesignWindow : AUnitDesignWindow {
         return UserDesigns.GetCurrentShipTemplateDesign(designHullCat);
     }
 
-    protected override void ObsoleteDesign(string designName) {
-        UserDesigns.ObsoleteShipDesign(designName);
+    protected override void Obsolete(AUnitMemberDesign design) {
+        UserDesigns.ObsoleteDesign(design as ShipDesign);
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {

@@ -81,9 +81,7 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual float CompletionPercentage { get { return Mathf.Clamp01(CumProductionApplied / CostToConstruct); } }
 
-        public virtual decimal BuyoutCost {
-            get { return (decimal)((CostToConstruct - CumProductionApplied) * TempGameValues.ProductionCostBuyoutMultiplier); }
-        }
+        public virtual decimal BuyoutCost { get { return __CalcBuyoutCost(); } }
 
         /// <summary>
         /// Returns the cost in units of production to construct what is being constructed.
@@ -137,10 +135,20 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Debug
+
+        private decimal __CalcBuyoutCost() {
+            return (decimal)((CostToConstruct - CumProductionApplied) / CostToConstruct) * Design.BuyoutCost;
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __HandleExpectedCompletionDateChanged() {
             //D.Log("{0} has changed ExpectedCompletionDate to {1}. CurrentDate = {2}.",
             //    DebugName, ExpectedCompletionDate, GameTime.Instance.CurrentDate);
         }
+
+
+        #endregion
 
         public sealed override string ToString() {
             return DebugName;

@@ -25,11 +25,11 @@ namespace CodeEnv.Master.GameContent {
 
         Transform OrdnanceSpawnPool { get; }
 
-        Transform Spawn(WDVCategory ordnanceID, Vector3 location);
+        Transform Spawn(EquipmentCategory ordnanceID, Vector3 location);
 
-        Transform Spawn(WDVCategory ordnanceID, Vector3 location, Quaternion rotation);
+        Transform Spawn(EquipmentCategory ordnanceID, Vector3 location, Quaternion rotation);
 
-        Transform Spawn(WDVCategory ordnanceID, Vector3 location, Quaternion rotation, Transform parent);
+        Transform Spawn(EquipmentCategory ordnanceID, Vector3 location, Quaternion rotation, Transform parent);
 
         void DespawnOrdnance(Transform ordnanceTransform);
 

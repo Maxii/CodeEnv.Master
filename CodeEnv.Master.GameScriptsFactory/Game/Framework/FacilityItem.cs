@@ -173,7 +173,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         _obstacleZoneCollider.enabled = true;
         CurrentState = FacilityState.Idling;
         Data.ActivateSRSensors();
-        __SubscribeToSensorEvents();
+        __SubscribeLocallyToSRSensorEvents();
     }
 
     public FacilityReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
@@ -512,9 +512,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     protected override void ResetOrderAndState() {
         base.ResetOrderAndState();
         _currentOrder = null;   // avoid order changed while paused system
-        if (!IsDead) {
-            CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
-        }
+        CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
         D.AssertDefault(_lastCmdOrderID);   // 1.22.18 ExitState methods set this to default
     }
 
@@ -663,7 +661,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteConstructOrder_UponUncompletedRemovalFromConstructionQueue(float completionPercentage) {
         LogEvent();
-        IsDead = true;
+        IsDead = true;  // The facility's BaseCmd will remove the uncompleted facility when it detects the death event
     }
 
     void ExecuteConstructOrder_UponResetOrderAndState() {
@@ -757,6 +755,15 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Idling_UponHQStatusChangeCompleted() {
         LogEvent();
         // TODO
+    }
+
+    void Idling_UponUncompletedRemovalFromConstructionQueue(float completionPercentage) {
+        LogEvent();
+        // 4.29.18 Occurs when element is instantly instantiated via a Construct Order (thereby appearing in the Construction Queue
+        // of a Base), followed immediately by the user removing the element from the queue all while still paused. 
+        // This occurs because the Construct Order is not processed by this StateMachine until unpaused. As a result, 
+        // this new instance is in Idling state rather than ExecuteConstructOrder state when removed from the queue.
+        IsDead = true;  // The facility's BaseCmd will remove the uncompleted facility when it detects the death event
     }
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
@@ -1147,45 +1154,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region ExecuteRefitOrder Support Members
 
-    private float __CalcRefitCost(FacilityDesign refitDesign, FacilityDesign currentDesign) {
-        float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
-        if (refitCost < refitDesign.MinimumRefitCost) {
-            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
-            refitCost = refitDesign.MinimumRefitCost;
-        }
-        return refitCost;
-    }
-
-    private float __CalcRefitCost(AUnitCmdDesign refitDesign, AUnitCmdDesign currentDesign) {
-        float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
-        if (refitCost < refitDesign.MinimumRefitCost) {
-            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
-            refitCost = refitDesign.MinimumRefitCost;
-        }
-        return refitCost;
-    }
-
-    private bool __TryGetUpgradeDesign(AUnitCmdDesign currentCmdDesign, out AUnitCmdDesign upgradedCmdDesign) {
-        var ownerDesigns = OwnerAiMgr.Designs;
-        if (currentCmdDesign is SettlementCmdDesign) {
-            SettlementCmdDesign settleCmdDesign;
-            if (ownerDesigns.TryGetUpgradeDesign(currentCmdDesign as SettlementCmdDesign, out settleCmdDesign)) {
-                upgradedCmdDesign = settleCmdDesign;
-                return true;
-            }
-        }
-        else {
-            D.Assert(currentCmdDesign is StarbaseCmdDesign);
-            StarbaseCmdDesign sbCmdDesign;
-            if (ownerDesigns.TryGetUpgradeDesign(currentCmdDesign as StarbaseCmdDesign, out sbCmdDesign)) {
-                upgradedCmdDesign = sbCmdDesign;
-                return true;
-            }
-        }
-        upgradedCmdDesign = null;
-        return false;
-    }
-
+    // See AUnitElementItem StateMachine Support Members
 
     #endregion
 
@@ -1194,7 +1163,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder is FacilityRefitOrder);
         D.AssertEqual(Command, CurrentOrder.Target);
-        D.AssertNull(_preReworkValues);
+        D.AssertNull(_elementPreReworkValues);
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
 
         _lastCmdOrderID = CurrentOrder.CmdOrderID;
@@ -1213,22 +1182,26 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign;
-        float refitCost = __CalcRefitCost(refitDesign, Data.Design);
-        D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
-            DebugName, refitDesign.DebugName, refitCost);
+        FacilityRefitOrder refitOrder = CurrentOrder as FacilityRefitOrder;
+        var facilityRefitDesign = refitOrder.RefitDesign;
+        float refitCost = __CalcRefitCost(facilityRefitDesign, Data.Design);
 
-        _preReworkValues = Data.PrepareForRework();
+        _elementPreReworkValues = Data.PrepareForRework();
 
-        if (IsHQ) {
-            var currentCmdModuleDesign = Command.Data.CmdDesign;
-            AUnitCmdDesign upgradedDesign;
-            if (__TryGetUpgradeDesign(currentCmdModuleDesign, out upgradedDesign)) {
-                UnitFactory.Instance.UpgradeCmdInstance(upgradedDesign, Command);
-            }
+        AUnitCmdModuleDesign cmdModuleRefitDesign = null;
+        if (refitOrder.IncludeCmdModule) {
+            var cmdModuleExistingDesign = Command.Data.CmdModuleDesign;
+            bool isRefitDesignFound = TryGetUpgradeDesign(cmdModuleExistingDesign, out cmdModuleRefitDesign);
+            D.Assert(isRefitDesignFound);
+            float cmdModuleRefitCost = __CalcRefitCost(cmdModuleRefitDesign, cmdModuleExistingDesign);
+            D.Warn(/*ShowDebugLog, */"FYI. {0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
+                Command.DebugName, cmdModuleRefitDesign.DebugName, cmdModuleRefitCost);
+            refitCost += cmdModuleRefitCost;
         }
 
-        RefitConstructionTask construction = Command.ConstructionMgr.AddToRefitQueue(refitDesign, this, refitCost);
+        D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
+            DebugName, facilityRefitDesign.DebugName, refitCost);
+        RefitConstructionTask construction = Command.ConstructionMgr.AddToRefitQueue(facilityRefitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -1238,9 +1211,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // refit completed so try to inform Cmd... 
         AttemptOrderOutcomeCallback(OrderOutcome.Success);
 
-        // ...and replace the element
+        // ...and, if CmdModule refit was included, refit it first before adding/removing the element...
+        if (refitOrder.IncludeCmdModule) {
+            D.AssertNotNull(cmdModuleRefitDesign);
+            UnitFactory.Instance.RefitCmdInstance(cmdModuleRefitDesign, Command);
+        }
+
         ReworkUnderway = ReworkingMode.None;
-        FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, refitDesign, Name, Command.UnitContainer.gameObject);
+
+        // ...then, replace the element
+        string name = IsHQ ? Name.Remove(__HQNameAddendum) : Name;  // [HQ] will be added back in Command.ReplaceRefittedElement
+        FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, facilityRefitDesign, name, Command.UnitContainer.gameObject);
         Command.ReplaceRefittedElement(this, facilityReplacement);
 
         facilityReplacement.FinalInitialize();
@@ -1290,7 +1271,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         if (!IsDead) {   // 1.13.18 Killed while Refitting so allow death sequence to handle
             if (completionPercentage == Constants.ZeroPercent) {
-                Data.RestorePreReworkValues(_preReworkValues);
+                Data.RestorePreReworkValues(_elementPreReworkValues);
             }
             AttemptOrderOutcomeCallback(OrderOutcome.ConstructionCanceled);
             CurrentState = FacilityState.Idling;
@@ -1317,7 +1298,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Refitting);
         ReworkUnderway = ReworkingMode.None;
-        _preReworkValues = null;
+        _elementPreReworkValues = null;
     }
 
     #endregion
@@ -1344,7 +1325,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ValidateCommonNonCallableStateValues();
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
         D.AssertEqual(Command, CurrentOrder.Target);
-        D.AssertNull(_preReworkValues);
+        D.AssertNull(_elementPreReworkValues);
 
         _lastCmdOrderID = CurrentOrder.CmdOrderID;
         _fsmTgt = CurrentOrder.Target;
@@ -1366,7 +1347,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        _preReworkValues = Data.PrepareForRework();
+        _elementPreReworkValues = Data.PrepareForRework();
 
         DisbandConstructionTask construction = Command.ConstructionMgr.AddToDisbandQueue(Data.Design, this, disbandCost);
         D.Assert(!construction.IsCompleted);
@@ -1435,7 +1416,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         if (!IsDead) {
             if (completionPercentage == Constants.ZeroPercent) {
-                Data.RestorePreReworkValues(_preReworkValues);
+                Data.RestorePreReworkValues(_elementPreReworkValues);
                 AttemptOrderOutcomeCallback(OrderOutcome.ConstructionCanceled);
                 CurrentState = FacilityState.Idling;
             }
@@ -1475,7 +1456,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteDisbandOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
-        _preReworkValues = null;
+        _elementPreReworkValues = null;
         StopEffectSequence(EffectSequenceID.Disbanding);
         ReworkUnderway = ReworkingMode.None;
     }

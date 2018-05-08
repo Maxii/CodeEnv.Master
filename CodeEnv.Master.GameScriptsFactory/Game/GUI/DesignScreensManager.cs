@@ -244,5 +244,46 @@ public class DesignScreensManager : AMonoBase {
         return DebugName;
     }
 
+    #region Screen Choice implementation using DialogWindow
+
+    // 5.8.18 Upshot: Using a dialog window to get a chosen value back can be done, but it is a bit of a hack.
+    // It requires use of Ngui's EventDelegate parameter feature which is challenging. The counterpart to this
+    // Archive is the SelectDesignScreenDialogForm which is not currently used.
+
+    [Obsolete] // Called by the DesignsButton in the UserEmpireMgmtForm
+    public void ShowScreenChoicePopupDialog() {
+        // This EventDelegate constructor is the one to use when you want a parameter to be returned to the Method.
+        // EventDelegate uses reflection to detect there is a expected parameter in the method and knows its Type. If it doesn't 
+        // detect a method parameter, it nulls the parameters array, making it unusable.
+        // Using the EventDelegate(Callback) constructor requires that the Callback has no parameter so the parameters array
+        // will always be null. See UnityLearnings - Ngui - EventDelegate
+        EventDelegate acceptButtonDelegate = new EventDelegate(this, "HandleScreenChoiceAcceptButtonClicked");
+
+        DialogWindow.DialogSettings dialogSettings = new DialogWindow.DialogSettings {
+            ShowAcceptButton = true,
+            ShowCancelButton = true,
+
+            AcceptButtonDelegate = acceptButtonDelegate,
+            CancelButtonDelegate = new EventDelegate(HandleScreenChoiceCancelButtonClicked)
+
+        };
+        DialogWindow.Instance.Show(FormID.SelectDesignScreenDialog, dialogSettings);
+    }
+
+    [Obsolete]
+    private void HandleScreenChoiceAcceptButtonClicked(GuiElementID screenChoiceCheckboxID) {
+        DialogWindow.Instance.Hide();
+
+        InitializeDesignWindow(screenChoiceCheckboxID);
+        _currentDesignWindow.Show();
+    }
+
+    [Obsolete]
+    private void HandleScreenChoiceCancelButtonClicked() {
+        DialogWindow.Instance.Hide();
+    }
+
+    #endregion
+
 }
 

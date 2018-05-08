@@ -63,7 +63,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="CapabilityStatID.cs" />
+    <Compile Include="Generic\IO\CapabilityStatID.cs" />
+    <Compile Include="Generic\Framework\CountermeasureAccuracy.cs" />
+    <Compile Include="Generic\Framework\CombatStrength.cs" />
     <Compile Include="Generic\IO\EquipmentStatID.cs" />
     <Compile Include="Generic\IO\EquipmentStatFactory.cs" />
     <Compile Include="Generic\IO\AImageStat.cs" />
@@ -137,7 +139,7 @@
     <Compile Include="Game\Gameplay\EmpireStartLevel.cs" />
     <Compile Include="Generic\Framework\APlanetoidDesign.cs" />
     <Compile Include="Game\Framework\CelestialDesigns.cs" />
-    <Compile Include="Generic\Framework\AUnitCmdDesign.cs" />
+    <Compile Include="Generic\Framework\AUnitCmdModuleDesign.cs" />
     <Compile Include="Generic\Framework\AUnitMemberDesign.cs" />
     <Compile Include="Generic\_Debug\BaseCreatorEditorSettings.cs" />
     <Compile Include="Generic\_Debug\DebugBaseFormation.cs" />
@@ -146,8 +148,8 @@
     <Compile Include="Generic\_Debug\DebugLaunchedWeaponLoadout.cs" />
     <Compile Include="Generic\_Debug\DebugShipCombatStanceExclusions.cs" />
     <Compile Include="Generic\_Debug\FleetCreatorEditorSettings.cs" />
-    <Compile Include="Game\Framework\StarbaseCmdDesign.cs" />
-    <Compile Include="Game\Framework\FleetCmdDesign.cs" />
+    <Compile Include="Game\Framework\StarbaseCmdModuleDesign.cs" />
+    <Compile Include="Game\Framework\FleetCmdModuleDesign.cs" />
     <Compile Include="Generic\Framework\AllKnowledge.cs" />
     <Compile Include="Game\Graphics\CircleHighlightManager.cs" />
     <Compile Include="Generic\Framework\AIntelInfoAccessController.cs" />
@@ -204,7 +206,6 @@
     <Compile Include="Generic\Framework\DamageCategory.cs" />
     <Compile Include="Generic\Framework\PassiveCountermeasure.cs" />
     <Compile Include="Generic\IO\PassiveCountermeasureStat.cs" />
-    <Compile Include="Generic\Framework\CombatStrength.cs" />
     <Compile Include="Generic\Framework\DamageStrength.cs" />
     <Compile Include="Generic\Framework\WDVStrength.cs" />
     <Compile Include="Generic\Framework\AEquipment.cs" />
@@ -465,7 +466,7 @@
     <Compile Include="Generic\IO\SystemNameFactory.cs" />
     <Compile Include="Game\Gameplay\SystemDensity.cs" />
     <Compile Include="Game\GUI\SystemDensityGuiSelection.cs" />
-    <Compile Include="Game\Framework\SettlementCmdDesign.cs" />
+    <Compile Include="Game\Framework\SettlementCmdModuleDesign.cs" />
     <Compile Include="Generic\IO\UnitCreatorConfiguration.cs" />
     <Compile Include="Generic\Interfaces\Access\IDebugFleetCreator.cs" />
     <Compile Include="Game\Framework\MoonDesign.cs" />
@@ -607,6 +608,7 @@
     <Compile Include="Generic\Graphics\TreeLinkID.cs" />
     <Compile Include="Generic\Graphics\TreeNodeID.cs" />
     <Compile Include="Generic\Framework\UserResearchManager.cs" />
+    <Compile Include="Generic\_Debug\UnityMoveTech.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

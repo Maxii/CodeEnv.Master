@@ -66,13 +66,9 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         private set { SetProperty<bool>(ref _isOperational, value, "IsOperational"); }
     }
 
-    private WDVStrength _deliveryVehicleStrength;
-    public WDVStrength DeliveryVehicleStrength {
-        get { return _deliveryVehicleStrength; }
-        protected set { SetProperty<WDVStrength>(ref _deliveryVehicleStrength, value, "DeliveryVehicleStrength"); }
-    }
+    public EquipmentCategory WeaponCategory { get { return Weapon.Category; } }
 
-    public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
+    public DamageStrength DmgPotential { get { return Weapon.OrdnanceDmgPotential; } }
 
     public bool ShowDebugLog { get { return GameReferences.DebugControls.ShowOrdnanceDebugLogs; } }
 
@@ -130,8 +126,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         Target = target;
         Weapon = weapon;
         Subscribe();
-
-        DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
 
         AssignName();
         weapon.HandleFiringInitiated(target, this);

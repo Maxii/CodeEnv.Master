@@ -545,7 +545,7 @@ namespace CodeEnv.Master.GameContent {
             List<ICountermeasure> allCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
             allCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
             allCountermeasures.AddRange(ShieldGenerators.Cast<ICountermeasure>());
-            var cmDamageMitigation = allCountermeasures.Where(cm => !cm.IsDamaged).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
+            var cmDamageMitigation = allCountermeasures.Where(cm => !cm.IsDamaged).Select(cm => cm.DmgMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
             DamageMitigation = HullEquipment.DamageMitigation + cmDamageMitigation;
             DefensiveStrength = new CombatStrength(allCountermeasures, HullEquipment.DamageMitigation);
         }

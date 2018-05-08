@@ -56,6 +56,10 @@ public class PhysicsProjectile : APhysicsProjectileOrdnance {
 
     public override float Mass { get { return Weapon.OrdnanceMass; } }
 
+    protected override DamageStrength DmgMitigation { get { return Weapon.OrdnanceDmgMitigation; } }
+
+    protected override float HitPts { get; set; }
+
     protected new ProjectileLauncher Weapon { get { return base.Weapon as ProjectileLauncher; } }
 
     private Job _impactEffectCompletionJob;
@@ -63,6 +67,7 @@ public class PhysicsProjectile : APhysicsProjectileOrdnance {
 
     public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
         base.Launch(target, weapon, topography);
+        HitPts = Weapon.HitPoints;
         AdjustHeadingForInaccuracy();
         InitializeVelocity();
         D.Assert(!enabled);
@@ -214,7 +219,7 @@ public class PhysicsProjectile : APhysicsProjectileOrdnance {
                 else {
                     ReportInterdiction();   // Not from ActiveCM as they don't collide
                 }
-                impactedTarget.TakeHit(DamagePotential);
+                impactedTarget.TakeHit(DmgPotential);
                 // if target is killed by this hit, TerminateNow will be immediately called by Weapon
             }
             if (impactedTarget.IsOperational) {
@@ -279,6 +284,8 @@ public class PhysicsProjectile : APhysicsProjectileOrdnance {
         }
         KillImpactEffectCompletionJob();
         KillMuzzleEffectCompletionJob();
+
+        HitPts = Constants.ZeroF;
         // FIXME what about audio?
     }
 

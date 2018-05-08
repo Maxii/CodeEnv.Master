@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2018 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IInterceptableOrdnance.cs
-// Interface for ordnance that can be intercepted by Active Countermeasures.
+// File: UnityMoveTech.cs
+// Debug enum indicating what Projectile movement approach is being used - Physics or Kinematic.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,14 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for ordnance that can be intercepted by Active Countermeasures.
+    /// Debug enum indicating what Projectile movement approach is being used - Physics or Kinematic.
+    /// <remarks>Used by DebugControls when in the Editor. Moved here to allow access from classes in
+    /// the GameContent namespace.</remarks>
     /// </summary>
-    public interface IInterceptableOrdnance : IOrdnance, IDetectable {
+    public enum UnityMoveTech {
 
-        EquipmentCategory WeaponCategory { get; }
-
-        void TakeHit(DamageStrength interceptStrength);
+        Physics,
+        Kinematic
 
     }
 }

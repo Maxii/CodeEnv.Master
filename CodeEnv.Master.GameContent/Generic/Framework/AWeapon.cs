@@ -64,11 +64,7 @@ namespace CodeEnv.Master.GameContent {
             get { return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name; }
         }
 
-        public WDVCategory DeliveryVehicleCategory { get { return Stat.DeliveryVehicleCategory; } }
-
-        public WDVStrength DeliveryVehicleStrength { get { return Stat.DeliveryVehicleStrength; } }
-
-        public DamageStrength DamagePotential { get { return Stat.DamagePotential; } }
+        public DamageStrength OrdnanceDmgPotential { get { return Stat.OrdnanceDmgPotential; } }
 
         public IUnitElement Element { get { return RangeMonitor.ParentItem; } }
 

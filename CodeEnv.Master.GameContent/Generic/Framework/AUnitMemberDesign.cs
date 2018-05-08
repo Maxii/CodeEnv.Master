@@ -37,6 +37,13 @@ namespace CodeEnv.Master.GameContent {
 
         public Player Player { get; private set; }
 
+        /// <summary>
+        /// The name of this design.
+        /// <remarks>Typically in the format RootDesignName_DesignLevel (Cmd_1, Barracks1_1), except when DesignLevel is 0, 
+        /// in which case it would be RootDesignName. The exception keeps the DesignName the same as the RootDesignName when a user enters
+        /// the name which would be what a user expects. Auto-generated RootDesignNames typically have the format Cmd# or Barracks# 
+        /// which makes the creation of unique RootDesignNames reliable.</remarks>
+        /// </summary>
         public string DesignName { get; private set; }
 
         private string _rootDesignName;
@@ -51,10 +58,20 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private SourceAndStatus _status;
         /// <summary>
         /// Indicates the source and status of the design.
         /// </summary>
-        public SourceAndStatus Status { get; set; }
+        public SourceAndStatus Status {
+            get { return _status; }
+            set {
+                D.AssertNotDefault((int)value);
+                if (_status == SourceAndStatus.PlayerCreation_Obsolete && value == SourceAndStatus.PlayerCreation_Current) {
+                    D.Warn("{0}.Status being reverted to Current from Obsolete?", DebugName);
+                }
+                _status = value;
+            }
+        }
 
         public abstract AtlasID ImageAtlasID { get; }
 
@@ -66,6 +83,11 @@ namespace CodeEnv.Master.GameContent {
         /// The cost in units of production to construct this design from scratch.
         /// </summary>
         public float ConstructionCost { get; private set; }
+
+        /// <summary>
+        /// The financial cost to buyout the construction of this design from scratch.
+        /// </summary>
+        public decimal BuyoutCost { get; private set; }
 
         /// <summary>
         /// The maximum number of hit points in this design. A sum of ElementHull or CmdModule
@@ -297,6 +319,7 @@ namespace CodeEnv.Master.GameContent {
         public void AssignPropertyValues() {
             ConstructionCost = CalcConstructionCost();
             HitPoints = CalcHitPoints();
+            BuyoutCost = (decimal)(ConstructionCost * TempGameValues.__ProductionCostBuyoutMultiplier * Player.BuyoutCostMultiplier);
         }
 
         protected virtual float CalcConstructionCost() {
@@ -432,9 +455,10 @@ namespace CodeEnv.Master.GameContent {
             PlayerCreation_Obsolete,
 
             /// <summary>
-            /// The Design was created by the system as an empty template for creating designs.
-            /// <remarks>Only one exists for each type of design. They are automatically replaced rather than obsoleted
-            /// when new technology is researched that allows an upgrade.</remarks>
+            /// The Design was created by the system as a basic template for creating new designs.
+            /// <remarks>The design is by definition, current, as only one exists for each type of design. 
+            /// They are automatically replaced rather than obsoleted when new technology is researched that allows an upgrade.</remarks>
+            /// <remarks>No unit member will ever be instantiated using a design with this SourceAndStatus.</remarks>
             /// </summary>
             SystemCreation_Template
         }

@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BeamWeaponStat : AWeaponStat {
 
-        ////public override EquipmentCategory Category { get { return EquipmentCategory.BeamWeapon; } }
-
         /// <summary>
         /// The maximum inaccuracy of the weapon's bearing when launched in degrees.
         /// </summary>
@@ -34,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
         /// The firing duration in hours.
         /// </summary>
         public float Duration { get; private set; }
+
+        public DamageStrength BeamIntegrity { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat" /> struct.
@@ -50,25 +50,24 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="deliveryVehicleStrength">The delivery strength.</param>
+        /// <param name="beamIntegrity">The beam integrity.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
-        /// <param name="damagePotential">The damage potential.</param>
+        /// <param name="ordDmgPotential">The ordnance damage potential.</param>
         /// <param name="duration">The firing duration in hours.</param>
         /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
         public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
-            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
-            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
-            float duration, float maxLaunchInaccuracy)
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat,
+            DamageStrength beamIntegrity, float reloadPeriod, DamageStrength ordDmgPotential, float duration, float maxLaunchInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
-                  rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
+                rangeCat, reloadPeriod, ordDmgPotential) {
             D.Assert(duration > Constants.ZeroF);
             if (maxLaunchInaccuracy > 5F) {
                 D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", DebugName, MaxLaunchInaccuracy);
             }
+            BeamIntegrity = beamIntegrity;
             Duration = duration;
             MaxLaunchInaccuracy = maxLaunchInaccuracy;
         }
-
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

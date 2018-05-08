@@ -430,9 +430,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return Data.RepairDamage(repairPts);
     }
 
-    public void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-        UnsubscribeFromSensorEvents();
-        Data.ChangeDesign(cmdDesign, passiveCMs, sensors, ftlDampener);
+    /// <summary>
+    /// Refits the CmdModule to reflect the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
+    /// with the new instances provided as these are derived from the cmdModuleDesign.
+    /// <remarks>These changes do not interfere with the ongoing operations of this Cmd. They can however create momentary 
+    /// changes in AlertStatus and FtlDampening before both are properly resumed.</remarks>
+    /// </summary>
+    /// <param name="cmdModuleDesign">The design of the new CmdModule.</param>
+    /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
+    /// <param name="sensors">The replacement CmdSensors.</param>
+    /// <param name="ftlDampener">The replacement FtlDampener.</param>
+    public void RefitCmdModule(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+        UnsubscribeFromSensorEvents();  // prepare for the changes in Data
+        Data.RefitCmdModule(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
+        // after the changes have been made in Data, reattach and continue operations
         AttachEquipment();
         InitializeCmdRangeMonitors();
         SubscribeToSensorEvents();
@@ -1045,7 +1056,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             bool isCmdModuleMissed = RandomExtended.Chance(cmdModuleMissedChance);
             if (!isCmdModuleMissed) {
                 DamageStrength damageToCmdModule = damageIncurred - Data.DamageMitigation;
-                if (damageToCmdModule.Total > Constants.ZeroF) {
+                if (damageToCmdModule.__Total > Constants.ZeroF) {
                     float unusedDamageSeverity;
                     bool isCmdAlive = Data.ApplyDamage(damageToCmdModule, out unusedDamageSeverity);
                     D.Assert(isCmdAlive);

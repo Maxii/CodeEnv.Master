@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+
         /// <summary>
         /// Indicates whether forward, reverse or collision avoidance propulsion is engaged.
         /// </summary>
@@ -217,7 +218,10 @@ namespace CodeEnv.Master.GameContent {
             DisengageDriftCorrection();
         }
 
-        public void HandleDeath() {
+        /// <summary>
+        /// Disengages all propulsion including DriftCorrection and CollisionAvoidance.
+        /// </summary>
+        public void DisengageAllPropulsion() {
             DisengageForwardPropulsion();
             DisengageReversePropulsion();
             DisengageDriftCorrection();
@@ -505,13 +509,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Collision Avoidance 
 
-        public void HandleIsCollisionAvoidanceOperationalChanged(bool isCollisionAvoidanceOperational) {
-            if (!isCollisionAvoidanceOperational && IsCollisionAvoidanceEngaged) {
-                DisengageAllCollisionAvoidancePropulsion();
-            }
-            // any other combo requires no action as Ship's CollisionDetectionMonitor is managed directly
-        }
-
         public void HandlePendingCollisionWith(IObstacle obstacle) {
             _caPropulsionJobs = _caPropulsionJobs ?? new Dictionary<IObstacle, Job>(2);
             DisengageForwardPropulsion();
@@ -652,7 +649,7 @@ namespace CodeEnv.Master.GameContent {
             _caPropulsionJobs.Remove(obstacle);
         }
 
-        private void DisengageAllCollisionAvoidancePropulsion() {
+        public void DisengageAllCollisionAvoidancePropulsion() {
             UnsubscribeFromAllCollisionAvoidanceObstacleDeaths();
             KillAllCollisionAvoidancePropulsionJobs();
         }
@@ -779,6 +776,53 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return DebugName;
         }
+
+        #region Debug
+
+        public bool __IsCAPropulsionEngaged { get { return IsCollisionAvoidanceEngaged; } }
+
+        #endregion
+
+
+        #region IDisposable
+
+        private bool _alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+
+            Dispose(true);
+
+            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+            // the finalization queue and prevent finalization code from 'disposing' a second time
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isExplicitlyDisposing) {
+            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+            }
+
+            if (isExplicitlyDisposing) {
+                // Dispose of managed resources here as you have called Dispose() explicitly
+                Cleanup();
+            }
+
+            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+            // called Dispose(false) to cleanup unmanaged resources
+
+            _alreadyDisposed = true;
+        }
+
+        #endregion
 
         #region EngineRoom SpeedRange Approach Archive
 
@@ -1092,46 +1136,6 @@ namespace CodeEnv.Master.GameContent {
         //    #endregion
 
         //}
-
-        #endregion
-
-        #region IDisposable
-
-        private bool _alreadyDisposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose() {
-
-            Dispose(true);
-
-            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
-            // the finalization queue and prevent finalization code from 'disposing' a second time
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources.
-        /// </summary>
-        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isExplicitlyDisposing) {
-            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-                D.Warn("{0} has already been disposed.", GetType().Name);
-                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-            }
-
-            if (isExplicitlyDisposing) {
-                // Dispose of managed resources here as you have called Dispose() explicitly
-                Cleanup();
-            }
-
-            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
-            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
-            // called Dispose(false) to cleanup unmanaged resources
-
-            _alreadyDisposed = true;
-        }
 
         #endregion
 

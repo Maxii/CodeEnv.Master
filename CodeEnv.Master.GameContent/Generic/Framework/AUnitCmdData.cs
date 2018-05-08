@@ -214,7 +214,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FtlDampener FtlDampener { get; private set; }
 
-        public AUnitCmdDesign CmdDesign { get; private set; }
+        public AUnitCmdModuleDesign CmdModuleDesign { get; private set; }
 
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
@@ -230,18 +230,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The command module design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, AUnitCmdDesign cmdDesign)
-            : base(cmd, owner, cmdDesign.HitPoints, passiveCMs) {
+            FtlDampener ftlDampener, AUnitCmdModuleDesign cmdModDesign)
+            : base(cmd, owner, cmdModDesign.HitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
-            ////Sensors = sensors;
-            MaxCmdStaffEffectiveness = cmdDesign.ReqdCmdStat.MaxCmdStaffEffectiveness;
-            CmdDesign = cmdDesign;
+            MaxCmdStaffEffectiveness = cmdModDesign.CmdModuleStat.MaxCmdStaffEffectiveness;
+            CmdModuleDesign = cmdModDesign;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
             Initialize(sensors);
-            ////SubscribeToSensorRangeChanges();
         }
 
         private void InitializeCollections() {
@@ -293,9 +291,19 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, OutputsYield>(ed => ed.Outputs, ElementOutputsPropChangedHandler));
         }
 
-        public virtual void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            CmdDesign = cmdDesign;
-            MaxCmdStaffEffectiveness = cmdDesign.ReqdCmdStat.MaxCmdStaffEffectiveness;
+        /// <summary>
+        /// Refits the CmdModule to reflect the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
+        /// with the new instances provided as these are derived from the cmdModuleDesign.
+        /// <remarks>These changes do not interfere with the ongoing operations of this Cmd. They can however create momentary 
+        /// changes in AlertStatus and FtlDampening before both are properly resumed.</remarks>
+        /// </summary>
+        /// <param name="cmdModuleDesign">The design of the new CmdModule.</param>
+        /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
+        /// <param name="sensors">The replacement CmdSensors.</param>
+        /// <param name="ftlDampener">The replacement FtlDampener.</param>
+        public virtual void RefitCmdModule(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            CmdModuleDesign = cmdModuleDesign;
+            MaxCmdStaffEffectiveness = cmdModuleDesign.CmdModuleStat.MaxCmdStaffEffectiveness;
             ReplacePassiveCMs(passiveCMs);
             ReplaceSensors(sensors);
             ReplaceFtlDampener(ftlDampener);
@@ -308,14 +316,14 @@ namespace CodeEnv.Master.GameContent {
             Initialize(sensorReplacements);
         }
 
-        private void ReplaceFtlDampener(FtlDampener ftlDampener) {
+        private void ReplaceFtlDampener(FtlDampener replacementFtlDampener) {
             D.AssertNotNull(FtlDampener);
             D.Assert(!FtlDampener.IsActivated);
             D.AssertNull(FtlDampener.RangeMonitor);
 
-            D.Assert(!ftlDampener.IsActivated);
-            D.AssertNotNull(ftlDampener.RangeMonitor);
-            FtlDampener = ftlDampener;
+            D.Assert(!replacementFtlDampener.IsActivated);
+            D.AssertNotNull(replacementFtlDampener.RangeMonitor);
+            FtlDampener = replacementFtlDampener;
             AssessFtlDampenerActivation();
         }
 
@@ -409,7 +417,9 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleAlertStatusChanged() {
-            D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+            if (AlertStatus == AlertStatus.Red) {
+                D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+            }
             AssessFtlDampenerActivation();
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
@@ -635,7 +645,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if the command survived.
         /// </returns>
         public override bool ApplyDamage(DamageStrength damageToCmdModule, out float damageSeverity) {
-            var initialDamage = damageToCmdModule.Total;
+            var initialDamage = damageToCmdModule.__Total;
             damageSeverity = Mathf.Clamp01(initialDamage / CmdModuleCurrentHitPoints);
             float cumCurrentHitPtReductionFromEquip = AssessDamageToEquipment(damageSeverity);
             float totalDamage = initialDamage + cumCurrentHitPtReductionFromEquip;

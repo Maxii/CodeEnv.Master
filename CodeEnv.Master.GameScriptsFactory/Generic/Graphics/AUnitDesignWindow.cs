@@ -57,9 +57,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
     private GameObject _threeDModelStagePrefab = null;
 
-    [SerializeField]
-    private bool _includeObsoleteDesigns = false;    // TODO Debug location for testing. Move to UI
-
     private Transform _contentHolder;
     protected override Transform ContentHolder { get { return _contentHolder; } }
 
@@ -179,6 +176,8 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         _designerEquipmentStorage = _designerUIContainerWidget.gameObject.GetSingleComponentInChildren<DesignEquipmentStorage>();
         _windowControlsUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.MenuControlsUIContainer).GetComponent<UIWidget>();
+
+        __debugCntls = DebugControls.Instance;
     }
 
     private void InitializeContentHolder() {
@@ -482,10 +481,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     public void ObsoleteChosenDesign() {
         if (_pickedDesignIcon != null) {
             AUnitMemberDesign pickedDesign = _pickedDesignIcon.Design;
-            ObsoleteDesign(pickedDesign.DesignName);
+            Obsolete(pickedDesign);
             SFXManager.Instance.PlaySFX(SfxClipID.OpenShut);
 
-            if (!_includeObsoleteDesigns) {
+            if (!__debugCntls.IncludeObsoleteDesigns) {
                 RemoveIcon(_pickedDesignIcon);
             }
             ChangePickedDesignIcon(null);
@@ -500,7 +499,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     #endregion
 
-    protected abstract void ObsoleteDesign(string designName);
+    protected abstract void Obsolete(AUnitMemberDesign design);
 
     /// <summary>
     /// Changes _pickedDesignIcon to newPickedDesignIcon, destroying any icon already assigned
@@ -662,11 +661,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         AUnitMemberDesign.SourceAndStatus previousDesignStatus = previousDesign.Status;
         if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
             // current design that has just been updated to newDesign so obsolete previousDesign
-            ObsoleteDesign(previousDesign.DesignName);
+            Obsolete(previousDesign);
             // Only remove the previousDesignIcon from displayed and registered designs when the source of the design is current.
             // If previous source is system then it isn't displayed, and if it is obsolete, the user has chosen to display obsolete.
             // Even if current the icon should only be removed when not showing obsolete.
-            if (!_includeObsoleteDesigns) {
+            if (!__debugCntls.IncludeObsoleteDesigns) {
                 RemoveIcon(previousDesignIcon);
             }
         }
@@ -700,7 +699,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         D.AssertEqual(Constants.Zero, _registeredDesignIcons.Count);
         RemoveRegisteredDesignIcons();   // OPTIMIZE Reqd to destroy the icon already present. Can be removed once reuse of icons is implemented
 
-        IEnumerable<AUnitMemberDesign> designs = GetRegisteredUserDesigns(_includeObsoleteDesigns);
+        IEnumerable<AUnitMemberDesign> designs = GetRegisteredUserDesigns(__debugCntls.IncludeObsoleteDesigns);
         int desiredDesignsToAccommodateInGrid = designs.Count();
 
         Vector2 gridContainerViewSize = _registeredDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -915,6 +914,8 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     #region Debug
+
+    private DebugControls __debugCntls;
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidatePrefabs() {

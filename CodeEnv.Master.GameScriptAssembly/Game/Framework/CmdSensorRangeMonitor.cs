@@ -51,6 +51,24 @@ public class CmdSensorRangeMonitor : ASensorRangeMonitor, ICmdSensorRangeMonitor
 
     protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }
 
+    protected override void __HandleUnknownTargetDetectedAndAdded(IElementAttackable unknownTgt) {
+        base.__HandleUnknownTargetDetectedAndAdded(unknownTgt);
+        if (RangeCategory == RangeCategory.Medium) {
+            D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
+        }
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided maneuverableItem (ship) is detected by the fleet's Sensors with the range of this monitor.
+    /// <remarks>Currently only tracks Enemy elements, so friendly elements won't be present.</remarks>
+    /// </summary>
+    /// <param name="maneuverableItem">The maneuverable item.</param>
+    /// <returns></returns>
+    public bool __IsPresentAsEnemy(IManeuverable maneuverableItem) {
+        D.Assert(maneuverableItem is IShip);
+        return _enemyElementsDetected.Contains(maneuverableItem as IUnitElement_Ltd);
+    }
+
     #endregion
 
 }

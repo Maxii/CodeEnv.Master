@@ -36,18 +36,18 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}.{1}";
 
-        private static readonly Speed[] __ValidExternalChangeSpeeds = {
-                                                                    Speed.HardStop,
-                                                                    Speed.Stop,
-                                                                    Speed.ThrustersOnly,
-                                                                    Speed.Docking,
-                                                                    Speed.DeadSlow,
-                                                                    Speed.Slow,
-                                                                    Speed.OneThird,
-                                                                    Speed.TwoThirds,
-                                                                    Speed.Standard,
-                                                                    Speed.Full,
-                                                                };
+        private static readonly Speed[] __ValidExternalChangeSpeeds =   {
+                                                                            Speed.HardStop,
+                                                                            Speed.Stop,
+                                                                            Speed.ThrustersOnly,
+                                                                            Speed.Docking,
+                                                                            Speed.DeadSlow,
+                                                                            Speed.Slow,
+                                                                            Speed.OneThird,
+                                                                            Speed.TwoThirds,
+                                                                            Speed.Standard,
+                                                                            Speed.Full,
+                                                                        };
 
         public event EventHandler apCourseChanged;
 

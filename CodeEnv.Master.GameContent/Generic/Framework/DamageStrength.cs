@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DamageStrength.cs
-// Immutable data container holding the offensive and defensive damage 
-// infliction and mitigation capabilities of weapons and countermeasures respectively.
+// Immutable data container holding the damage infliction and mitigation capabilities of ordnance and equipment.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,12 +18,12 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Immutable data container holding the offensive and defensive damage 
-    /// infliction and mitigation capabilities of weapons and countermeasures respectively.
+    /// Immutable data container holding the damage infliction and mitigation capabilities of ordnance and equipment.
     /// </summary>
     public struct DamageStrength : IEquatable<DamageStrength>, IComparable<DamageStrength> {
 
@@ -52,26 +51,25 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static DamageStrength operator +(DamageStrength left, DamageStrength right) {
-            var t = left.Thermal + right.Thermal;
-            var s = left.Structural + right.Structural;
-            var i = left.Incursion + right.Incursion;
+            var t = left._thermalValue + right._thermalValue;
+            var s = left._structuralValue + right._structuralValue;
+            var i = left._incursionValue + right._incursionValue;
             return new DamageStrength(t, s, i);
         }
 
         /// <summary>
-        /// Returns the damage inflicted (a positive DamageStrength) on the defender (right operand) by the attacker (left operand).
+        /// Returns the damage to be inflicted (a >= 0 DamageStrength) on the defender (right operand) 
+        /// by the attacker (left operand) after the defender mitigates what damage it can. 
         /// </summary>
         /// <param name="attacker">The attacker.</param>
         /// <param name="defender">The defender.</param>
-        /// <returns>
-        /// The damage (a positive DamageStrength) inflicted on the defender by the attacker.
-        /// </returns>
+        /// <returns></returns>
         public static DamageStrength operator -(DamageStrength attacker, DamageStrength defender) {
-            var t = attacker.Thermal - defender.Thermal;
+            var t = attacker._thermalValue - defender._thermalValue;
             if (t < Constants.ZeroF) { t = Constants.ZeroF; }
-            var s = attacker.Structural - defender.Structural;
+            var s = attacker._structuralValue - defender._structuralValue;
             if (s < Constants.ZeroF) { s = Constants.ZeroF; }
-            var i = attacker.Incursion - defender.Incursion;
+            var i = attacker._incursionValue - defender._incursionValue;
             if (i < Constants.ZeroF) { i = Constants.ZeroF; }
             return new DamageStrength(t, s, i);
         }
@@ -86,9 +84,9 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public static DamageStrength operator *(DamageStrength strength, float scaler) {
             Utility.ValidateNotNegative(scaler);
-            var t = strength.Thermal * scaler;
-            var s = strength.Structural * scaler;
-            var i = strength.Incursion * scaler;
+            var t = strength._thermalValue * scaler;
+            var s = strength._structuralValue * scaler;
+            var i = strength._incursionValue * scaler;
             return new DamageStrength(t, s, i);
         }
 
@@ -108,17 +106,15 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName {
             get {
-                return DebugNameFormat.Inject(GetType().Name, Thermal.FormatValue(), Structural.FormatValue(), Incursion.FormatValue());
+                return DebugNameFormat.Inject(GetType().Name, _thermalValue.FormatValue(), _structuralValue.FormatValue(), _incursionValue.FormatValue());
             }
         }
 
-        public float Total { get { return Thermal + Structural + Incursion; } }
+        public float __Total { get { return _thermalValue + _structuralValue + _incursionValue; } }
 
-        public float Thermal { get; private set; }
-
-        public float Structural { get; private set; }
-
-        public float Incursion { get; private set; }
+        private float _thermalValue;
+        private float _structuralValue;
+        private float _incursionValue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DamageStrength" /> struct.
@@ -131,13 +127,13 @@ namespace CodeEnv.Master.GameContent {
             Utility.ValidateNotNegative(value);
             switch (damageCat) {
                 case DamageCategory.Thermal:
-                    Thermal = value;
+                    _thermalValue = value;
                     break;
                 case DamageCategory.Structural:
-                    Structural = value;
+                    _structuralValue = value;
                     break;
                 case DamageCategory.Incursion:
-                    Incursion = value;
+                    _incursionValue = value;
                     break;
                 case DamageCategory.None:
                 default:
@@ -161,19 +157,19 @@ namespace CodeEnv.Master.GameContent {
         private DamageStrength(float thermal, float structural, float incursion)
             : this() {
             Utility.ValidateNotNegative(thermal, structural, incursion);
-            Thermal = thermal;
-            Structural = structural;
-            Incursion = incursion;
+            _thermalValue = thermal;
+            _structuralValue = structural;
+            _incursionValue = incursion;
         }
 
         public float GetValue(DamageCategory damageCat) {
             switch (damageCat) {
                 case DamageCategory.Thermal:
-                    return Thermal;
+                    return _thermalValue;
                 case DamageCategory.Structural:
-                    return Structural;
+                    return _structuralValue;
                 case DamageCategory.Incursion:
-                    return Incursion;
+                    return _incursionValue;
                 case DamageCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageCat));
@@ -181,17 +177,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private string ConstructLabelOutput(bool includeTotalValue) {
-            string thermal = Thermal.FormatValue();
-            string structural = Structural.FormatValue();
-            string incursion = Incursion.FormatValue();
+            string thermalValueText = _thermalValue.FormatValue();
+            string structuralValueText = _structuralValue.FormatValue();
+            string incursionValueText = _incursionValue.FormatValue();
 
             if (includeTotalValue) {
-                string total = Total.FormatValue();
-                return LabelFormatWithTotal.Inject(total, DamageCategory.Thermal.GetEnumAttributeText(), thermal,
-                    DamageCategory.Structural.GetEnumAttributeText(), structural, DamageCategory.Incursion.GetEnumAttributeText(), incursion);
+                string total = __Total.FormatValue();
+                return LabelFormatWithTotal.Inject(total, DamageCategory.Thermal.GetEnumAttributeText(), thermalValueText,
+                    DamageCategory.Structural.GetEnumAttributeText(), structuralValueText, DamageCategory.Incursion.GetEnumAttributeText(),
+                    incursionValueText);
             }
-            return LabelFormatNoTotal.Inject(DamageCategory.Thermal.GetEnumAttributeText(), thermal, DamageCategory.Structural.GetEnumAttributeText(),
-                structural, DamageCategory.Incursion.GetEnumAttributeText(), incursion);
+            return LabelFormatNoTotal.Inject(DamageCategory.Thermal.GetEnumAttributeText(), thermalValueText,
+                DamageCategory.Structural.GetEnumAttributeText(), structuralValueText, DamageCategory.Incursion.GetEnumAttributeText(),
+                incursionValueText);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -211,9 +209,9 @@ namespace CodeEnv.Master.GameContent {
         public override int GetHashCode() {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
                 int hash = 17;  // 17 = some prime number
-                hash = hash * 31 + Thermal.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + Structural.GetHashCode();
-                hash = hash * 31 + Incursion.GetHashCode();
+                hash = hash * 31 + _thermalValue.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + _structuralValue.GetHashCode();
+                hash = hash * 31 + _incursionValue.GetHashCode();
                 return hash;
             }
         }
@@ -223,11 +221,11 @@ namespace CodeEnv.Master.GameContent {
         public string ToLabel(bool includeTotal = false) { return ConstructLabelOutput(includeTotal); }
 
         public string ToTextHud(bool includeTotal = false) {
-            if (Total == Constants.ZeroF) {
+            if (__Total == Constants.ZeroF) {
                 return string.Empty;
             }
-            string totalText = includeTotal ? Total.FormatValue() : string.Empty;
-            return DebugNameFormat.Inject(totalText, Thermal.FormatValue(), Structural.FormatValue(), Incursion.FormatValue());
+            string totalText = includeTotal ? __Total.FormatValue() : string.Empty;
+            return DebugNameFormat.Inject(totalText, _thermalValue.FormatValue(), _structuralValue.FormatValue(), _incursionValue.FormatValue());
         }
 
         public override string ToString() {
@@ -237,7 +235,7 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<DamageStrength> Members
 
         public bool Equals(DamageStrength other) {
-            return Thermal == other.Thermal && Structural == other.Structural && Incursion == other.Incursion;
+            return _thermalValue == other._thermalValue && _structuralValue == other._structuralValue && _incursionValue == other._incursionValue;
         }
 
         #endregion
@@ -246,7 +244,7 @@ namespace CodeEnv.Master.GameContent {
 
         public int CompareTo(DamageStrength other) {
             //D.Log("{0}.CompareTo({1}) called.", ToString(), other.ToString());
-            return Total.CompareTo(other.Total);
+            return __Total.CompareTo(other.__Total);
         }
 
         #endregion

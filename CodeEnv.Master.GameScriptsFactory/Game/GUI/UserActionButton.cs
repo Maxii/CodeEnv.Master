@@ -129,6 +129,9 @@ public class UserActionButton : AGuiButton {
         if (_actionMode == ActionMode.PauseResume) {
             bool toPause = !_gameMgr.IsPaused;
             _gameMgr.RequestPauseStateChange(toPause);
+            if (toPause) {
+                //__ShowDialogBoxTest();
+            }
         }
         else {
             D.AssertEqual(ActionMode.OpenResearchScreen, _actionMode);
@@ -175,6 +178,20 @@ public class UserActionButton : AGuiButton {
         base.__ValidateOnAwake();
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         D.Assert(gameObject.activeInHierarchy);
+    }
+
+    private void __ShowDialogBoxTest() {
+        var dialogWindow = DialogWindow.Instance;
+        var dialogSettings = new DialogWindow.DialogSettings() {
+            Title = "Pause Test",
+            Text = "I am paused",
+            ShowDoneButton = true,
+            DoneButtonDelegate = new EventDelegate(() => {
+                D.Warn("Done Button was clicked!");
+                dialogWindow.Hide();
+            }),
+        };
+        dialogWindow.Show(FormID.TextDialog, dialogSettings);
     }
 
     #endregion

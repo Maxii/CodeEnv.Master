@@ -28,11 +28,11 @@ using UnityEngine;
 public class FleetCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        UserDesigns.Add(newDesign as FleetCmdDesign);
+        UserDesigns.Add(newDesign as FleetCmdModuleDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
-        return new FleetCmdDesign(design as FleetCmdDesign);
+        return new FleetCmdModuleDesign(design as FleetCmdModuleDesign);
     }
 
     protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
@@ -42,7 +42,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return UserDesigns.GetAllFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllFleetCmdModDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,11 +53,11 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return UserDesigns.GetCurrentFleetTemplateDesign();
+        return UserDesigns.GetCurrentFleetCmdModTemplateDesign();
     }
 
-    protected override void ObsoleteDesign(string designName) {
-        UserDesigns.ObsoleteFleetCmdDesign(designName);
+    protected override void Obsolete(AUnitMemberDesign design) {
+        UserDesigns.ObsoleteDesign(design as FleetCmdModuleDesign);
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {

@@ -143,6 +143,7 @@ public class DebugControlsEditor : Editor {
                     NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useOneUIPanelPerWidget");
                     NGUIEditorTools.DrawProperty("Deactivate MRSensors", serializedObject, "_deactivateMRSensors");
                     NGUIEditorTools.DrawProperty("Deactivate LRSensors", serializedObject, "_deactivateLRSensors");
+                    NGUIEditorTools.DrawProperty("Include Obsolete Designs", serializedObject, "_includeObsoleteDesigns");
 
                     var allTechRschdSP = NGUIEditorTools.DrawProperty("All Techs Researched", serializedObject, "_isAllTechResearched");
                     if (allTechRschdSP.boolValue) {

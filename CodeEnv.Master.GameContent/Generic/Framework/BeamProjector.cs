@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public override float MaxLaunchInaccuracy { get { return Stat.MaxLaunchInaccuracy; } }
 
+        public DamageStrength BeamIntegrity { get { return Stat.BeamIntegrity; } }
+
         protected new BeamWeaponStat Stat { get { return base.Stat as BeamWeaponStat; } }
 
         private ITerminatableOrdnance _activeOrdnance;

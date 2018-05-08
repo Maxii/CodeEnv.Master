@@ -31,8 +31,8 @@ using UnityEngine;
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[]    {
-                                                                                            ShipDirective.JoinFleet,
-                                                                                            ShipDirective.JoinHanger,
+                                                                                            ShipDirective.JoinFleetShortcut,
+                                                                                            ShipDirective.JoinHangerShortcut,
                                                                                             ShipDirective.Disengage,
                                                                                             ShipDirective.Scuttle
                                                                                         };
@@ -68,8 +68,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         switch (directive) {
             case ShipDirective.Scuttle:
             case ShipDirective.Disengage:
-            case ShipDirective.JoinFleet:
-            case ShipDirective.JoinHanger:
+            case ShipDirective.JoinFleetShortcut:
+            case ShipDirective.JoinHangerShortcut:
                 // 12.5.17 Currently no CtxMenu orders allowed for ships in hangers
                 return _shipMenuOperator.IsLocatedInHanger || !_shipMenuOperator.IsAuthorizedForNewOrder(directive);
             default:
@@ -92,13 +92,13 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableDestination> targets) {
         bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
-            case ShipDirective.JoinFleet:
+            case ShipDirective.JoinFleetShortcut:
                 IEnumerable<IFleetCmd> joinableFleets;
                 _userKnowledge.TryGetJoinableFleetsFor(_shipMenuOperator, out joinableFleets);
                 targets = joinableFleets.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
-            case ShipDirective.JoinHanger:
+            case ShipDirective.JoinHangerShortcut:
                 IEnumerable<IUnitBaseCmd> joinableHangerBases;
                 _userKnowledge.TryGetJoinableHangerBasesFor(_shipMenuOperator, out joinableHangerBases);
                 targets = joinableHangerBases.Cast<INavigableDestination>();

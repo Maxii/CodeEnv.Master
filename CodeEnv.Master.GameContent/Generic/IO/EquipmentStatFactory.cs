@@ -107,34 +107,39 @@ namespace CodeEnv.Master.GameContent {
 
             private string _eAccuracyTagName = "Accuracy";
             private string _eReloadPeriodTagName = "Reload";
-            private string _eMaxCharge = "MaxCharge";
-            private string _eChargeRate = "ChargeRate";
+            private string _eMaxChargeTagName = "MaxCharge";
+            private string _eChargeRateTagName = "ChargeRate";
 
-            private string _eWdvStrengthContainerTagName = "WdvStrengths";   // holds WdvCategory and WdvCatValue values
-            private string _eWdvCategoryTagName = "WdvCategory";
-            private string _eWdvCatValueTagName = "WdvCatValue";
+            private string _eCmAccuracyContainerTagName = "CmAccuracies";   // holds Equipment[Weap]Category and WeapCatAccuracy values
+            private string _eCmAccyWeapCategoryTagName = "CmAccyWeapCategory";
+            private string _eCmAccyWeapCatValueTagName = "CmAccyWeapCatValue";
 
-            private string _eDmgStrengthContainerTagName = "DmgStrengths";    // holds DamageCategory and DamageCatValue values
+            private string _eElementDmgMitigationContainerTagName = "ElemDmgMitigations";       // holds DmgCategory and DmgCatValue values
+            private string _eProjectileDmgMitigationContainerTagName = "ProjectileDmgMitigationStrengths";    // holds DmgCategory and DmgCatValue values
+            private string _eBeamIntegrityContainerTagName = "BeamIntegrityStrengths";          // holds DmgCategory and DmgCatValue values
+            private string _eOrdDmgPotentialContainerTagName = "OrdDmgPotentials";              // holds DmgCategory and DmgCatValue values
+            private string _eCmInterceptStrengthContainerTagName = "CmInterceptStrengths";      // holds DmgCategory and DmgCatValue values
             private string _eDmgCategoryTagName = "DmgCategory";
             private string _eDmgCatValueTagName = "DmgCatValue";
 
-            private string _eMaxSpeed = "MaxSpeed";
-            private string _eDrag = "Drag";
-            private string _eRangeCategory = "RangeCategory";
-            private string _eOrdnanceMass = "OrdnanceMass";
-            private string _eDuration = "Duration";
+            private string _eMaxSpeedTagName = "MaxSpeed";
+            private string _eDragTagName = "Drag";
+            private string _eRangeCategoryTagName = "RangeCategory";
+            private string _eOrdMassTagName = "OrdMass";
+            private string _eOrdHitPtsTagName = "OrdHitPts";
+            private string _eDurationTagName = "Duration";
 
-            private string _eMaxTurnRate = "MaxTurnRate";
-            private string _eTurnRateConstraint = "TurnRateConstraint";
+            private string _eMaxTurnRateTagName = "MaxTurnRate";
+            private string _eTurnRateConstraintTagName = "TurnRateConstraint";
 
-            private string _eFoodOutput = "Food";
-            private string _eScienceOutput = "Science";
-            private string _eProdnOutput = "Production";
-            private string _eIncomeOutput = "Income";
-            private string _eCultureOutput = "Culture";
+            private string _eFoodOutputTagName = "Food";
+            private string _eScienceOutputTagName = "Science";
+            private string _eProdnOutputTagName = "Production";
+            private string _eIncomeOutputTagName = "Income";
+            private string _eCultureOutputTagName = "Culture";
 
-            private string _eUpdateFreq = "UpdateFreq";
-            private string _eHqPriority = "HqPriority";
+            private string _eUpdateFreqTagName = "UpdateFreq";
+            private string _eHqPriorityTagName = "HqPriority";
 
             protected override string XmlFilename { get { return "EquipmentStatValues"; } }
 
@@ -280,15 +285,15 @@ namespace CodeEnv.Master.GameContent {
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                WDVStrength[] interceptStrengths = GetWdvStrengths(levelNode);
-                float interceptAccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
+                DamageStrength interceptStrength = GetStrength(levelNode, _eCmInterceptStrengthContainerTagName);
+                CountermeasureAccuracy interceptAccuracy = GetActiveCmInterceptAccuracy(levelNode);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
+                DamageStrength elementDmgMitigation = GetStrength(levelNode, _eElementDmgMitigationContainerTagName);
 
                 return new ActiveCountermeasureStat(name, imageAtlasID, imageFilename, description, statID, size, mass,
-                    pwrReqd, hitPts, constructionCost, expense, interceptStrengths, interceptAccuracy, reloadPeriod,
-                    dmgMitigation);
+                    pwrReqd, hitPts, constructionCost, expense, interceptStrength, interceptAccuracy, reloadPeriod,
+                    elementDmgMitigation);
             }
 
             private EngineStat CreateEngineStat(EquipmentStatID statID, XElement levelNode) {
@@ -304,8 +309,8 @@ namespace CodeEnv.Master.GameContent {
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
                 bool isDamageable = bool.Parse(levelNode.Element(_eDamageableTagName).Value);
 
-                float maxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRate).Value);
-                float maxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
+                float maxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRateTagName).Value);
+                float maxSpeed = float.Parse(levelNode.Element(_eMaxSpeedTagName).Value);
 
                 return new EngineStat(name, imageAtlasID, imageFilename, description, statID, size, mass, hitPts,
                     constructCost, expense, maxTurnRate, maxSpeed, isDamageable);
@@ -322,7 +327,7 @@ namespace CodeEnv.Master.GameContent {
                 float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
                 return new FtlDampenerStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr, hitPts,
                     constructCost, expense, rangeCat);
@@ -339,7 +344,7 @@ namespace CodeEnv.Master.GameContent {
                 float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
-                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
+                DamageStrength dmgMitigation = GetStrength(levelNode, _eElementDmgMitigationContainerTagName);
 
                 return new PassiveCountermeasureStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
                     hitPts, constructCost, expense, dmgMitigation);
@@ -357,12 +362,12 @@ namespace CodeEnv.Master.GameContent {
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
-                float maxCharge = float.Parse(levelNode.Element(_eMaxCharge).Value);
-                float chargeRate = float.Parse(levelNode.Element(_eChargeRate).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
+                float maxCharge = float.Parse(levelNode.Element(_eMaxChargeTagName).Value);
+                float chargeRate = float.Parse(levelNode.Element(_eChargeRateTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
+                DamageStrength dmgMitigation = GetStrength(levelNode, _eElementDmgMitigationContainerTagName);
                 return new ShieldGeneratorStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
                     hitPts, constructCost, expense, rangeCat, maxCharge, chargeRate, reloadPeriod, dmgMitigation);
             }
@@ -437,17 +442,17 @@ namespace CodeEnv.Master.GameContent {
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
-                WDVStrength ordDeliveryVehicleStrength = GetWdvStrengths(levelNode).Single();
+                DamageStrength beamIntegrity = GetStrength(levelNode, _eBeamIntegrityContainerTagName);
                 float aimInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
-                float duration = float.Parse(levelNode.Element(_eDuration).Value);
+                DamageStrength ordDmgPotential = GetStrength(levelNode, _eOrdDmgPotentialContainerTagName);
+                float duration = float.Parse(levelNode.Element(_eDurationTagName).Value);
 
                 return new BeamWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
-                    hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, duration, aimInaccuracy);
+                    hitPts, constructionCost, expense, rangeCat, beamIntegrity, reloadPeriod, ordDmgPotential, duration, aimInaccuracy);
             }
 
             private ProjectileWeaponStat CreateProjectileWeaponStat(EquipmentStatID statID, XElement levelNode) {
@@ -458,24 +463,25 @@ namespace CodeEnv.Master.GameContent {
                 float size = float.Parse(levelNode.Element(_eSizeTagName).Value);
                 float mass = float.Parse(levelNode.Element(_eMassTagName).Value);
                 float pwrReqd = float.Parse(levelNode.Element(_ePowerTagName).Value);
-                float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
+                float elementHitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
-                WDVStrength ordDeliveryVehicleStrength = GetWdvStrengths(levelNode).Single();
+                DamageStrength ordDmgMitigation = GetStrength(levelNode, _eProjectileDmgMitigationContainerTagName);
                 float aimInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
-                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
-                float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
-                float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
+                DamageStrength ordDmgPotential = GetStrength(levelNode, _eOrdDmgPotentialContainerTagName);
+                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeedTagName).Value);
+                float ordMass = float.Parse(levelNode.Element(_eOrdMassTagName).Value);
+                float ordDrag = float.Parse(levelNode.Element(_eDragTagName).Value);
+                float ordHitPts = float.Parse(levelNode.Element(_eOrdHitPtsTagName).Value);
 
                 return new ProjectileWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
-                    hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, ordMaxSpeed,
-                    ordMass, ordDrag, aimInaccuracy);
+                    elementHitPts, constructionCost, expense, rangeCat, ordDmgMitigation, reloadPeriod, ordDmgPotential, ordMaxSpeed,
+                    ordMass, ordDrag, aimInaccuracy, ordHitPts);
             }
 
             private MissileWeaponStat CreateMissileWeaponStat(EquipmentStatID statID, XElement levelNode) {
@@ -486,27 +492,28 @@ namespace CodeEnv.Master.GameContent {
                 float size = float.Parse(levelNode.Element(_eSizeTagName).Value);
                 float mass = float.Parse(levelNode.Element(_eMassTagName).Value);
                 float pwrReqd = float.Parse(levelNode.Element(_ePowerTagName).Value);
-                float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
+                float elementHitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
-                WDVStrength ordDeliveryVehicleStrength = GetWdvStrengths(levelNode).Single();
+                DamageStrength ordDmgMitigation = GetStrength(levelNode, _eProjectileDmgMitigationContainerTagName);
                 float ordSteeringInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
-                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
-                float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
-                float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
+                DamageStrength ordDmgPotential = GetStrength(levelNode, _eOrdDmgPotentialContainerTagName);
+                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeedTagName).Value);
+                float ordMass = float.Parse(levelNode.Element(_eOrdMassTagName).Value);
+                float ordDrag = float.Parse(levelNode.Element(_eDragTagName).Value);
+                float ordHitPts = float.Parse(levelNode.Element(_eOrdHitPtsTagName).Value);
 
-                float ordMaxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRate).Value);
-                float ordCourseUpdateFreq = float.Parse(levelNode.Element(_eUpdateFreq).Value);
+                float ordMaxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRateTagName).Value);
+                float ordCourseUpdateFreq = float.Parse(levelNode.Element(_eUpdateFreqTagName).Value);
 
                 return new MissileWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
-                    hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, ordMaxSpeed,
-                    ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy);
+                    elementHitPts, constructionCost, expense, rangeCat, ordDmgMitigation, reloadPeriod, ordDmgPotential, ordMaxSpeed,
+                    ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy, ordHitPts);
             }
 
             private AssaultWeaponStat CreateAssaultWeaponStat(EquipmentStatID statID, XElement levelNode) {
@@ -517,27 +524,28 @@ namespace CodeEnv.Master.GameContent {
                 float size = float.Parse(levelNode.Element(_eSizeTagName).Value);
                 float mass = float.Parse(levelNode.Element(_eMassTagName).Value);
                 float pwrReqd = float.Parse(levelNode.Element(_ePowerTagName).Value);
-                float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
+                float elementHitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
+                RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
-                WDVStrength ordDeliveryVehicleStrength = GetWdvStrengths(levelNode).Single();
+                DamageStrength ordDmgMitigation = GetStrength(levelNode, _eProjectileDmgMitigationContainerTagName);
                 float ordSteeringInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
-                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
-                float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
-                float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
+                DamageStrength ordDmgPotential = GetStrength(levelNode, _eOrdDmgPotentialContainerTagName);
+                float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeedTagName).Value);
+                float ordMass = float.Parse(levelNode.Element(_eOrdMassTagName).Value);
+                float ordDrag = float.Parse(levelNode.Element(_eDragTagName).Value);
+                float ordHitPts = float.Parse(levelNode.Element(_eOrdHitPtsTagName).Value);
 
-                float ordMaxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRate).Value);
-                float ordCourseUpdateFreq = float.Parse(levelNode.Element(_eUpdateFreq).Value);
+                float ordMaxTurnRate = float.Parse(levelNode.Element(_eMaxTurnRateTagName).Value);
+                float ordCourseUpdateFreq = float.Parse(levelNode.Element(_eUpdateFreqTagName).Value);
 
                 return new AssaultWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
-                    hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, ordMaxSpeed,
-                    ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy);
+                    elementHitPts, constructionCost, expense, rangeCat, ordDmgMitigation, reloadPeriod, ordDmgPotential, ordMaxSpeed,
+                    ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy, ordHitPts);
             }
 
             private FacilityHullStat CreateFacilityHullStat(EquipmentStatID statID, XElement levelNode) {
@@ -552,14 +560,14 @@ namespace CodeEnv.Master.GameContent {
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
-                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriority).Value);
+                DamageStrength dmgMitigation = GetStrength(levelNode, _eElementDmgMitigationContainerTagName);
+                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriorityTagName).Value);
 
-                float food = float.Parse(levelNode.Element(_eFoodOutput).Value);
-                float science = float.Parse(levelNode.Element(_eScienceOutput).Value);
-                float income = float.Parse(levelNode.Element(_eIncomeOutput).Value);
-                float culture = float.Parse(levelNode.Element(_eCultureOutput).Value);
-                float prodn = float.Parse(levelNode.Element(_eProdnOutput).Value);
+                float food = float.Parse(levelNode.Element(_eFoodOutputTagName).Value);
+                float science = float.Parse(levelNode.Element(_eScienceOutputTagName).Value);
+                float income = float.Parse(levelNode.Element(_eIncomeOutputTagName).Value);
+                float culture = float.Parse(levelNode.Element(_eCultureOutputTagName).Value);
+                float prodn = float.Parse(levelNode.Element(_eProdnOutputTagName).Value);
 
                 return new FacilityHullStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd, hitPts, constructionCost,
                     expense, dmgMitigation, hqPriority, science, culture, income, food, prodn);
@@ -577,38 +585,48 @@ namespace CodeEnv.Master.GameContent {
                 float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
-                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriority).Value);
-                float turnRateConstraint = float.Parse(levelNode.Element(_eTurnRateConstraint).Value);
+                DamageStrength dmgMitigation = GetStrength(levelNode, _eElementDmgMitigationContainerTagName);
+                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriorityTagName).Value);
+                float turnRateConstraint = float.Parse(levelNode.Element(_eTurnRateConstraintTagName).Value);
 
-                float science = float.Parse(levelNode.Element(_eScienceOutput).Value);
-                float income = float.Parse(levelNode.Element(_eIncomeOutput).Value);
-                float culture = float.Parse(levelNode.Element(_eCultureOutput).Value);
+                float science = float.Parse(levelNode.Element(_eScienceOutputTagName).Value);
+                float income = float.Parse(levelNode.Element(_eIncomeOutputTagName).Value);
+                float culture = float.Parse(levelNode.Element(_eCultureOutputTagName).Value);
 
                 return new ShipHullStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd, hitPts, constructionCost,
                     expense, dmgMitigation, hqPriority, turnRateConstraint, science, culture, income);
             }
 
-            private WDVStrength[] GetWdvStrengths(XElement levelNode) {
-                IList<WDVStrength> strengths = new List<WDVStrength>();
-                var wdvStrengthNodes = levelNode.Elements(_eWdvStrengthContainerTagName);
-                foreach (var wdvStrengthNode in wdvStrengthNodes) {
-                    WDVCategory wdvCat = Enums<WDVCategory>.Parse(wdvStrengthNode.Element(_eWdvCategoryTagName).Value);
-                    float wdvCatValue = float.Parse(wdvStrengthNode.Element(_eWdvCatValueTagName).Value);
-                    strengths.Add(new WDVStrength(wdvCat, wdvCatValue));
+            private DamageStrength GetStrength(XElement levelNode, string containerTagName) {
+                DamageStrength strength = default(DamageStrength);
+                var strengthNodes = levelNode.Elements(containerTagName);
+                foreach (var strengthNode in strengthNodes) {
+                    XElement strengthCatNode = strengthNode.Element(_eDmgCategoryTagName);
+                    string strengthCatNodeValue = strengthCatNode.Value;
+                    if (strengthCatNode.IsEmpty || strengthCatNodeValue == string.Empty) {
+                        continue;
+                    }
+                    DamageCategory strengthCat = Enums<DamageCategory>.Parse(strengthNode.Element(_eDmgCategoryTagName).Value);
+                    float strengthCatValue = float.Parse(strengthNode.Element(_eDmgCatValueTagName).Value);
+                    strength += new DamageStrength(strengthCat, strengthCatValue);
                 }
-                return strengths.ToArray();
+                return strength;
             }
 
-            private DamageStrength GetDmgStrengths(XElement levelNode) {
-                DamageStrength dmgStrength = default(DamageStrength);
-                var dmgStrengthNodes = levelNode.Elements(_eDmgStrengthContainerTagName);
-                foreach (var dmgStrengthNode in dmgStrengthNodes) {
-                    DamageCategory dmgCat = Enums<DamageCategory>.Parse(dmgStrengthNode.Element(_eDmgCategoryTagName).Value);
-                    float dmgCatValue = float.Parse(dmgStrengthNode.Element(_eDmgCatValueTagName).Value);
-                    dmgStrength += new DamageStrength(dmgCat, dmgCatValue);
+            private CountermeasureAccuracy GetActiveCmInterceptAccuracy(XElement levelNode) {
+                CountermeasureAccuracy cmAccuracy = default(CountermeasureAccuracy);
+                var cmAccuracyNodes = levelNode.Elements(_eCmAccuracyContainerTagName);
+                foreach (var cmAccyNode in cmAccuracyNodes) {
+                    XElement weapCatNode = cmAccyNode.Element(_eCmAccyWeapCategoryTagName);
+                    string weapCatNodeValue = weapCatNode.Value;
+                    if (weapCatNode.IsEmpty || weapCatNodeValue == string.Empty) {   // XElement.IsEmpty is true only if in the format <TagName/> 
+                        continue;
+                    }
+                    EquipmentCategory ordnanceCat = Enums<EquipmentCategory>.Parse(weapCatNode.Value);
+                    float ordCatAccy = float.Parse(cmAccyNode.Element(_eCmAccyWeapCatValueTagName).Value);
+                    cmAccuracy += new CountermeasureAccuracy(ordnanceCat, ordCatAccy);
                 }
-                return dmgStrength;
+                return cmAccuracy;
             }
 
         }

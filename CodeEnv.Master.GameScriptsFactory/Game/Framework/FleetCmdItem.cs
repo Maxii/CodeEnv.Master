@@ -139,6 +139,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         base.RemoveElement(element);
 
         var removedShip = element as ShipItem;
+        RemoveFromStateMachine(removedShip);
+
         if (!IsDead) {
             if (removedShip == HQElement) {
                 // 12.13.17 The ship that was just removed is the HQ, so select another. As HQElement changes to a new ship, the
@@ -153,6 +155,63 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // Whether Cmd is alive or dead, we still need to remove and recycle the FormationStation from the removed non-HQ ship
         bool isFormationStationRemoved = RemoveAndRecycleFormationStation(removedShip);
         D.Assert(isFormationStationRemoved);
+    }
+
+    /// <summary>
+    /// Replaces elementToReplace with refittedElement in this Cmd.
+    /// <remarks>Only called after a element refit has successfully completed.</remarks>
+    /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, position, 
+    /// Topography, HQ state and formation assignment. Client must create the refittedElement, 
+    /// complete initialization, commence operations and destroy elementToReplace.</remarks>
+    /// </summary>
+    /// <param name="elementToReplace">The element to replace.</param>
+    /// <param name="refittedElement">The refitted element replacing elementToReplace.</param>
+    public void ReplaceRefittedElement(ShipItem elementToReplace, ShipItem refittedElement) {
+        D.Assert(elementToReplace.IsCurrentOrderDirectiveAnyOf(ShipDirective.Refit));
+        // AddElement without dealing with Cmd death, HQ or FormationManager
+        Elements.Add(refittedElement);
+        Data.AddElement(refittedElement.Data);
+        refittedElement.Command = this;
+        refittedElement.AttachAsChildOf(UnitContainer);
+        UnifiedSRSensorMonitor.Add(refittedElement.SRSensorMonitor);
+
+        refittedElement.subordinateDeathOneShot += SubordinateDeathEventHandler;
+        refittedElement.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
+        refittedElement.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
+        refittedElement.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
+        refittedElement.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
+
+        // RemoveElement without dealing with Cmd death, HQ or FormationManager
+        bool isRemoved = Elements.Remove(elementToReplace);
+        D.Assert(isRemoved);
+        Data.RemoveElement(elementToReplace.Data);
+
+        UnifiedSRSensorMonitor.Remove(elementToReplace.SRSensorMonitor);
+
+        elementToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
+        elementToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
+        elementToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
+        elementToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
+        elementToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
+        // no need to null Command as elementToReplace will be destroyed
+
+        // no need to AssessIcon as replacingElement only has enhanced performance
+        // no need to worry about IsJoinable as there shouldn't be any checks when using this method
+        refittedElement.transform.rotation = elementToReplace.transform.rotation;
+        refittedElement.Data.Topography = elementToReplace.Topography;
+
+        if (elementToReplace.IsHQ) {
+            // handle all HQ change here without firing HQ change handlers
+            _hqElement = refittedElement;
+            refittedElement.IsHQ = true;
+            Data.HQElementData = refittedElement.Data;
+            AttachCmdToHQElement(); // needs to occur before formation changed
+        }
+        FormationMgr.ReplaceElement(elementToReplace, refittedElement);
+
+        // 11.26.17 Don't communicate removal/addition to FSM as this method is only called after a Element refit has been successful.
+        // ReplacingElement has already been refit so doesn't need to try it again, and elementToReplace has already 
+        // called back with success so Cmd is not waiting for it.
     }
 
     /// <summary>
@@ -339,6 +398,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return false;
     }
 
+    [Obsolete("Fleets no longer refit en-masse inside a hanger")]
     public int GetRefittableShipCount() {
         int count = Constants.Zero;
         foreach (var e in Elements) {
@@ -719,7 +779,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return CurrentState == stateA || CurrentState == stateB || CurrentState == stateC;
     }
 
-
     /// <summary>
     /// Restarts execution of the CurrentState. If the CurrentState is a Call()ed state, Return()s first, then restarts
     /// execution of the state Return()ed too, aka the new CurrentState.
@@ -735,19 +794,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             DebugName, typeof(FleetState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
     }
-
-    /// <summary>
-    /// The target the FSM uses to communicate between Call()ing and Call()ed states. 
-    /// Valid during most Call()ed states (excluding AssumingFormation), and during the states that Call()ed them until nulled by that state.
-    /// The ExecuteXXXState that sets this value during its UponPreconfigureState() is responsible for nulling it during its ExitState().
-    /// </summary>Moving
-    private IFleetNavigableDestination _fsmTgt;
-
-    /// <summary>
-    /// The ships expected to callback with an order outcome.
-    /// <remarks>Used where _moveHelper is not handling fleet move-related order outcome callbacks.</remarks>
-    /// </summary>
-    private HashSet<ShipItem> _fsmShipsExpectedToCallbackWithOrderOutcome = new HashSet<ShipItem>();
 
     #region FinalInitialize
 
@@ -1451,8 +1497,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             case OrderOutcome.Success:
                 bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
                 if (!isRemoved) {
-                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());   //  2.14.18 Failed from _UponSubJoined
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",   //  2.14.18 Failed from _UponSubJoined, 5.6.18 Failed
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
                 }
                 break;
             case OrderOutcome.NewOrderReceived:
@@ -1500,6 +1546,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 ShipOrder order = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff, _executingOrderID);
                 D.Log("{0} is issuing {1} to {2} after being joined during State {3}.", DebugName, order.DebugName, subordinateShip.DebugName,
                     CurrentState.GetValueName());
+                // 5.6.18 Added Log to help diagnose 'not present to be removed' errors on line 1500
+                D.Log("{0}: Ships that had not completed AssumingStation when {1} joined: {2}.", DebugName, subordinateShip.DebugName,
+                    _fsmShipsExpectedToCallbackWithOrderOutcome.Except(subordinateShip).Select(s => s.DebugName).Concatenate());
                 subordinateShip.CurrentOrder = order;
             }
         }
@@ -1625,7 +1674,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         StationaryLocation closestAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-        D.LogBold(/*ShowDebugLog,*/ "{0} has successfully completed exploration of {1}. Assuming Formation.", DebugName, fleetExploreTgt.DebugName);
+        D.Log(/*ShowDebugLog,*/ "{0} has successfully completed exploration of {1}. Assuming Formation.", DebugName, fleetExploreTgt.DebugName);
         IssueCmdStaffsAssumeFormationOrder(closestAssyStation);
     }
 
@@ -1642,7 +1691,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteExploreOrder_UponApTargetReached() {
         LogEvent();
-        D.LogBold(/*ShowDebugLog,*/ "{0} has reached its Explore target {1}, is DisengagingPilot and beginning exploration.", DebugName, _fsmTgt.DebugName);
+        D.Log(ShowDebugLog, "{0} has reached its Explore target {1}, is DisengagingPilot and beginning exploration.", DebugName, _fsmTgt.DebugName);
         _moveHelper.DisengagePilot();
     }
 
@@ -3540,8 +3589,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 bool isAdded = _fsmShipsExpectedToCallbackWithOrderOutcome.Add(subordinateShip);
                 D.Assert(isAdded);
                 ShipOrder order = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, _executingOrderID, _fsmTgt as IShipNavigableDestination);
-                D.Warn("FYI: {0} is issuing {1} to {2} after completing repairs during State {3}.", DebugName, order.DebugName,
-                    subordinateShip.DebugName, CurrentState.GetValueName());
+                D.LogBold("{0} is issuing {1} to {2} after completing repairs during State {3}.", DebugName, order.DebugName,
+                    subordinateShip.DebugName, CurrentState.GetValueName());    // 4.30.18 Confirming this occurs
                 subordinateShip.CurrentOrder = order;
             }
         }
@@ -4245,7 +4294,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteJoinHangerOrder_UponApTargetReached() {
         LogEvent();
-        D.LogBold(ShowDebugLog, "{0} has reached its JoinHanger target {1} and is attempting to join.", DebugName, _fsmTgt.DebugName);
+        D.Log(ShowDebugLog, "{0} has reached its JoinHanger target {1} and is attempting to join.", DebugName, _fsmTgt.DebugName);
         _moveHelper.DisengagePilot();
     }
 
@@ -4349,6 +4398,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteJoinHangerOrder_UponDeath() {
         LogEvent();
         // Do nothing as this will always occur once or more times
+        D.LogBold("{0} has died, probably because it transferred all its ships to {1}'s hanger.", DebugName, _fsmTgt.DebugName);
     }
 
     void ExecuteJoinHangerOrder_ExitState() {
@@ -4374,10 +4424,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region JoiningHanger Support Members
 
-    private void DetermineShipsToReceiveJoinHangerOrder() {
+    private void DetermineShipsToReceiveEnterHangerOrder() {
         foreach (var e in Elements) {
             var ship = e as ShipItem;
-            if (ship.IsAuthorizedForNewOrder(ShipDirective.JoinHanger)) {
+            if (ship.IsAuthorizedForNewOrder(ShipDirective.EnterHanger)) {
                 _fsmShipsExpectedToCallbackWithOrderOutcome.Add(ship);
             }
         }
@@ -4390,6 +4440,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
 
+        DetermineShipsToReceiveEnterHangerOrder();
         ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
     }
 
@@ -4406,7 +4457,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // Wait here until ships have been transferred to the hanger
             yield return null;
         }
-        D.LogBold("{0} has transferred all ships capable of joining {1}'s hanger.", DebugName, _fsmTgt.DebugName);
+
+        D.Assert(!IsDead);   // won't get here if all ships were transferred as this fleetCmd will already be dead
+        D.LogBold("{0} has transferred all ships capable of entering {1}'s hanger. {1} remain.", DebugName, _fsmTgt.DebugName, ElementCount);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -4418,7 +4471,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void JoiningHanger_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
-
         D.Log(ShowDebugLog, "{0}.JoiningHanger_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
             DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
 
@@ -5081,8 +5133,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
 
-        // move to the base target whose hanger we are to refit in
-        float standoffDistance = Constants.ZeroF;    // can't refit in an enemy base's hanger
+        // move to orbit the base where we are to refit
+        float standoffDistance = Constants.ZeroF;    // can't refit at an enemy base
         _moveHelper.PlotPilotCourse(_fsmTgt, Speed.Standard, standoffDistance);
 
         while (!_moveHelper.IsPilotEngaged) {
@@ -5091,7 +5143,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         while (_moveHelper.IsPilotEngaged) {
-            // wait for pilot to arrive at base target whose hanger we are to refit in
+            // wait for pilot to arrive and orbit base target where we are to refit
             yield return null;
         }
 
@@ -5105,12 +5157,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
 
-        if (!IsDead) {
-            IAssemblySupported refittingBaseWithAssyStations = _fsmTgt as IAssemblySupported;
-            D.AssertNotNull(refittingBaseWithAssyStations);
-            IFleetNavigableDestination postRefitAssyStation = GameUtility.GetClosest(Position, refittingBaseWithAssyStations.LocalAssemblyStations);
-            IssueCmdStaffsAssumeFormationOrder(postRefitAssyStation);
-        }
+        D.Assert(!IsDead);  // Previously, sending all ships to hanger to refit resulted in a dead Cmd
+        IAssemblySupported refittingBaseWithAssyStations = _fsmTgt as IAssemblySupported;
+        D.AssertNotNull(refittingBaseWithAssyStations);
+        IFleetNavigableDestination postRefitAssyStation = GameUtility.GetClosest(Position, refittingBaseWithAssyStations.LocalAssemblyStations);
+        IssueCmdStaffsAssumeFormationOrder(postRefitAssyStation);
     }
 
     void ExecuteRefitOrder_UponApCoursePlotSuccess() {
@@ -5126,7 +5177,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteRefitOrder_UponApTargetReached() {
         LogEvent();
-        D.LogBold(ShowDebugLog, "{0} has reached its Refit target {1} and is attempting to join the hanger to refit.", DebugName, _fsmTgt.DebugName);
+        D.Log(ShowDebugLog, "{0} has reached its Refit target {1} and is entering high orbit to refit. DistanceToBase = {2:0.#}.",
+            DebugName, _fsmTgt.DebugName, Vector3.Distance(Position, _fsmTgt.Position));
+
         _moveHelper.DisengagePilot();
     }
 
@@ -5267,6 +5320,26 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(_fsmShipsExpectedToCallbackWithOrderOutcome.Any());  // Should not have been called if no elements can be refit
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the CmdModule should be included in the refit.
+    /// If true, the returned value indicates which ship should be ordered to include the CmdModule in its refit.
+    /// </summary>
+    /// <param name="candidates">The candidates to pick from.</param>
+    /// <param name="ship">The ship selected to include the CmdModule refit.</param>
+    /// <returns></returns>
+    private bool TryPickShipToRefitCmdModule(IEnumerable<ShipItem> candidates, out ShipItem ship) {
+        D.Assert(!candidates.IsNullOrEmpty());
+        ship = null;
+        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.CmdModuleDesign);
+        if (toRefitCmdModule) {
+            ship = candidates.SingleOrDefault(s => s.IsHQ);
+            if (ship == null) {
+                ship = candidates.First();
+            }
+        }
+        return toRefitCmdModule;
+    }
+
     #endregion
 
     void Refitting_UponPreconfigureState() {
@@ -5281,27 +5354,40 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     IEnumerator Refitting_EnterState() {
         LogEvent();
 
+        ShipItem shipToRefitCmdModule;
+        bool toRefitCmdModule = TryPickShipToRefitCmdModule(_fsmShipsExpectedToCallbackWithOrderOutcome, out shipToRefitCmdModule);
+
+        int refitQty = _fsmShipsExpectedToCallbackWithOrderOutcome.Count;
+        D.Log(ShowDebugLog, "{0} is issuing a RefitOrder to {1} Ships orbiting {2}: {3}.", DebugName, refitQty, _fsmTgt.DebugName,
+            _fsmShipsExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
         // Fleet ships should be in high orbit around Base
         foreach (var ship in _fsmShipsExpectedToCallbackWithOrderOutcome) {
-            // dispatch the ships that can refit to the hanger
+            // order the ships that can refit to do so in orbit
             ShipDesign refitDesign;
             bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(ship.Data.Design, out refitDesign);
             D.Assert(isDesignAvailable);
 
-            var refitOrder = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IShipNavigableDestination);
+            bool toIncludeCmdModuleInThisShipsRefit = ship == shipToRefitCmdModule;
+
+            var refitOrder = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IShipNavigableDestination, toIncludeCmdModuleInThisShipsRefit);
             ship.CurrentOrder = refitOrder;
         }
 
-        // 11.26.17 HACK placeholder for refitting cmd module as currently not supported
-        StartEffectSequence(EffectSequenceID.Refitting);
-        Data.__RemoveDamageFromCmdModuleEquipment();
-        StopEffectSequence(EffectSequenceID.Refitting);
+        if (toRefitCmdModule) {
+            StartEffectSequence(EffectSequenceID.Refitting);
+        }
 
         while (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
-            // Wait here until ships have been transferred to the refit hanger
+            // Wait here until all refitable ships have completed their orbital refit
             yield return null;
         }
-        D.LogBold("{0} has transferred all ships capable of refitting to {1}'s hanger.", DebugName, _fsmTgt.DebugName);
+
+        string cmdModuleMsg = string.Empty;
+        if (toRefitCmdModule) {
+            StopEffectSequence(EffectSequenceID.Refitting);
+            cmdModuleMsg = ", including the CmdModule";
+        }
+        D.LogBold("{0} has completed refit of {1} ships orbiting {2}{3}.", DebugName, refitQty, _fsmTgt.DebugName, cmdModuleMsg);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -5371,8 +5457,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 ShipDesign refitDesign;
                 bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(subordinateShip.Data.Design, out refitDesign);
                 D.Assert(isDesignAvailable);
+                bool includeCmdModuleInRefit = false;
 
-                ShipRefitOrder order = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IShipNavigableDestination);
+                ShipRefitOrder order = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign,
+                    _fsmTgt as IShipNavigableDestination, includeCmdModuleInRefit);
                 D.LogBold("{0} is issuing {1} to {2} after being joined during State {3}.", DebugName, order.DebugName, subordinateShip.DebugName,
                     CurrentState.GetValueName());
                 subordinateShip.CurrentOrder = order;
@@ -5434,6 +5522,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Refitting_ExitState() {
         LogEvent();
         ResetCommonCallableStateValues();
+        StopEffectSequence(EffectSequenceID.Refitting);
     }
 
     #endregion
@@ -5667,7 +5756,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
 
-        DetermineShipsToReceiveAssumeStationOrder();
+        DetermineShipsToReceiveDisbandOrder();
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
     }
 
@@ -5683,10 +5772,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         StopEffectSequence(EffectSequenceID.Disbanding);
 
         while (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
-            // Wait here until ships have been transferred to the disband hanger
+            // Wait here until all disbandable ships have been transferred to the hanger or have otherwise indicated they can't fit
             yield return null;
         }
-        D.LogBold("{0} has transferred all ships capable of disbanding to {1}'s hanger.", DebugName, _fsmTgt.DebugName);
+        D.Log("{0} has transferred all ships capable of disbanding that can fit to {1}'s hanger.", DebugName, _fsmTgt.DebugName);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -6949,6 +7038,36 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     #region StateMachine Support Members
 
     /// <summary>
+    /// The target the FSM uses to communicate between Call()ing and Call()ed states. 
+    /// Valid during most Call()ed states (excluding AssumingFormation), and during the states that Call()ed them until nulled by that state.
+    /// The ExecuteXXXState that sets this value during its UponPreconfigureState() is responsible for nulling it during its ExitState().
+    /// </summary>Moving
+    private IFleetNavigableDestination _fsmTgt;
+
+    /// <summary>
+    /// The ships expected to callback with an order outcome.
+    /// <remarks>Used where FleetMoveHelper is not handling fleet move-related order outcome callbacks.</remarks>
+    /// </summary>
+    private HashSet<ShipItem> _fsmShipsExpectedToCallbackWithOrderOutcome = new HashSet<ShipItem>();
+
+    /// <summary>
+    /// Removes the specified ship from any collections used by the StateMachine.
+    /// <remarks>Intended for use when the ship is removed from the Cmd. In most circumstances, 
+    /// when a ship is removed from Cmd while it is executing Cmd's order, it will already have provided 
+    /// Cmd with its OrderOutcome, and will therefore already be removed from these collections. 
+    /// However, when the ship is executing an order from this Cmd, and it is removed
+    /// as a result of splitting off another fleet from this Cmd, the ship will still be present in 
+    /// these collections. This is because the act of splitting a fleet is not executed via order 
+    /// to either the fleet or ships involved. As a result, there is no order outcome, 
+    /// just a removal of the ship from the Cmd.</remarks>
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    private void RemoveFromStateMachine(ShipItem ship) {
+        _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+        _moveHelper.Remove(ship);
+    }
+
+    /// <summary>
     /// Convenience method that has the CmdStaff issue an AssumeFormation order to all ships.
     /// </summary>
     /// <param name="target">The target.</param>
@@ -7499,8 +7618,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 return false;
             }
 
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
             foreach (var e in Elements) {
                 string eFailCause;
                 if ((e as ShipItem).__TryAuthorizeNewOrder(ShipDirective.Attack, out eFailCause)) {
@@ -7515,37 +7635,41 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
         if (orderDirective == FleetDirective.Refit) {
             // Can be ordered to refit even if already ordered to refit as can change destination before arrival
-            int refittableShipCount = Constants.Zero;
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            // Authorizing a Unit Refit requires at least 1 element to be refitable, independent of whether there is a CmdModule upgrade available
+            bool toAuthorizeRefit = false;
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
+
             foreach (var e in Elements) {
                 ShipItem ship = e as ShipItem;
                 string eFailCause;
-                if (ship.__TryAuthorizeNewOrder(ShipDirective.Refit, out eFailCause)) {
-                    refittableShipCount++;
-                }
-                else {
+                toAuthorizeRefit = ship.__TryAuthorizeNewOrder(ShipDirective.Refit, out eFailCause);
+                if (!toAuthorizeRefit) {
                     elementFailCauses.Add(eFailCause);
+                    continue;
                 }
+                break;
             }
 
-            if (refittableShipCount > Constants.Zero) {
-                if (OwnerAiMgr.Knowledge.AreAnyBaseHangersJoinable(refittableShipCount)) {
-                    return true;
-                }
-                failCause = "No hangers available to accommodate {0} ships.".Inject(refittableShipCount);
-            }
-            else {
+            if (!toAuthorizeRefit) {
                 failCause = elementFailCauses.Concatenate();
             }
-            return false;
+            else {
+                if (!OwnerAiMgr.Knowledge.OwnerBases.Any()) {
+                    toAuthorizeRefit = false;
+                    failCause = "No owner bases available";
+                }
+            }
+            return toAuthorizeRefit;
         }
         if (orderDirective == FleetDirective.Disband) {
             // Can be ordered to disband even if already ordered to disband as can change destination before arrival
             // 1.2.18 OPTIMIZE a ship in a fleet can always be disbanded?
             int disbandableShipCount = Constants.Zero;
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
             foreach (var e in Elements) {
                 ShipItem ship = e as ShipItem;
                 string eFailCause;
@@ -7578,8 +7702,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
             if (Data.UnitHealth < Constants.OneHundredPercent) {
                 // one or more elements are damaged but element(s) could be otherwise occupied
-                IList<string> elementFailCauses = new List<string>();
-                elementFailCauses.Add("No Authorized Elements: ");
+                IList<string> elementFailCauses = new List<string> {
+                    "No Authorized Elements: "
+                };
                 foreach (var e in Elements) {
                     string eFailCause;
                     if ((e as ShipItem).__TryAuthorizeNewOrder(ShipDirective.Repair, out eFailCause)) {
@@ -7601,8 +7726,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 failCause = "No explorables";
                 return false;
             }
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
             foreach (var e in Elements) {
                 string eFailCause;
                 if ((e as ShipItem).__TryAuthorizeNewOrder(ShipDirective.Explore, out eFailCause)) {

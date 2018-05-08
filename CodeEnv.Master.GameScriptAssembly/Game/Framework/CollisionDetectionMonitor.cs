@@ -99,7 +99,13 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
     }
 
-    protected override void HandleIsOperationalChanged() { }
+    #endregion
+
+    protected override void HandleIsOperationalChanged() {
+        if (!IsOperational) {
+            ParentItem.DisengageCollisionAvoidancePropulsion();
+        }
+    }
 
     protected override void HandleParentItemSet() {
         base.HandleParentItemSet();
@@ -115,8 +121,6 @@ public class CollisionDetectionMonitor : AColliderMonitor {
             HandleObstaclesEncounteredWhilePaused();
         }
     }
-
-    #endregion
 
     #region Obstacles Encountered While Paused Handling System
 

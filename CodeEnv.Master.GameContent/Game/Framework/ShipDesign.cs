@@ -30,15 +30,14 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}[{1}], Player = {2}, Hull = {3}, Status = {4}, ConstructionCost = {5:0.}, DesignLevel = {6}";
 
         private static OptionalEquipMountCategory[] SupportedMountCategories =  {
-                                                                                OptionalEquipMountCategory.Silo,
-                                                                                OptionalEquipMountCategory.Turret,
-                                                                                OptionalEquipMountCategory.Sensor,
-                                                                                OptionalEquipMountCategory.Skin,
-                                                                                OptionalEquipMountCategory.Screen,
-                                                                                OptionalEquipMountCategory.FtlEngine,
-                                                                                OptionalEquipMountCategory.Flex
-                                                                            };
-
+                                                                                    OptionalEquipMountCategory.Silo,
+                                                                                    OptionalEquipMountCategory.Turret,
+                                                                                    OptionalEquipMountCategory.Sensor,
+                                                                                    OptionalEquipMountCategory.Skin,
+                                                                                    OptionalEquipMountCategory.Screen,
+                                                                                    OptionalEquipMountCategory.FtlEngine,
+                                                                                    OptionalEquipMountCategory.Flex
+                                                                                };
 
         static ShipDesign() {
             __ValidateWeaponHullMountCatSequence();
@@ -64,7 +63,6 @@ namespace CodeEnv.Master.GameContent {
             return existingStat;
         }
 
-
         public override string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
@@ -84,9 +82,6 @@ namespace CodeEnv.Master.GameContent {
         public override string ImageFilename { get { return HullStat.ImageFilename; } }
 
         public EngineStat StlEngineStat { get; private set; }
-
-        [Obsolete]
-        public EngineStat FtlEngineStat { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 

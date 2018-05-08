@@ -28,11 +28,11 @@ using UnityEngine;
 public class SettlementCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        UserDesigns.Add(newDesign as SettlementCmdDesign);
+        UserDesigns.Add(newDesign as SettlementCmdModuleDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
-        return new SettlementCmdDesign(design as SettlementCmdDesign);
+        return new SettlementCmdModuleDesign(design as SettlementCmdModuleDesign);
     }
 
     protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
@@ -42,7 +42,7 @@ public class SettlementCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return UserDesigns.GetAllSettlementCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllSettlementCmdModDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,11 +53,11 @@ public class SettlementCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return UserDesigns.GetCurrentSettlementTemplateDesign();
+        return UserDesigns.GetCurrentSettlementCmdModTemplateDesign();
     }
 
-    protected override void ObsoleteDesign(string designName) {
-        UserDesigns.ObsoleteSettlementCmdDesign(designName);
+    protected override void Obsolete(AUnitMemberDesign design) {
+        UserDesigns.ObsoleteDesign(design as SettlementCmdModuleDesign);
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {

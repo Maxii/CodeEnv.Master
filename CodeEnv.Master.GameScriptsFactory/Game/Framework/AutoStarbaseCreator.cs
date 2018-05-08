@@ -46,7 +46,7 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
     }
 
     protected override void MakeCommand() {
-        _command = _factory.MakeStarbaseCmdInstance(Owner, Configuration.CmdDesignName, gameObject, UnitName);
+        _command = _factory.MakeStarbaseCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName);
     }
 
     protected override void AddElementsToCommand() {

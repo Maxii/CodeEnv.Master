@@ -66,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
         /// which means it can be different than CurrentFlagshipFacing when the flagship needs to go around a detour.</remarks>
         /// <remarks>5.16.17 Set to default(Vector3) when the fleet navigator is disengaged. 
         /// In this case, CurrentFlagshipFacing will be used instead.</remarks>
+        /// <remarks>UNCLEAR 4.30.18 I'm not sure this makes sense, manually manipulating this value with the set property.</remarks>
         /// </summary>
         public Vector3 CurrentHeading {
             get {
@@ -123,7 +124,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new FleetPublisher(this); }
         }
 
-        public new FleetCmdDesign CmdDesign { get { return base.CmdDesign as FleetCmdDesign; } }
+        public new FleetCmdModuleDesign CmdModuleDesign { get { return base.CmdModuleDesign as FleetCmdModuleDesign; } }
 
         #region Initialization 
 
@@ -135,9 +136,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, FleetCmdDesign cmdDesign)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdDesign) {
+        /// <param name="cmdModDesign">The cmd module design.</param>
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, FleetCmdModuleDesign cmdModDesign)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
         }
 
         /// <summary>
@@ -148,10 +149,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The cmd module design.</param>
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, FleetCmdDesign cmdDesign)
-            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdDesign) {
+            FtlDampener ftlDampener, FleetCmdModuleDesign cmdModDesign)
+            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
         }
 
         protected override AIntel MakeIntelInstance() {
@@ -175,6 +176,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+        public override void RefitCmdModule(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.RefitCmdModule(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
+            // No FleetCmdModule-specific values to consider dealing with
+        }
 
         /// <summary>
         /// Activates all the ship sensors in the fleet. Does nothing if they are already activated.

@@ -23,23 +23,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeaponStat : ARangedEquipmentStat {
 
-        private const string DebugNameFormat = "{0}(DeliveryVehicleStrength[{1}], DamagePotential[{2}], Range[{3}]).";
+        private const string DebugNameFormat = "{0}(Range[{1}])";
 
         public override string DebugName {
             get {
                 if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(base.DebugName, DeliveryVehicleStrength.DebugName, DamagePotential.DebugName,
-                        RangeCategory.GetValueName());
+                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName());
                 }
                 return _debugName;
             }
         }
 
-        public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
-
-        public WDVStrength DeliveryVehicleStrength { get; private set; }
-
-        public DamageStrength DamagePotential { get; private set; }
+        public DamageStrength OrdnanceDmgPotential { get; private set; }
 
         public float ReloadPeriod { get; private set; }
 
@@ -58,19 +53,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
-        /// <param name="damagePotential">The damage potential.</param>
-        public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
-            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
-            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential)
+        /// <param name="ordDmgPotential">The ordnance damage potential.</param>
+        public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id, float size,
+            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, float reloadPeriod,
+            DamageStrength ordDmgPotential)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
-                  rangeCat, isDamageable: true) {
-            DeliveryVehicleStrength = deliveryVehicleStrength;
+                rangeCat, isDamageable: true) {
             ReloadPeriod = reloadPeriod;
-            DamagePotential = damagePotential;
+            OrdnanceDmgPotential = ordDmgPotential;
         }
-
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

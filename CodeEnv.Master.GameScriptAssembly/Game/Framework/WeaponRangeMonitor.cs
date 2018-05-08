@@ -85,7 +85,6 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         weapon.RangeMonitor = this;
     }
 
-    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(AWeapon weapon) {
         weapon.RangeMonitor = null;
     }
@@ -484,7 +483,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
 
     #region SubscribeToInfoAccessEvents Archive
 
-    // 5.8.17 Removed as access to Item Owner should always be available now that Elements have >= 1 un-damageable SRSensor
+    // 5.8.17 Removed as access to Item Owner should always be available now that Elements have >= 1 non-damageable SRSensor
     ////private void DetectedItemInfoAccessChangedEventHandler(object sender, InfoAccessChangedEventArgs e) {
     ////    Player playerWhosInfoAccessToItemChgd = e.Player;
     ////    IElementBlastable attackableDetectedItem = sender as IElementBlastable;

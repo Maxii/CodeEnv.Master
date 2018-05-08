@@ -28,11 +28,11 @@ using UnityEngine;
 public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        UserDesigns.Add(newDesign as StarbaseCmdDesign);
+        UserDesigns.Add(newDesign as StarbaseCmdModuleDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
-        return new StarbaseCmdDesign(design as StarbaseCmdDesign);
+        return new StarbaseCmdModuleDesign(design as StarbaseCmdModuleDesign);
     }
 
     protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
@@ -42,7 +42,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return UserDesigns.GetAllStarbaseCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllStarbaseCmdModDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,11 +53,11 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return UserDesigns.GetCurrentStarbaseTemplateDesign();
+        return UserDesigns.GetCurrentStarbaseCmdModTemplateDesign();
     }
 
-    protected override void ObsoleteDesign(string designName) {
-        UserDesigns.ObsoleteStarbaseCmdDesign(designName);
+    protected override void Obsolete(AUnitMemberDesign design) {
+        UserDesigns.ObsoleteDesign(design as StarbaseCmdModuleDesign);
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {

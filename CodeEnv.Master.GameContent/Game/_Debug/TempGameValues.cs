@@ -156,6 +156,13 @@ namespace CodeEnv.Master.GameContent {
                                                                                         EquipmentCategory.LRSensor
                                                                                     };
 
+        public static EquipmentCategory[] WeaponEquipCats =     {
+                                                                    EquipmentCategory.AssaultWeapon,
+                                                                    EquipmentCategory.BeamWeapon,
+                                                                    EquipmentCategory.MissileWeapon,
+                                                                    EquipmentCategory.ProjectileWeapon
+                                                                };
+
         public static ShipHullCategory[] ShipHullCategoriesInUse =  {
                                                                         ShipHullCategory.Carrier,
                                                                         ShipHullCategory.Colonizer,
@@ -199,8 +206,6 @@ namespace CodeEnv.Master.GameContent {
                                                                                 ShipHullCategory.Frigate,
                                                                                 ShipHullCategory.Destroyer
                                                                             };
-
-        public const string FleetCmdDefaultRootDesignName = "FleetCmdDefaultDesign";
 
         public const string FleetCmdTemplateRootDesignName = "FleetCmdTemplateDesign";
         public const string StarbaseCmdTemplateRootDesignName = "StarbaseCmdTemplateDesign";
@@ -296,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public const float ProductionCostBuyoutMultiplier = 2.0F;
+        public const float __ProductionCostBuyoutMultiplier = 2.0F;
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.

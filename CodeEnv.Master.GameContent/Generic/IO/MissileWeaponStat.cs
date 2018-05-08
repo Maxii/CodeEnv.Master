@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MissileWeaponStat : AProjectileWeaponStat {
 
-        ////public override EquipmentCategory Category { get { return EquipmentCategory.MissileWeapon; } }
-
         /// <summary>
         /// The turn rate of the ordnance in degrees per hour .
         /// </summary>
@@ -55,23 +53,22 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="deliveryVehicleStrength">The delivery strength.</param>
+        /// <param name="ordDmgMitigation">The ordnance damage mitigation.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
-        /// <param name="damagePotential">The damage potential.</param>
-        /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
-        /// <param name="ordnanceMass">The mass of the ordnance.</param>
-        /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
+        /// <param name="ordDmgPotential">The ordnance damage potential.</param>
+        /// <param name="ordMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
+        /// <param name="ordMass">The mass of the ordnance.</param>
+        /// <param name="ordDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         /// <param name="turnRate">The turn rate of the ordnance in degrees per hour .</param>
         /// <param name="courseUpdateFreq">How often the ordnance's course is updated per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
+        /// <param name="ordHitPts">The ordnance hit points.</param>
         public MissileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
-            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
-            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
-            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq,
-            float maxSteeringInaccuracy)
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat,
+            DamageStrength ordDmgMitigation, float reloadPeriod, DamageStrength ordDmgPotential, float ordMaxSpeed,
+            float ordMass, float ordDrag, float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, float ordHitPts)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
-                  rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass,
-                  ordnanceDrag) {
+                rangeCat, ordDmgMitigation, reloadPeriod, ordDmgPotential, ordMaxSpeed, ordMass, ordDrag, ordHitPts) {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             if (maxSteeringInaccuracy > 5F) {

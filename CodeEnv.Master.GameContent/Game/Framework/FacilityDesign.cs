@@ -30,13 +30,13 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}[{1}], Player = {2}, Hull = {3}, Status = {4}, ConstructionCost = {5:0.}, DesignLevel = {6}";
 
         private static OptionalEquipMountCategory[] SupportedMountCategories =  {
-                                                                                OptionalEquipMountCategory.Silo,
-                                                                                OptionalEquipMountCategory.Turret,
-                                                                                OptionalEquipMountCategory.Sensor,
-                                                                                OptionalEquipMountCategory.Skin,
-                                                                                OptionalEquipMountCategory.Screen,
-                                                                                OptionalEquipMountCategory.Flex
-                                                                            };
+                                                                                    OptionalEquipMountCategory.Silo,
+                                                                                    OptionalEquipMountCategory.Turret,
+                                                                                    OptionalEquipMountCategory.Sensor,
+                                                                                    OptionalEquipMountCategory.Skin,
+                                                                                    OptionalEquipMountCategory.Screen,
+                                                                                    OptionalEquipMountCategory.Flex
+                                                                                };
 
         static FacilityDesign() {
             __ValidateWeaponHullMountCatSequence();

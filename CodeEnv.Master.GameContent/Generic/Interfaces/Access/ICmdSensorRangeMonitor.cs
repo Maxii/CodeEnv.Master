@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitCmd ParentItem { get; }
 
+        bool __IsPresentAsEnemy(IManeuverable maneuverableItem);
+
 
     }
 }

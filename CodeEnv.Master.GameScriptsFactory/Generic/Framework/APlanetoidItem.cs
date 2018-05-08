@@ -416,11 +416,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         D.Assert(!IsDead);
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
-        if (damage.Total == Constants.ZeroF) {
+        if (damage.__Total == Constants.ZeroF) {
             D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", DebugName);
             return;
         }
-        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
+        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.__Total);
 
         float unusedDamageSeverity;
         bool didPlanetSurvive = Data.ApplyDamage(damage, out unusedDamageSeverity);

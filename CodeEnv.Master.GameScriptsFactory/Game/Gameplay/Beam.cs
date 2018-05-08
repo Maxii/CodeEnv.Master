@@ -288,7 +288,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
             // target has a normal rigidbody so apply impact force
             float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
-            float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
+            float forceMagnitude = DmgPotential.__Total * percentOfBeamDuration;
             Vector3 force = transform.forward * forceMagnitude;
             //D.Log(ShowDebugLog, "{0} applying impact force of {1} to {2}.", DebugName, force, impactedTarget.DisplayName);
             impactedTargetRigidbody.AddForceAtPosition(force, impactPoint, ForceMode.Impulse);
@@ -298,7 +298,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void HandleShieldImpact(Shield shield, float deltaTimeInHours) {
-        var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTimeInHours / Weapon.Duration);
+        DamageStrength incrementalShieldImpact = Weapon.BeamIntegrity * (deltaTimeInHours / Weapon.Duration);
         shield.AbsorbImpact(incrementalShieldImpact);
         _isInterdicted = true;
     }
@@ -395,7 +395,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _isInterdicted = true;
         }
 
-        DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
+        DamageStrength cumDamageToApply = DmgPotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
         //D.Log(ShowDebugLog, "{0} is applying hit of strength {1} to {2}.", DebugName, cumDamageToApply, _impactedTarget.DisplayName);
 
         // 3.20.17 There was a problem here where TakeHit resulted in death of _impactedTgt. When it was last warEnemy within

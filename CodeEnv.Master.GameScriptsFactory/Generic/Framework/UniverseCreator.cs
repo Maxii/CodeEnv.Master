@@ -543,6 +543,7 @@ public class UniverseCreator {
                 D.Assert(isAdded);
                 homeSystemCreator = debugCreator;
                 toDeployAutoCreator = false;
+                break;
             }
         }
 

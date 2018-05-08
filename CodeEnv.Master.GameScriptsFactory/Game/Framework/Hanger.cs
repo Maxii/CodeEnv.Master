@@ -44,6 +44,8 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
     public AUnitBaseCmdItem ParentBaseCmd { get; private set; }
 
+    public Player Owner { get { return ParentBaseCmd.Owner; } }
+
     private HangerFormationManager _formationMgr;
 
     protected override void Awake() {
@@ -60,6 +62,11 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         return _allShips.Count + shipsToJoinCount <= Formation.Hanger.MaxFormationSlots();
     }
 
+    /// <summary>
+    /// Adds the ship to this Hanger.
+    /// <remarks>Will throw an error if ship has not already detached itself from its Command.</remarks>
+    /// </summary>
+    /// <param name="ship">The ship.</param>
     public void AddShip(ShipItem ship) {
         D.Assert(IsJoinable);
         D.Assert(!ship.IsHQ);
@@ -76,8 +83,9 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         _allShips.Add(ship);
         UnityUtility.AttachChildToParent(ship.gameObject, gameObject);
         ship.subordinateDeathOneShot += HangerShipDeathEventHandler;
-        ship.IsCollisionAvoidanceOperational = false;
-        ship.Data.DeactivateSRSensors();
+        ////ship.IsCollisionAvoidanceOperational = false;
+        ////ship.Data.DeactivateSRSensors();
+        ship.PrepareForHangerArrival();
 
         if (isFirstShip) {
             _formationMgr.RepositionAllElementsInFormation(_allShips.Cast<IUnitElement>());
@@ -121,14 +129,15 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
         Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, formation, fleetRootname);
-        D.Log("{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
+        D.Log(/*ShowDebugLog,*/ "{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
             DebugName, fleet.DebugName, fleet.Position, fleetCreatorLocation, Vector3.Distance(fleet.Position, fleetCreatorLocation));
 
         ships.ForAll(ship => {
             D.Assert(ship.__HasCommand);
             D.Assert(!ship.IsCollisionAvoidanceOperational);
-            ship.IsCollisionAvoidanceOperational = true;
-            ship.Data.ActivateSRSensors();
+            ////ship.IsCollisionAvoidanceOperational = true;
+            ////ship.Data.ActivateSRSensors();
+            ship.PrepareForHangerDeparture();
             // 1.6.18 Fleet will clear orders of ships during CommenceOperations
         });
 
@@ -140,17 +149,20 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     }
 
     /// <summary>
-    /// Replaces shipToReplace with replacingShip in this Unit.
-    /// <remarks>Handles adding, removing and formation assignment, position and rotation. 
-    /// Client must create the replacingShip, complete initialization, commence operations and destroy shipToReplace.</remarks>
+    /// Replaces shipToReplace with refittedShip in this Hanger.
+    /// <remarks>Only called after a hanger ship refit has successfully completed.</remarks>
+    /// <remarks>Handles adding, removing, rotation, position and formation assignment. 
+    /// Client must create the refittedShip, complete its initialization, commence operations and destroy shipToReplace.</remarks>
     /// </summary>
-    /// <param name="shipToReplace">The ship to replace.</param>
-    /// <param name="replacingShip">The replacing ship.</param>
-    public void ReplaceShip(ShipItem shipToReplace, ShipItem replacingShip) {
+    /// <param name="shipToReplace">The ship that needs to be replaced with refittedShip.</param>
+    /// <param name="refittedShip">The refitted replacement for shipToReplace.</param>
+    public void ReplaceRefittedShip(ShipItem shipToReplace, ShipItem refittedShip) {
         // AddElement without dealing with Cmd death, HQ or FormationManager
-        _allShips.Add(replacingShip);
-        UnityUtility.AttachChildToParent(replacingShip.gameObject, gameObject);
-        replacingShip.subordinateDeathOneShot += HangerShipDeathEventHandler;
+        _allShips.Add(refittedShip);
+        UnityUtility.AttachChildToParent(refittedShip.gameObject, gameObject);
+        refittedShip.subordinateDeathOneShot += HangerShipDeathEventHandler;
+        D.Assert(!refittedShip.IsCollisionAvoidanceOperational);    // CommenceOps does not activate CA if located in hanger
+        D.Assert(!refittedShip.SRSensorMonitor.IsOperational);  // CommenceOps does not activate Sensors if located in hanger
 
         // Remove(ship) without dealing with Cmd death, HQ or FormationManager
         bool isRemoved = _allShips.Remove(shipToReplace);
@@ -158,7 +170,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         shipToReplace.subordinateDeathOneShot -= HangerShipDeathEventHandler;
 
         // no need to worry about IsJoinable as there shouldn't be any checks when using this method
-        _formationMgr.ReplaceElement(shipToReplace, replacingShip);
+        _formationMgr.ReplaceElement(shipToReplace, refittedShip);
         isRemoved = RemoveAndRecycleFormationStation(shipToReplace);
         D.Assert(isRemoved);
     }

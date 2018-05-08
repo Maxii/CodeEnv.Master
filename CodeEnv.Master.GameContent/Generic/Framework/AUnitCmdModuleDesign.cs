@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitCmdDesign.cs
-// Abstract design holding the stats of a unit command for a player.
+// File: AUnitCmdModuleDesign.cs
+// Abstract design holding the stats of a unit command module for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,16 +23,16 @@ namespace CodeEnv.Master.GameContent {
     using Common.LocalResources;
 
     /// <summary>
-    /// Abstract design holding the stats of a unit command for a player.
+    /// Abstract design holding the stats of a unit command module for a player.
     /// </summary>
-    public abstract class AUnitCmdDesign : AUnitMemberDesign {
+    public abstract class AUnitCmdModuleDesign : AUnitMemberDesign {
 
         private static OptionalEquipMountCategory[] SupportedMountCategories =  {
                                                                                     OptionalEquipMountCategory.Skin,
                                                                                     OptionalEquipMountCategory.Sensor,
                                                                                     OptionalEquipMountCategory.Flex
                                                                                 };
-        static AUnitCmdDesign() {
+        static AUnitCmdModuleDesign() {
             __ValidateSupportedMountsCanAccommodateSupportedEquipment();
         }
 
@@ -52,26 +52,24 @@ namespace CodeEnv.Master.GameContent {
 
         public SensorStat ReqdMRSensorStat { get; private set; }
 
-        public ACmdModuleStat ReqdCmdStat { get; private set; }
+        public ACmdModuleStat CmdModuleStat { get; private set; }
 
-        public sealed override AtlasID ImageAtlasID { get { return ReqdCmdStat.ImageAtlasID; } }
+        public sealed override AtlasID ImageAtlasID { get { return CmdModuleStat.ImageAtlasID; } }
 
-        public sealed override string ImageFilename { get { return ReqdCmdStat.ImageFilename; } }
-
-        // UNCLEAR Currently a CmdModuleDesign is not constructed via a Base ConstructionQueue so no need for a ConstructionCost? Refit?
+        public sealed override string ImageFilename { get { return CmdModuleStat.ImageFilename; } }
 
         protected override OptionalEquipMountCategory[] SupportedOptionalMountCategories { get { return SupportedMountCategories; } }
 
-        public AUnitCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat reqdCmdStat)
+        public AUnitCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat cmdModStat)
             : base(player) {
             FtlDampenerStat = ftlDampenerStat;
             ReqdMRSensorStat = reqdMRSensorStat;
-            ReqdCmdStat = reqdCmdStat;
+            CmdModuleStat = cmdModStat;
         }
 
         protected override float CalcConstructionCost() {
             float cumConstructionCost = base.CalcConstructionCost();
-            cumConstructionCost += ReqdCmdStat.ConstructCost;
+            cumConstructionCost += CmdModuleStat.ConstructCost;
             cumConstructionCost += ReqdMRSensorStat.ConstructCost;
             cumConstructionCost += FtlDampenerStat.ConstructCost;
             return cumConstructionCost;
@@ -79,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override float CalcHitPoints() {
             float cumHitPts = base.CalcHitPoints();
-            cumHitPts += ReqdCmdStat.HitPoints;
+            cumHitPts += CmdModuleStat.HitPoints;
             cumHitPts += ReqdMRSensorStat.HitPoints;
             cumHitPts += FtlDampenerStat.HitPoints;
             return cumHitPts;
@@ -112,9 +110,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
             if (base.IsNonStatContentEqual(oDesign)) {
-                var cmdDesign = oDesign as AUnitCmdDesign;
-                return cmdDesign.FtlDampenerStat == FtlDampenerStat && cmdDesign.ReqdMRSensorStat == ReqdMRSensorStat
-                    && cmdDesign.ReqdCmdStat == ReqdCmdStat;
+                var cmdModDesign = oDesign as AUnitCmdModuleDesign;
+                return cmdModDesign.FtlDampenerStat == FtlDampenerStat && cmdModDesign.ReqdMRSensorStat == ReqdMRSensorStat
+                    && cmdModDesign.CmdModuleStat == CmdModuleStat;
             }
             return false;
         }
@@ -134,14 +132,14 @@ namespace CodeEnv.Master.GameContent {
 
         #region Value-based Equality Archive
 
-        ////public static bool operator ==(AUnitCmdDesign left, AUnitCmdDesign right) {
+        ////public static bool operator ==(AUnitCmdModuleDesign left, AUnitCmdModuleDesign right) {
         ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
         ////    if (ReferenceEquals(left, right)) { return true; }
         ////    if (((object)left == null) || ((object)right == null)) { return false; }
         ////    return left.Equals(right);
         ////}
 
-        ////public static bool operator !=(AUnitCmdDesign left, AUnitCmdDesign right) {
+        ////public static bool operator !=(AUnitCmdModuleDesign left, AUnitCmdModuleDesign right) {
         ////    return !(left == right);
         ////}
 
@@ -157,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
 
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
-        ////        AUnitCmdDesign oDesign = (AUnitCmdDesign)obj;
+        ////        AUnitCmdModuleDesign oDesign = (AUnitCmdModuleDesign)obj;
         ////        return oDesign.FtlDampenerStat == FtlDampenerStat && oDesign.ReqdMRSensorStat == ReqdMRSensorStat
         ////            && oDesign.ReqdCmdStat == ReqdCmdStat;
         ////    }

@@ -167,6 +167,24 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     #endregion
 
+    #region StateMachine Support Members
+
+    protected override bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility) {
+        D.Assert(!candidates.IsNullOrEmpty());
+        facility = null;
+        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.CmdModuleDesign);
+        if (toRefitCmdModule) {
+            facility = candidates.SingleOrDefault(f => f.IsHQ);
+            if (facility == null) {
+                facility = candidates.First();
+            }
+        }
+        return toRefitCmdModule;
+    }
+
+    #endregion
+
+
     #region Cleanup
 
     #endregion

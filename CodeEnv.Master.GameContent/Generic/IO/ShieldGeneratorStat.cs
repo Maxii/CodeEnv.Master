@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// The amount of damage this generator can mitigate when the Item it is apart of takes a hit.
         /// This value has nothing to do with the capacity of this generator to absorb impacts.
         /// </summary>
-        public DamageStrength DamageMitigation { get; private set; }
+        public DamageStrength DmgMitigation { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShieldGeneratorStat" /> class.
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maximumCharge">The maximum charge.</param>
         /// <param name="trickleChargeRate">The trickle charge rate.</param>
         /// <param name="reloadPeriod">The reload period.</param>
-        /// <param name="dmgMitigation">The damage mitigation.</param>
+        /// <param name="dmgMitigation">The equipment's contribution to Element's DamageMitigation.</param>
         public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
             EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength dmgMitigation)
@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             MaximumCharge = maximumCharge;
             TrickleChargeRate = trickleChargeRate;
             ReloadPeriod = reloadPeriod;
-            DamageMitigation = dmgMitigation;
+            DmgMitigation = dmgMitigation;
         }
 
 

@@ -85,7 +85,6 @@ namespace CodeEnv.Master.GameContent {
             IsDamageable = isDamageable;
         }
 
-
     }
 
     #region Value-based Equality Archive

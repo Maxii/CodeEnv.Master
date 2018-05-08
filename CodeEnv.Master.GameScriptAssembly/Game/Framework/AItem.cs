@@ -181,7 +181,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// <summary>
     /// Initializes the Owner's PlayerAIManager for this item.
     /// </summary>
-    protected void InitializeOwnerAIManager() {
+    private void InitializeOwnerAIManager() {
         OwnerAiMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
     }
 

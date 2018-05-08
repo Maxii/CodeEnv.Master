@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCmdDesign.cs
-// The design of a Starbase Command for a player.
+// File: FleetCmdModuleDesign.cs
+// The design of a Fleet Command Module for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,34 +16,30 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// The design of a Starbase Command for a player.
+    /// The design of a Fleet Command Module for a player.
     /// </summary>
-    public class StarbaseCmdDesign : AUnitCmdDesign {
+    public class FleetCmdModuleDesign : AUnitCmdModuleDesign {
 
-        private static StarbaseCmdModuleStat GetImprovedReqdStat(Player player, StarbaseCmdModuleStat existingStat) {
+        private static FleetCmdModuleStat GetImprovedReqdStat(Player player, FleetCmdModuleStat existingStat) {
             var designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
-            StarbaseCmdModuleStat currentStat;
-            var isFound = designs.TryGetCurrentStarbaseCmdModuleStat(out currentStat);
-            D.Assert(isFound);  // has to be there as need existingStat to request improvement
+            var currentStat = designs.GetCurrentFleetCmdModuleStat();
             return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
-        public new StarbaseCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as StarbaseCmdModuleStat; } }
+        public new FleetCmdModuleStat CmdModuleStat { get { return base.CmdModuleStat as FleetCmdModuleStat; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdDesign"/> class.
+        /// Initializes a new instance of the <see cref="FleetCmdModuleDesign"/> class.
         /// <remarks>This version automatically improves any Reqd EquipmentStats to the highest Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
-        public StarbaseCmdDesign(StarbaseCmdDesign designToImprove)
+        public FleetCmdModuleDesign(FleetCmdModuleDesign designToImprove)
             : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
-            GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdCmdStat),
-            GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
+                  GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
+                  GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
             OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
@@ -59,8 +55,8 @@ namespace CodeEnv.Master.GameContent {
             DesignLevel = designToImprove.DesignLevel;
         }
 
-        public StarbaseCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, StarbaseCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
+        public FleetCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, FleetCmdModuleStat cmdModStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdModStat) {
             InitializeValuesAndReferences();
         }
 
@@ -70,14 +66,14 @@ namespace CodeEnv.Master.GameContent {
 
         #region Value-based Equality Archive
 
-        ////public static bool operator ==(StarbaseCmdDesign left, StarbaseCmdDesign right) {
+        ////public static bool operator ==(FleetCmdModuleDesign left, FleetCmdModuleDesign right) {
         ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
         ////    if (ReferenceEquals(left, right)) { return true; }
         ////    if (((object)left == null) || ((object)right == null)) { return false; }
         ////    return left.Equals(right);
         ////}
 
-        ////public static bool operator !=(StarbaseCmdDesign left, StarbaseCmdDesign right) {
+        ////public static bool operator !=(FleetCmdModuleDesign left, FleetCmdModuleDesign right) {
         ////    return !(left == right);
         ////}
 

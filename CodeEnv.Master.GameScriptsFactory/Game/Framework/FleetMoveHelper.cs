@@ -49,7 +49,7 @@ public class FleetMoveHelper : IDisposable {
 
     private static readonly LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
-    private static readonly Speed[] InvalidApSpeeds = {
+    private static readonly Speed[] InvalidApSpeeds =   {
                                                             Speed.None,
                                                             Speed.HardStop,
                                                             Speed.Stop
@@ -369,6 +369,11 @@ public class FleetMoveHelper : IDisposable {
             case OrderOutcome.Success:
                 bool isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
+                if (!isRemoved) {
+                    string currentOrderMsg = ship.CurrentOrder != null ? ship.CurrentOrder.DebugName : "None";
+                    D.Error("{0} erroneously received {1}.{2} from {3} in Frame {4}. Ship's CurrentOrder = {5}.", DebugName, typeof(OrderOutcome).Name,
+                        outcome.GetValueName(), ship.DebugName, Time.frameCount, currentOrderMsg);
+                }
                 break;
             case OrderOutcome.Death:
                 // Added to help debug timing of when dead ship is removed 
@@ -378,16 +383,17 @@ public class FleetMoveHelper : IDisposable {
                 break;
             case OrderOutcome.NeedsRepair:
             case OrderOutcome.Ownership:
-                /*bool*/
                 isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
                 break;
             case OrderOutcome.NewOrderReceived:
                 // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
                 // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
+                // 4.30.18 Occurred again but unclear whether User order. Added CurrentOrder debug info
                 if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle)) {
-                    D.Warn("{0} received {1}.{2} from {3} but UNCLEAR why. Target: {4}.", DebugName, typeof(OrderOutcome).Name,
-                        outcome.GetValueName(), ship.DebugName, target.DebugName);
+                    string currentOrderMsg = ship.CurrentOrder != null ? ship.CurrentOrder.DebugName : "None";
+                    D.Warn("{0} received {1}.{2} from {3} in Frame {4}, but UNCLEAR why. Ship's CurrentOrder = {5}.", DebugName, typeof(OrderOutcome).Name,
+                        outcome.GetValueName(), ship.DebugName, Time.frameCount, currentOrderMsg);
                 }
                 isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
@@ -975,6 +981,22 @@ public class FleetMoveHelper : IDisposable {
         RefreshApCourse(CourseRefreshMode.ClearCourse);
         // _fleet.UponApFailure(FleetMoveFailureMode.TgtUnreachable);
         D.Error("{0}: Target {1} is unreachable.", DebugName, ApTarget.DebugName);
+    }
+
+    /// <summary>
+    /// Removes the specified ship from any collections in this FleetMoveHelper, if it is present.
+    /// <remarks>Intended for use when the ship is removed from the Cmd. In most circumstances, 
+    /// when a ship is removed from Cmd while it is executing Cmd's order, it will already have provided 
+    /// Cmd with its OrderOutcome, and will therefore already be removed from these collections. 
+    /// However, when the ship is executing an order from this Cmd involving a move, and it is removed
+    /// as a result of splitting off another fleet from this Cmd, the ship will still be present in 
+    /// these collections. This is because the act of splitting a fleet is not executed via order 
+    /// to either the fleet or ships involved. As a result, there is no order outcome, 
+    /// just a removal of the ship from the Cmd.</remarks>
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    internal void Remove(ShipItem ship) {
+        _shipsExpectedToArrive.Remove(ship);
     }
 
     private void IssueMoveOrderToAllShips(IFleetNavigableDestination fleetTgt, float tgtStandoffDistance) {

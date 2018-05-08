@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementCmdDesign.cs
-// The design of a Settlement Command for a player.
+// File: SettlementCmdModuleDesign.cs
+// The design of a Settlement Command Module for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The design of a Settlement Command for a player.
+    /// The design of a Settlement Command Module for a player.
     /// </summary>
-    public class SettlementCmdDesign : AUnitCmdDesign {
+    public class SettlementCmdModuleDesign : AUnitCmdModuleDesign {
 
         private static SettlementCmdModuleStat GetImprovedReqdStat(Player player, SettlementCmdModuleStat existingStat) {
             var designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
@@ -27,18 +27,18 @@ namespace CodeEnv.Master.GameContent {
             return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
-        public new SettlementCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as SettlementCmdModuleStat; } }
+        public new SettlementCmdModuleStat CmdModuleStat { get { return base.CmdModuleStat as SettlementCmdModuleStat; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdDesign"/> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdModuleDesign"/> class.
         /// <remarks>This version automatically improves any Reqd EquipmentStats to the highest Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
-        public SettlementCmdDesign(SettlementCmdDesign designToImprove)
+        public SettlementCmdModuleDesign(SettlementCmdModuleDesign designToImprove)
             : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
-                  GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdCmdStat),
+                  GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
             OptionalEquipSlotID slotID;
@@ -55,8 +55,8 @@ namespace CodeEnv.Master.GameContent {
             DesignLevel = designToImprove.DesignLevel;
         }
 
-        public SettlementCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
+        public SettlementCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdModuleStat cmdModStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdModStat) {
             InitializeValuesAndReferences();
         }
 
@@ -66,14 +66,14 @@ namespace CodeEnv.Master.GameContent {
 
         #region Value-based Equality Archive
 
-        ////public static bool operator ==(SettlementCmdDesign left, SettlementCmdDesign right) {
+        ////public static bool operator ==(SettlementCmdModuleDesign left, SettlementCmdModuleDesign right) {
         ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
         ////    if (ReferenceEquals(left, right)) { return true; }
         ////    if (((object)left == null) || ((object)right == null)) { return false; }
         ////    return left.Equals(right);
         ////}
 
-        ////public static bool operator !=(SettlementCmdDesign left, SettlementCmdDesign right) {
+        ////public static bool operator !=(SettlementCmdModuleDesign left, SettlementCmdModuleDesign right) {
         ////    return !(left == right);
         ////}
 

@@ -117,7 +117,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         HashSet<IPlanetoid_Ltd> EnemyPlanetoidsDetected { get; }
 
-
         /// <summary>
         /// A copy of all the detected war enemy targets that are in range of the sensors of this monitor.
         /// <remarks>TODO 3.27.17 Not currently used as planetoids no longer IElementAttackable, aka Targets
@@ -152,14 +151,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         void ResetForReuse();
 
-        /// <summary>
-        /// Removes the specified sensor. Returns <c>true</c> if this monitor
-        /// is still in use (has sensors remaining even if not operational), <c>false</c> otherwise.
-        /// </summary>
-        /// <param name="sensor">The sensor.</param>
-        /// <returns></returns>
-        ////[Obsolete("Not currently used")]
-        ////bool Remove(ASensor sensor);
 
     }
 }

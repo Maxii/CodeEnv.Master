@@ -69,7 +69,6 @@ public abstract class AKinematicProjectileOrdnance : AProjectileOrdnance {
         }
     }
 
-
     protected override void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
             D.Assert(_hasPauseEventBeenReceived, DebugName);

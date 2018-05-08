@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new SettlementPublisher(this); }
         }
 
-        public new SettlementCmdDesign CmdDesign { get { return base.CmdDesign as SettlementCmdDesign; } }
+        public new SettlementCmdModuleDesign CmdModuleDesign { get { return base.CmdModuleDesign as SettlementCmdModuleDesign; } }
 
         private IList<IDisposable> _systemDataSubscriptions = new List<IDisposable>(2);
 
@@ -66,10 +66,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The cmd module design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-           SettlementCmdDesign cmdDesign)
-               : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdDesign) {
+           SettlementCmdModuleDesign cmdModDesign)
+               : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
         }
 
         /// <summary>
@@ -80,12 +80,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The cmd module design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdDesign cmdDesign)
-            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdDesign) {
-            Population = cmdDesign.ReqdCmdStat.StartingPopulation;
-            Approval = cmdDesign.ReqdCmdStat.StartingApproval;
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleDesign cmdModDesign)
+            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            Population = cmdModDesign.CmdModuleStat.StartingPopulation;
+            Approval = cmdModDesign.CmdModuleStat.StartingApproval;
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
@@ -148,10 +148,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
-        public override void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.ChangeDesign(cmdDesign, passiveCMs, sensors, ftlDampener);
-            // 4.28.18 Not currently planning on fooling with Population or Approval
+        public override void RefitCmdModule(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.RefitCmdModule(cmdModDesign, passiveCMs, sensors, ftlDampener);
+            // CmdModuleDesign does have SettlementCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
         }
 
         private void UpdateCapacity() {

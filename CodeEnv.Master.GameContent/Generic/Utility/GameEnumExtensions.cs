@@ -771,58 +771,32 @@ namespace CodeEnv.Master.GameContent {
 
         #region Combat Strength
 
-        public static AtlasID GetImageAtlasID(this WDVCategory category) {
-            switch (category) {
-                case WDVCategory.Beam:
-                case WDVCategory.Projectile:
-                case WDVCategory.Missile:
-                case WDVCategory.AssaultVehicle:
+        public static AtlasID __GetIconAtlasID(this EquipmentCategory weapCat) {
+            switch (weapCat) {
+                case EquipmentCategory.BeamWeapon:
+                case EquipmentCategory.ProjectileWeapon:
+                case EquipmentCategory.MissileWeapon:
+                case EquipmentCategory.AssaultWeapon:
                     return AtlasID.MyGui;
-                case WDVCategory.None:
+                case EquipmentCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapCat));
             }
         }
 
-        public static string GetImageFilename(this WDVCategory category) {
-            switch (category) {
-                case WDVCategory.Beam:
-                case WDVCategory.Projectile:
-                case WDVCategory.Missile:
-                case WDVCategory.AssaultVehicle:
-                    return TempGameValues.AnImageFilename;
-                case WDVCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
-            }
-        }
-
-        public static AtlasID GetIconAtlasID(this WDVCategory category) {
-            switch (category) {
-                case WDVCategory.Beam:
-                case WDVCategory.Projectile:
-                case WDVCategory.Missile:
-                case WDVCategory.AssaultVehicle:
-                    return AtlasID.MyGui;
-                case WDVCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
-            }
-        }
-
-        public static string GetIconFilename(this WDVCategory category) {
-            switch (category) {
-                case WDVCategory.Beam:
+        public static string __GetIconFilename(this EquipmentCategory weapCat) {
+            switch (weapCat) {
+                case EquipmentCategory.BeamWeapon:
                     return TempGameValues.BeamIconFilename;
-                case WDVCategory.Projectile:
+                case EquipmentCategory.ProjectileWeapon:
                     return TempGameValues.ProjectileIconFilename;
-                case WDVCategory.Missile:
+                case EquipmentCategory.MissileWeapon:
                     return TempGameValues.MissileIconFilename;
-                case WDVCategory.AssaultVehicle:
+                case EquipmentCategory.AssaultWeapon:
                     return TempGameValues.AssaultVehicleIconFilename;
-                case WDVCategory.None:
+                case EquipmentCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapCat));
             }
         }
 
@@ -2380,6 +2354,23 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static string GetPoolPrefabName(this EquipmentCategory weapCat) {
+            switch (weapCat) {
+                case EquipmentCategory.BeamWeapon:
+                    return GameConstants.PoolPrefabName_Beam;
+                case EquipmentCategory.ProjectileWeapon:
+                    return GameReferences.DebugControls.MovementTech == UnityMoveTech.Physics ?
+                        GameConstants.PoolPrefabName_PhysicsProjectile : GameConstants.PoolPrefabName_KinematicProjectile;
+                case EquipmentCategory.MissileWeapon:
+                    return GameConstants.PoolPrefabName_Missile;
+                case EquipmentCategory.AssaultWeapon:
+                    return GameConstants.PoolPrefabName_AssaultVehicle;
+                case EquipmentCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapCat));
+            }
+        }
+
         #endregion
 
         #region Gui Menu ElementID
@@ -2737,8 +2728,9 @@ namespace CodeEnv.Master.GameContent {
                     return Constants.ZeroF;
                 case Speed.ThrustersOnly:
                     // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace: STL = 0.24, FTL = 1.2
-                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.13, OpenSpace: STL = 0.5, FTL = 1.25
-                    fullSpeedFactor = 0.03F;
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.128, OpenSpace: STL = 0.51, FTL = 1.28
+                    // 4.30.18 with MaxSpeed of 16: InSystem, STL = 0.051
+                    fullSpeedFactor = 0.032F;
                     break;
                 case Speed.Docking:
                     // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace: STL = 0.4, FTL = 2
@@ -3009,6 +3001,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
 
         #region Debug Enums
 

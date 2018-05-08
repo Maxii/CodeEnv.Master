@@ -58,8 +58,8 @@ public class FacilityDesignWindow : AUnitDesignWindow {
         return UserDesigns.GetCurrentFacilityTemplateDesign(designHullCat);
     }
 
-    protected override void ObsoleteDesign(string designName) {
-        UserDesigns.ObsoleteFacilityDesign(designName);
+    protected override void Obsolete(AUnitMemberDesign design) {
+        UserDesigns.ObsoleteDesign(design as FacilityDesign);
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {

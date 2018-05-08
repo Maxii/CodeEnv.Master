@@ -62,6 +62,20 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+
+        #region Pooling Prefab Names
+
+        public const string PoolPrefabName_Beam = "Beam";
+
+        public const string PoolPrefabName_Missile = "Missile";
+
+        public const string PoolPrefabName_PhysicsProjectile = "PhysicsProjectile";
+
+        public const string PoolPrefabName_KinematicProjectile = "KinematicProjectile";
+
+        public const string PoolPrefabName_AssaultVehicle = "AssaultVehicle";
+
+        #endregion
     }
 }
 

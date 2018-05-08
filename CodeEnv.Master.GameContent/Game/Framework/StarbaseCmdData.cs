@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new StarbasePublisher(this); }
         }
 
-        public new StarbaseCmdDesign CmdDesign { get { return base.CmdDesign as StarbaseCmdDesign; } }
+        public new StarbaseCmdModuleDesign CmdModuleDesign { get { return base.CmdModuleDesign as StarbaseCmdModuleDesign; } }
 
         #region Initialization 
 
@@ -58,10 +58,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The cmd module design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            StarbaseCmdDesign cmdDesign)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdDesign) {
+            StarbaseCmdModuleDesign cmdModDesign)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
         }
 
         /// <summary>
@@ -72,12 +72,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdDesign">The command design.</param>
+        /// <param name="cmdModDesign">The cmd module design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdDesign cmdDesign)
-            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdDesign) {
-            Population = cmdDesign.ReqdCmdStat.StartingPopulation;
-            Approval = cmdDesign.ReqdCmdStat.StartingApproval;
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleDesign cmdModDesign)
+            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            Population = cmdModDesign.CmdModuleStat.StartingPopulation;
+            Approval = cmdModDesign.CmdModuleStat.StartingApproval;
             __PopulateResourcesFromSector();
         }
 
@@ -124,9 +124,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.ChangeDesign(cmdDesign, passiveCMs, sensors, ftlDampener);
-            // 4.28.18 Not currently planning on fooling with Population or Approval
+        public override void RefitCmdModule(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.RefitCmdModule(cmdModDesign, passiveCMs, sensors, ftlDampener);
+            // CmdModuleDesign does have StarbaseCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
         }
 
         #region Debug

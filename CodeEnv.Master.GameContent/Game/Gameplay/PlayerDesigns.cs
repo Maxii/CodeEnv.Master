@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using MoreLinq;
 
     /// <summary>
     /// Provides access to AUnitMemberDesigns and current AEquipmentStats for a player.
@@ -30,12 +31,6 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}{1}";
 
         private static EquipmentCategory[] _equipCatsUsedByFleetCmdTemplateDesign = {
-                                                                                        EquipmentCategory.FleetCmdModule,
-                                                                                        EquipmentCategory.FtlDampener,
-                                                                                        EquipmentCategory.MRSensor
-                                                                                    };
-
-        private static EquipmentCategory[] _equipCatsUsedByFleetCmdDefaultDesign =  {
                                                                                         EquipmentCategory.FleetCmdModule,
                                                                                         EquipmentCategory.FtlDampener,
                                                                                         EquipmentCategory.MRSensor
@@ -82,9 +77,9 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName { get { return DebugNameFormat.Inject(_player.DebugName, GetType().Name); } }
 
-        private IDictionary<string, StarbaseCmdDesign> _starbaseCmdDesignLookupByName;
-        private IDictionary<string, FleetCmdDesign> _fleetCmdDesignLookupByName;
-        private IDictionary<string, SettlementCmdDesign> _settlementCmdDesignLookupByName;
+        private IDictionary<string, StarbaseCmdModuleDesign> _starbaseCmdModDesignLookupByName;
+        private IDictionary<string, FleetCmdModuleDesign> _fleetCmdModDesignLookupByName;
+        private IDictionary<string, SettlementCmdModuleDesign> _settlementCmdModDesignLookupByName;
 
         private IDictionary<string, ShipDesign> _shipDesignLookupByName;
         private IDictionary<string, FacilityDesign> _facilityDesignLookupByName;
@@ -109,23 +104,15 @@ namespace CodeEnv.Master.GameContent {
         private void InitializeValuesAndReferences() {
             _shipDesignLookupByName = new Dictionary<string, ShipDesign>();
             _facilityDesignLookupByName = new Dictionary<string, FacilityDesign>();
-            _starbaseCmdDesignLookupByName = new Dictionary<string, StarbaseCmdDesign>();
-            _fleetCmdDesignLookupByName = new Dictionary<string, FleetCmdDesign>();
-            _settlementCmdDesignLookupByName = new Dictionary<string, SettlementCmdDesign>();
+            _starbaseCmdModDesignLookupByName = new Dictionary<string, StarbaseCmdModuleDesign>();
+            _fleetCmdModDesignLookupByName = new Dictionary<string, FleetCmdModuleDesign>();
+            _settlementCmdModDesignLookupByName = new Dictionary<string, SettlementCmdModuleDesign>();
 
             _shipDesignsLookupByHull = new Dictionary<ShipHullCategory, IList<ShipDesign>>();
             _facilityDesignsLookupByHull = new Dictionary<FacilityHullCategory, IList<FacilityDesign>>();
 
             _designNamesInUseLookup = new HashSet<string>();
 
-            var shipHullCats = Enums<ShipHullCategory>.GetValues(excludeDefault: true);
-            foreach (var hull in shipHullCats) {
-                _shipDesignsLookupByHull.Add(hull, new List<ShipDesign>());
-            }
-            var facHullCats = Enums<FacilityHullCategory>.GetValues(excludeDefault: true);
-            foreach (var hull in facHullCats) {
-                _facilityDesignsLookupByHull.Add(hull, new List<FacilityDesign>());
-            }
             _eStatFactory = EquipmentStatFactory.Instance;
         }
 
@@ -483,19 +470,13 @@ namespace CodeEnv.Master.GameContent {
         #region Update Required Designs
 
         /// <summary>
-        /// Makes any updates needed to Required Designs (Templates and Fleet's Default Cmd Design).
+        /// Makes any updates needed to Required Designs (Templates).
         /// </summary>
         /// <param name="improvedEqCats">The EquipmentCategories that were improved, aka increased their Level.</param>
         private void UpdateReqdDesigns(IEnumerable<EquipmentCategory> improvedEqCats) {
             List<EquipmentCategory> relevantImprovedEqCats = improvedEqCats.Intersect(_equipCatsUsedByFleetCmdTemplateDesign).ToList();
             if (relevantImprovedEqCats.Any()) {
                 UpdateFleetCmdTemplateDesign();
-            }
-
-            relevantImprovedEqCats.Clear();
-            relevantImprovedEqCats.AddRange(improvedEqCats.Intersect(_equipCatsUsedByFleetCmdDefaultDesign));
-            if (relevantImprovedEqCats.Any()) {
-                UpdateFleetCmdDefaultDesign();
             }
 
             relevantImprovedEqCats.Clear();
@@ -527,56 +508,36 @@ namespace CodeEnv.Master.GameContent {
             FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
             var cmdModuleStat = GetCurrentFleetCmdModuleStat();
             var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
-            FleetCmdDesign cmdDesign = new FleetCmdDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
+            FleetCmdModuleDesign cmdModDesign = new FleetCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
                 RootDesignName = TempGameValues.FleetCmdTemplateRootDesignName,
                 Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
             };
 
             D.Assert(IsFleetCmdTemplateDesignPresent());    // will always be present as only called after NewGameUnitGenerator makes designs
 
-            FleetCmdDesign existingTemplateDesign = GetCurrentFleetTemplateDesign();
+            FleetCmdModuleDesign existingTemplateDesign = GetCurrentFleetCmdModTemplateDesign();
             int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
-            cmdDesign.IncrementDesignLevelAndName(newDesignLevel);
+            cmdModDesign.IncrementDesignLevelAndName(newDesignLevel);
 
-            Add(cmdDesign);
-        }
-
-        private void UpdateFleetCmdDefaultDesign() {
-            FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
-            var cmdModuleStat = GetCurrentFleetCmdModuleStat();
-            var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
-            FleetCmdDesign cmdDesign = new FleetCmdDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
-                RootDesignName = TempGameValues.FleetCmdDefaultRootDesignName,
-                Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
-            };
-
-            D.Assert(IsFleetCmdDefaultDesignPresent());    // will always be present as only called after NewGameUnitGenerator makes designs
-
-            FleetCmdDesign existingDefaultDesign = GetCurrentDefaultFleetCmdDesign();
-            int newDesignLevel = existingDefaultDesign.DesignLevel + Constants.One;
-            cmdDesign.IncrementDesignLevelAndName(newDesignLevel);
-
-            ObsoleteDesign(existingDefaultDesign);   // avoids warning of need to auto obsolete existing design
-
-            Add(cmdDesign);
+            Add(cmdModDesign);
         }
 
         private void UpdateSettlementCmdTemplateDesign() {
             FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
             var cmdModuleStat = GetCurrentSettlementCmdModuleStat();
             var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
-            SettlementCmdDesign cmdDesign = new SettlementCmdDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
+            SettlementCmdModuleDesign cmdModDesign = new SettlementCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
                 RootDesignName = TempGameValues.SettlementCmdTemplateRootDesignName,
                 Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
             };
 
             D.Assert(IsSettlementCmdTemplateDesignPresent());    // will always be present as only called after NewGameUnitGenerator makes designs
 
-            SettlementCmdDesign existingTemplateDesign = GetCurrentSettlementTemplateDesign();
+            SettlementCmdModuleDesign existingTemplateDesign = GetCurrentSettlementCmdModTemplateDesign();
             int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
-            cmdDesign.IncrementDesignLevelAndName(newDesignLevel);
+            cmdModDesign.IncrementDesignLevelAndName(newDesignLevel);
 
-            Add(cmdDesign);
+            Add(cmdModDesign);
         }
 
         private void UpdateStarbaseCmdTemplateDesign() {
@@ -584,24 +545,26 @@ namespace CodeEnv.Master.GameContent {
             if (TryGetCurrentStarbaseCmdModuleStat(out cmdModuleStat)) {
                 FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
                 var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
-                StarbaseCmdDesign cmdDesign = new StarbaseCmdDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
+                StarbaseCmdModuleDesign cmdModDesign = new StarbaseCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
                     RootDesignName = TempGameValues.StarbaseCmdTemplateRootDesignName,
                     Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
                 };
 
                 if (IsStarbaseCmdTemplateDesignPresent()) {  // if CmdModuleStat JUST enabled, there won't yet be a Template design
-                    StarbaseCmdDesign existingTemplateDesign = GetCurrentStarbaseTemplateDesign();
+                    StarbaseCmdModuleDesign existingTemplateDesign = GetCurrentStarbaseCmdModTemplateDesign();
                     int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
-                    cmdDesign.IncrementDesignLevelAndName(newDesignLevel);
+                    cmdModDesign.IncrementDesignLevelAndName(newDesignLevel);
                 }
 
-                Add(cmdDesign);
+                Add(cmdModDesign);
             }
         }
 
         private void UpdateFacilityTemplateDesigns(IEnumerable<EquipmentCategory> updatedEqCats) {
             D.AssertNotEqual(Constants.Zero, updatedEqCats.Count());
 
+            // 5.1.18 This just reduces which HullCats to consider for updates. UpdateFacilityTemplateDesign(HullCat)
+            // will still test for whether there the HullStat for that HullCat is available.
             IEnumerable<FacilityHullCategory> hullCatsToUpdate;
             if (updatedEqCats.Contains(EquipmentCategory.SRSensor)) {
                 hullCatsToUpdate = TempGameValues.FacilityHullCategoriesInUse;
@@ -637,8 +600,11 @@ namespace CodeEnv.Master.GameContent {
         private void UpdateShipTemplateDesigns(IEnumerable<EquipmentCategory> updatedEqCats) {
             D.AssertNotEqual(Constants.Zero, updatedEqCats.Count());
 
+            // 5.1.18 This just reduces which HullCats to consider for updates. UpdateFacilityTemplateDesign(HullCat)
+            // will still test for whether there the HullStat for that HullCat is available.
             IEnumerable<ShipHullCategory> hullCatsToUpdate;
-            if (updatedEqCats.Contains(EquipmentCategory.SRSensor) || updatedEqCats.Contains(EquipmentCategory.StlPropulsion) || updatedEqCats.Contains(EquipmentCategory.FtlPropulsion)) {
+            if (updatedEqCats.Contains(EquipmentCategory.SRSensor) || updatedEqCats.Contains(EquipmentCategory.StlPropulsion)
+                || updatedEqCats.Contains(EquipmentCategory.FtlPropulsion)) {
                 hullCatsToUpdate = TempGameValues.ShipHullCategoriesInUse;
             }
             else {
@@ -713,6 +679,9 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
             }
+            else {
+                _shipDesignsLookupByHull.Add(design.HullCategory, new List<ShipDesign>());
+            }
 
             _shipDesignLookupByName.Add(designName, design);
             _shipDesignsLookupByHull[design.HullCategory].Add(design);
@@ -749,13 +718,16 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
             }
+            else {
+                _facilityDesignsLookupByHull.Add(design.HullCategory, new List<FacilityDesign>());
+            }
 
             _facilityDesignLookupByName.Add(designName, design);
             _facilityDesignsLookupByHull[design.HullCategory].Add(design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }
 
-        public void Add(StarbaseCmdDesign design) {
+        public void Add(StarbaseCmdModuleDesign design) {
             D.AssertEqual(_player, design.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             string designName = design.DesignName;
@@ -766,7 +738,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
-                var designsThatShouldBeObsolete = _starbaseCmdDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
+                var designsThatShouldBeObsolete = _starbaseCmdModDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
                     && d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
                 if (designsThatShouldBeObsolete.Any()) {
                     D.Warn("{0} found {1} designs that should be obsolete when adding {2}, so obsoleting them.", DebugName, designsThatShouldBeObsolete.Count(), design.DebugName);
@@ -774,18 +746,18 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                StarbaseCmdDesign existingTemplateDesign = _starbaseCmdDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                StarbaseCmdModuleDesign existingTemplateDesign = _starbaseCmdModDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
                 if (existingTemplateDesign != null) {
                     D.AssertEqual(existingTemplateDesign.RootDesignName, design.RootDesignName);
                     D.Log("{0} is replacing Template {1} with {2}.", DebugName, existingTemplateDesign.DebugName, design.DebugName);
-                    _starbaseCmdDesignLookupByName.Remove(existingTemplateDesign.DesignName);
+                    _starbaseCmdModDesignLookupByName.Remove(existingTemplateDesign.DesignName);
                 }
             }
-            _starbaseCmdDesignLookupByName.Add(designName, design);
+            _starbaseCmdModDesignLookupByName.Add(designName, design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }
 
-        public void Add(FleetCmdDesign design) {
+        public void Add(FleetCmdModuleDesign design) {
             D.AssertEqual(_player, design.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             string designName = design.DesignName;
@@ -795,7 +767,7 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
             if (design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
-                var designsThatShouldBeObsolete = _fleetCmdDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
+                var designsThatShouldBeObsolete = _fleetCmdModDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
                 && d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
                 if (designsThatShouldBeObsolete.Any()) {
                     D.Warn("{0} found {1} designs that should be obsolete when adding {2}, so obsoleting them.", DebugName, designsThatShouldBeObsolete.Count(), design.DebugName);
@@ -803,18 +775,18 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                FleetCmdDesign existingTemplateDesign = _fleetCmdDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                FleetCmdModuleDesign existingTemplateDesign = _fleetCmdModDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
                 if (existingTemplateDesign != null) {
                     D.AssertEqual(existingTemplateDesign.RootDesignName, design.RootDesignName);
                     D.Log("{0} is replacing Template {1} with {2}.", DebugName, existingTemplateDesign.DebugName, design.DebugName);
-                    _fleetCmdDesignLookupByName.Remove(existingTemplateDesign.DesignName);
+                    _fleetCmdModDesignLookupByName.Remove(existingTemplateDesign.DesignName);
                 }
             }
-            _fleetCmdDesignLookupByName.Add(designName, design);
+            _fleetCmdModDesignLookupByName.Add(designName, design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }
 
-        public void Add(SettlementCmdDesign design) {
+        public void Add(SettlementCmdModuleDesign design) {
             D.AssertEqual(_player, design.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             string designName = design.DesignName;
@@ -825,7 +797,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
-                var designsThatShouldBeObsolete = _settlementCmdDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
+                var designsThatShouldBeObsolete = _settlementCmdModDesignLookupByName.Values.Where(d => d.RootDesignName == design.RootDesignName
                 && d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
                 if (designsThatShouldBeObsolete.Any()) {
                     D.Warn("{0} found {1} designs that should be obsolete when adding {2}, so obsoleting them.", DebugName, designsThatShouldBeObsolete.Count(), design.DebugName);
@@ -833,14 +805,14 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                SettlementCmdDesign existingTemplateDesign = _settlementCmdDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                SettlementCmdModuleDesign existingTemplateDesign = _settlementCmdModDesignLookupByName.Values.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
                 if (existingTemplateDesign != null) {
                     D.AssertEqual(existingTemplateDesign.RootDesignName, design.RootDesignName);
                     D.Log("{0} is replacing Template {1} with {2}.", DebugName, existingTemplateDesign.DebugName, design.DebugName);
-                    _settlementCmdDesignLookupByName.Remove(existingTemplateDesign.DesignName);
+                    _settlementCmdModDesignLookupByName.Remove(existingTemplateDesign.DesignName);
                 }
             }
-            _settlementCmdDesignLookupByName.Add(designName, design);
+            _settlementCmdModDesignLookupByName.Add(designName, design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }
 
@@ -848,6 +820,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Obsolete Design
 
+        [Obsolete("Error prone. Use ObsoleteDesign(design) instead.")]
         public void ObsoleteShipDesign(string designName) {
             ShipDesign design;
             if (!_shipDesignLookupByName.TryGetValue(designName, out design)) {
@@ -865,6 +838,7 @@ namespace CodeEnv.Master.GameContent {
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
+        [Obsolete("Error prone. Use ObsoleteDesign(design) instead.")]
         public void ObsoleteFacilityDesign(string designName) {
             FacilityDesign design;
             if (!_facilityDesignLookupByName.TryGetValue(designName, out design)) {
@@ -882,52 +856,55 @@ namespace CodeEnv.Master.GameContent {
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
+        [Obsolete("Error prone. Use ObsoleteDesign(design) instead.")]
         public void ObsoleteStarbaseCmdDesign(string designName) {
-            StarbaseCmdDesign design;
-            if (!_starbaseCmdDesignLookupByName.TryGetValue(designName, out design)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(StarbaseCmdDesign).Name, designName, _starbaseCmdDesignLookupByName.Keys.Concatenate());
+            StarbaseCmdModuleDesign design;
+            if (!_starbaseCmdModDesignLookupByName.TryGetValue(designName, out design)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(StarbaseCmdModuleDesign).Name, designName, _starbaseCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
-        public void ObsoleteDesign(StarbaseCmdDesign design) {
-            if (!_starbaseCmdDesignLookupByName.Values.Contains(design)) {
-                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _starbaseCmdDesignLookupByName.Keys.Concatenate());
+        public void ObsoleteDesign(StarbaseCmdModuleDesign design) {
+            if (!_starbaseCmdModDesignLookupByName.Values.Contains(design)) {
+                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _starbaseCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
+        [Obsolete("Error prone. Use ObsoleteDesign(design) instead.")]
         public void ObsoleteSettlementCmdDesign(string designName) {
-            SettlementCmdDesign design;
-            if (!_settlementCmdDesignLookupByName.TryGetValue(designName, out design)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(SettlementCmdDesign).Name, designName, _settlementCmdDesignLookupByName.Keys.Concatenate());
+            SettlementCmdModuleDesign design;
+            if (!_settlementCmdModDesignLookupByName.TryGetValue(designName, out design)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(SettlementCmdModuleDesign).Name, designName, _settlementCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
-        public void ObsoleteDesign(SettlementCmdDesign design) {
-            if (!_settlementCmdDesignLookupByName.Values.Contains(design)) {
-                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _settlementCmdDesignLookupByName.Keys.Concatenate());
+        public void ObsoleteDesign(SettlementCmdModuleDesign design) {
+            if (!_settlementCmdModDesignLookupByName.Values.Contains(design)) {
+                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _settlementCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
+        [Obsolete("Error prone. Use ObsoleteDesign(design) instead.")]
         public void ObsoleteFleetCmdDesign(string designName) {
-            FleetCmdDesign design;
-            if (!_fleetCmdDesignLookupByName.TryGetValue(designName, out design)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(FleetCmdDesign).Name, designName, _fleetCmdDesignLookupByName.Keys.Concatenate());
+            FleetCmdModuleDesign design;
+            if (!_fleetCmdModDesignLookupByName.TryGetValue(designName, out design)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(FleetCmdModuleDesign).Name, designName, _fleetCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         }
 
-        public void ObsoleteDesign(FleetCmdDesign design) {
-            if (!_fleetCmdDesignLookupByName.Values.Contains(design)) {
-                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _fleetCmdDesignLookupByName.Keys.Concatenate());
+        public void ObsoleteDesign(FleetCmdModuleDesign design) {
+            if (!_fleetCmdModDesignLookupByName.Values.Contains(design)) {
+                D.Error("{0}: {1} not present. DesignNames: {2}.", DebugName, design.DebugName, _fleetCmdModDesignLookupByName.Keys.Concatenate());
             }
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, design.Status);
             design.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
@@ -936,6 +913,10 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         #region Design Presence
+
+        public bool CanDesignEverBeUpgraded(AUnitMemberDesign design) {
+            return design.Player == _player;
+        }
 
         public bool IsDesignNameInUse(string designName) {
             return _designNamesInUseLookup.Contains(designName);
@@ -974,6 +955,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsUpgradeDesignPresent(ShipDesign designToUpgrade) {
+            if (!CanDesignEverBeUpgraded(designToUpgrade)) {
+                // 4.30.18 Occurs when a ship is taken over and then tests for refit potential
+                D.Warn("{0}: An upgrade design presence inquiry occurred using {1} that can never be upgraded.", DebugName, designToUpgrade.DebugName);
+                return false;
+            }
             ShipDesign unusedUpgradeDesign;
             return TryGetUpgradeDesign(designToUpgrade, out unusedUpgradeDesign);
         }
@@ -1011,6 +997,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsUpgradeDesignPresent(FacilityDesign designToUpgrade) {
+            if (!CanDesignEverBeUpgraded(designToUpgrade)) {
+                // 4.30.18 Can occur when a facility is taken over and then tests for refit potential?
+                D.Warn("{0}: An upgrade design presence inquiry occurred using {1} that can never be upgraded.", DebugName, designToUpgrade.DebugName);
+                return false;
+            }
             FacilityDesign unusedUpgradeDesign;
             return TryGetUpgradeDesign(designToUpgrade, out unusedUpgradeDesign);
         }
@@ -1023,9 +1014,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="design">The design.</param>
         /// <param name="designName">Name of the design that is present, if any.</param>
         /// <returns></returns>
-        public bool IsDesignPresent(FleetCmdDesign design, out string designName) {
+        public bool IsDesignPresent(FleetCmdModuleDesign design, out string designName) {
             D.AssertEqual(_player, design.Player);
-            var designsPresent = _fleetCmdDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            var designsPresent = _fleetCmdModDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             foreach (var presentDesign in designsPresent) {
                 if (presentDesign.HasEqualContent(design)) {
                     designName = presentDesign.DesignName;
@@ -1037,18 +1028,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsFleetCmdTemplateDesignPresent() {
-            var templateDesign = _fleetCmdDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            var templateDesign = _fleetCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             return templateDesign != null;
         }
 
-        public bool IsFleetCmdDefaultDesignPresent() {
-            var templateDesign = _fleetCmdDesignLookupByName.Values.SingleOrDefault(design => design.RootDesignName == TempGameValues.FleetCmdDefaultRootDesignName);
-            return templateDesign != null;
-        }
-
-        [Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool IsUpgradeDesignPresent(FleetCmdDesign designToUpgrade) {
-            FleetCmdDesign unusedUpgradeDesign;
+        public bool IsUpgradeDesignPresent(FleetCmdModuleDesign designToUpgrade) {
+            if (!CanDesignEverBeUpgraded(designToUpgrade)) {
+                // 4.30.18 Can occur when a fleet is taken over and then tests for refit potential?
+                D.Warn("{0}: An upgrade design presence inquiry occurred using {1} that can never be upgraded.", DebugName, designToUpgrade.DebugName);
+                return false;
+            }
+            FleetCmdModuleDesign unusedUpgradeDesign;
             return TryGetUpgradeDesign(designToUpgrade, out unusedUpgradeDesign);
         }
 
@@ -1060,8 +1050,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="design">The design.</param>
         /// <param name="designName">Name of the design that is present, if any.</param>
         /// <returns></returns>
-        public bool IsDesignPresent(StarbaseCmdDesign design, out string designName) {
-            var designsPresent = _starbaseCmdDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+        public bool IsDesignPresent(StarbaseCmdModuleDesign design, out string designName) {
+            var designsPresent = _starbaseCmdModDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             foreach (var presentDesign in designsPresent) {
                 if (presentDesign.HasEqualContent(design)) {
                     designName = presentDesign.DesignName;
@@ -1073,13 +1063,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsStarbaseCmdTemplateDesignPresent() {
-            var templateDesign = _starbaseCmdDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            var templateDesign = _starbaseCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             return templateDesign != null;
         }
 
-        ////[Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool IsUpgradeDesignPresent(StarbaseCmdDesign designToUpgrade) {
-            StarbaseCmdDesign unusedUpgradeDesign;
+        public bool IsUpgradeDesignPresent(StarbaseCmdModuleDesign designToUpgrade) {
+            if (!CanDesignEverBeUpgraded(designToUpgrade)) {
+                // 4.30.18 Can occur when a Starbase is taken over and then tests for refit potential?
+                D.Warn("{0}: An upgrade design presence inquiry occurred using {1} that can never be upgraded.", DebugName, designToUpgrade.DebugName);
+                return false;
+            }
+            StarbaseCmdModuleDesign unusedUpgradeDesign;
             return TryGetUpgradeDesign(designToUpgrade, out unusedUpgradeDesign);
         }
 
@@ -1091,9 +1085,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="design">The design.</param>
         /// <param name="designName">Name of the design that is present, if any.</param>
         /// <returns></returns>
-        public bool IsDesignPresent(SettlementCmdDesign design, out string designName) {
+        public bool IsDesignPresent(SettlementCmdModuleDesign design, out string designName) {
             D.AssertEqual(_player, design.Player);
-            var designsPresent = _settlementCmdDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            var designsPresent = _settlementCmdModDesignLookupByName.Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             foreach (var presentDesign in designsPresent) {
                 if (presentDesign.HasEqualContent(design)) {
                     designName = presentDesign.DesignName;
@@ -1105,13 +1099,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsSettlementCmdTemplateDesignPresent() {
-            var templateDesign = _settlementCmdDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            var templateDesign = _settlementCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             return templateDesign != null;
         }
 
-        ////[Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool IsUpgradeDesignPresent(SettlementCmdDesign designToUpgrade) {
-            SettlementCmdDesign unusedUpgradeDesign;
+        public bool IsUpgradeDesignPresent(SettlementCmdModuleDesign designToUpgrade) {
+            if (!CanDesignEverBeUpgraded(designToUpgrade)) {
+                // 4.30.18 Can occur when a Settlement is taken over and then tests for refit potential?
+                D.Warn("{0}: An upgrade design presence inquiry occurred using {1} that can never be upgraded.", DebugName, designToUpgrade.DebugName);
+                return false;
+            }
+            SettlementCmdModuleDesign unusedUpgradeDesign;
             return TryGetUpgradeDesign(designToUpgrade, out unusedUpgradeDesign);
         }
 
@@ -1155,12 +1153,13 @@ namespace CodeEnv.Master.GameContent {
             var candidateDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 && d.RootDesignName == designToUpgrade.RootDesignName).Except(designToUpgrade);
             if (candidateDesigns.Any()) {
-                D.AssertEqual(Constants.One, candidateDesigns.Count());
-                upgradeDesign = candidateDesigns.First();
+                D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, designToUpgrade.Status, designToUpgrade.DebugName);
+                upgradeDesign = candidateDesigns.Single();
+                D.Log("{0} has found an upgrade design {1} better than {2}.", DebugName, upgradeDesign.DebugName, designToUpgrade.DebugName);
                 D.Assert(upgradeDesign.DesignLevel > designToUpgrade.DesignLevel);
                 return true;
             }
-            D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
+            //D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
             upgradeDesign = null;
             return false;
         }
@@ -1201,135 +1200,143 @@ namespace CodeEnv.Master.GameContent {
             var candidateDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 && d.RootDesignName == designToUpgrade.RootDesignName).Except(designToUpgrade);
             if (candidateDesigns.Any()) {
-                D.AssertEqual(Constants.One, candidateDesigns.Count());
-                upgradeDesign = candidateDesigns.First();
+                D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, designToUpgrade.Status, designToUpgrade.DebugName);
+                upgradeDesign = candidateDesigns.Single();
+                D.Log("{0} has found an upgrade design {1} better than {2}.", DebugName, upgradeDesign.DebugName, designToUpgrade.DebugName);
                 D.Assert(upgradeDesign.DesignLevel > designToUpgrade.DesignLevel);
                 return true;
             }
-            D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
+            //D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
             upgradeDesign = null;
             return false;
         }
 
-        public IEnumerable<StarbaseCmdDesign> GetAllStarbaseCmdDesigns(bool includeObsolete = false) {
+        public IEnumerable<StarbaseCmdModuleDesign> GetAllStarbaseCmdModDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _starbaseCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+                return _starbaseCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
             }
-            return _starbaseCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+            return _starbaseCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
         }
 
-        public StarbaseCmdDesign GetStarbaseCmdDesign(string designName) {
-            if (!_starbaseCmdDesignLookupByName.ContainsKey(designName)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(StarbaseCmdDesign).Name, designName, _starbaseCmdDesignLookupByName.Keys.Concatenate());
+        public StarbaseCmdModuleDesign GetStarbaseCmdModDesign(string designName) {
+            if (!_starbaseCmdModDesignLookupByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(StarbaseCmdModuleDesign).Name, designName, _starbaseCmdModDesignLookupByName.Keys.Concatenate());
             }
-            return _starbaseCmdDesignLookupByName[designName];
+            return _starbaseCmdModDesignLookupByName[designName];
         }
 
-        public StarbaseCmdDesign GetCurrentStarbaseTemplateDesign() {
-            return _starbaseCmdDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+        public StarbaseCmdModuleDesign GetCurrentStarbaseCmdModTemplateDesign() {
+            return _starbaseCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
         }
 
-        public bool TryGetDesign(string designName, out StarbaseCmdDesign design) {
-            return _starbaseCmdDesignLookupByName.TryGetValue(designName, out design);
+        public bool TryGetDesign(string designName, out StarbaseCmdModuleDesign design) {
+            return _starbaseCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
 
-        ////[Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool TryGetUpgradeDesign(StarbaseCmdDesign designToUpgrade, out StarbaseCmdDesign upgradeDesign) {
+        public bool TryGetUpgradeDesign(StarbaseCmdModuleDesign designToUpgrade, out StarbaseCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
-            var candidateDesigns = _starbaseCmdDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+            var candidateDesigns = _starbaseCmdModDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 && d.RootDesignName == designToUpgrade.RootDesignName).Except(designToUpgrade);
             if (candidateDesigns.Any()) {
-                D.AssertEqual(Constants.One, candidateDesigns.Count());
-                upgradeDesign = candidateDesigns.First();
+                D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, designToUpgrade.Status, designToUpgrade.DebugName);
+                upgradeDesign = candidateDesigns.Single();
+                D.Log("{0} has found an upgrade design {1} better than {2}.", DebugName, upgradeDesign.DebugName, designToUpgrade.DebugName);
                 D.Assert(upgradeDesign.DesignLevel > designToUpgrade.DesignLevel);
                 return true;
             }
-            D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
+            //D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
             upgradeDesign = null;
             return false;
         }
 
-        public IEnumerable<FleetCmdDesign> GetAllFleetCmdDesigns(bool includeObsolete = false) {
+        public IEnumerable<FleetCmdModuleDesign> GetAllFleetCmdModDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _fleetCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+                return _fleetCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
             }
-            return _fleetCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+            return _fleetCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
         }
 
-        public FleetCmdDesign GetFleetCmdDesign(string designName) {
-            if (!_fleetCmdDesignLookupByName.ContainsKey(designName)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", GetType().Name, typeof(FleetCmdDesign).Name, designName, _fleetCmdDesignLookupByName.Keys.Concatenate());
+        public FleetCmdModuleDesign GetFleetCmdModDesign(string designName) {
+            if (!_fleetCmdModDesignLookupByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", GetType().Name, typeof(FleetCmdModuleDesign).Name, designName, _fleetCmdModDesignLookupByName.Keys.Concatenate());
             }
-            return _fleetCmdDesignLookupByName[designName];
+            return _fleetCmdModDesignLookupByName[designName];
         }
 
-        public FleetCmdDesign GetCurrentFleetTemplateDesign() {
-            return _fleetCmdDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+        public FleetCmdModuleDesign GetCurrentFleetCmdModTemplateDesign() {
+            return _fleetCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
         }
 
-        public FleetCmdDesign GetCurrentDefaultFleetCmdDesign() {
-            return _fleetCmdDesignLookupByName.Values.Single(design => design.RootDesignName == TempGameValues.FleetCmdDefaultRootDesignName);
-
+        /// <summary>
+        /// Gets the default FleetCmdModuleDesign which will always be the cheapest of the lowest level designs available.
+        /// The design returned will typically, but not always, be Obsolete. It will never be a Template design.
+        /// </summary>
+        /// <returns></returns>
+        public FleetCmdModuleDesign GetDefaultFleetCmdModDesign() {
+            var allDesigns = _fleetCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
+            int minLevel = allDesigns.Min(des => des.DesignLevel);
+            D.AssertEqual(Constants.Zero, minLevel);
+            return allDesigns.Where(des => des.DesignLevel == minLevel).MinBy(minLevelDes => minLevelDes.BuyoutCost);
         }
 
-        public bool TryGetDesign(string designName, out FleetCmdDesign design) {
-            return _fleetCmdDesignLookupByName.TryGetValue(designName, out design);
+        public bool TryGetDesign(string designName, out FleetCmdModuleDesign design) {
+            return _fleetCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
 
-        [Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool TryGetUpgradeDesign(FleetCmdDesign designToUpgrade, out FleetCmdDesign upgradeDesign) {
+        public bool TryGetUpgradeDesign(FleetCmdModuleDesign designToUpgrade, out FleetCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
-            var candidateDesigns = _fleetCmdDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+            var candidateDesigns = _fleetCmdModDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 && d.RootDesignName == designToUpgrade.RootDesignName).Except(designToUpgrade);
             if (candidateDesigns.Any()) {
-                D.AssertEqual(Constants.One, candidateDesigns.Count());
-                upgradeDesign = candidateDesigns.First();
+                D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, designToUpgrade.Status, designToUpgrade.DebugName);
+                upgradeDesign = candidateDesigns.Single();
+                D.Log("{0} has found an upgrade design {1} better than {2}.", DebugName, upgradeDesign.DebugName, designToUpgrade.DebugName);
                 D.Assert(upgradeDesign.DesignLevel > designToUpgrade.DesignLevel);
                 return true;
             }
-            D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
+            //D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
             upgradeDesign = null;
             return false;
         }
 
-        public IEnumerable<SettlementCmdDesign> GetAllSettlementCmdDesigns(bool includeObsolete = false) {
+        public IEnumerable<SettlementCmdModuleDesign> GetAllSettlementCmdModDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _settlementCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+                return _settlementCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
             }
-            return _settlementCmdDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+            return _settlementCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
         }
 
-        ////[Obsolete]
-        public SettlementCmdDesign GetSettlementCmdDesign(string designName) {
-            if (!_settlementCmdDesignLookupByName.ContainsKey(designName)) {
-                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(SettlementCmdDesign).Name, designName, _settlementCmdDesignLookupByName.Keys.Concatenate());
+        public SettlementCmdModuleDesign GetSettlementCmdModDesign(string designName) {
+            if (!_settlementCmdModDesignLookupByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", DebugName, typeof(SettlementCmdModuleDesign).Name, designName, _settlementCmdModDesignLookupByName.Keys.Concatenate());
             }
-            return _settlementCmdDesignLookupByName[designName];
+            return _settlementCmdModDesignLookupByName[designName];
         }
 
-        public SettlementCmdDesign GetCurrentSettlementTemplateDesign() {
-            return _settlementCmdDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+        public SettlementCmdModuleDesign GetCurrentSettlementCmdModTemplateDesign() {
+            return _settlementCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
         }
 
-        public bool TryGetDesign(string designName, out SettlementCmdDesign design) {
-            return _settlementCmdDesignLookupByName.TryGetValue(designName, out design);
+        public bool TryGetDesign(string designName, out SettlementCmdModuleDesign design) {
+            return _settlementCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
 
-        ////[Obsolete("Upgrading CmdDesigns not yet supported")]
-        public bool TryGetUpgradeDesign(SettlementCmdDesign designToUpgrade, out SettlementCmdDesign upgradeDesign) {
+        public bool TryGetUpgradeDesign(SettlementCmdModuleDesign designToUpgrade, out SettlementCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
-            var candidateDesigns = _settlementCmdDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
+            var candidateDesigns = _settlementCmdModDesignLookupByName.Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
                 && d.RootDesignName == designToUpgrade.RootDesignName).Except(designToUpgrade);
             if (candidateDesigns.Any()) {
-                D.AssertEqual(Constants.One, candidateDesigns.Count());
-                upgradeDesign = candidateDesigns.First();
+                D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete, designToUpgrade.Status, designToUpgrade.DebugName);
+                upgradeDesign = candidateDesigns.Single();
+                D.Log("{0} has found an upgrade design {1} better than {2}.", DebugName, upgradeDesign.DebugName, designToUpgrade.DebugName);
                 D.Assert(upgradeDesign.DesignLevel > designToUpgrade.DesignLevel);
                 return true;
             }
-            D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
+            //D.Log("{0} has found no upgrade design better than {1}.", DebugName, designToUpgrade.DebugName);
             upgradeDesign = null;
             return false;
         }

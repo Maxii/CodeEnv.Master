@@ -61,7 +61,6 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
         dampener.RangeMonitor = this;
     }
 
-    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(FtlDampener dampener) {
         dampener.RangeMonitor = null;
     }
@@ -209,13 +208,19 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             // Item owner is unknown
             bool isRemoved = _trackedDampenableTargets.Remove(maneuverableItem);
             if (isRemoved) {
-                D.Warn("{0} unexpectedly found {1} in DampenableTgts. Removing.", DebugName, maneuverableItem.DebugName);
+                // 5.6.18 Occurred so added distances and sensor detection info
+                D.Warn("{0} unexpectedly found {1} without access to owner. Removing. TargetDistance: {2:0.#}.",
+                    DebugName, maneuverableItem.DebugName, Vector3.Distance(maneuverableItem.Position, ParentItem.Position));
+                bool isDetectedAsEnemyInFleetSRSensors = ParentItem.UnifiedSRSensorMonitor.__IsPresentAsEnemy(maneuverableItem);
+                bool isDetectedAsEnemyInFleetMRSensors = ParentItem.MRSensorMonitor.__IsPresentAsEnemy(maneuverableItem);
+                D.Warn("{0} on {1}: IsDetectedAsEnemyInSRSensors = {2}, IsDetectedAsEnemyInMRSensors = {3}.", DebugName,
+                    maneuverableItem.DebugName, isDetectedAsEnemyInFleetSRSensors, isDetectedAsEnemyInFleetMRSensors);
             }
             else if (IsOperational) {
                 float sqrThreshold = RangeDistance * RangeDistance * 0.96F; // was 0.99 but got 148/149 distance warnings
                                                                             // 1.25.18 was 0.97 but got 147.3 distance warnings
                 if (Vector3.SqrMagnitude(maneuverableItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
-                    D.Warn("{0} found {1} within range without access to owner and not present to be removed. TargetDistance: {2:0.#}.",
+                    D.Warn("{0} found {1} without access to owner and not present to be removed. TargetDistance: {2:0.#}.",
                         DebugName, maneuverableItem.DebugName, Vector3.Distance(maneuverableItem.Position, ParentItem.Position));
                     // 1.24.18 Can occur during startup if sensors not yet up?
                 }
@@ -281,8 +286,6 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
         if (_targetsPreviouslyTrackedAsDampenable != null) {
             _targetsPreviouslyTrackedAsDampenable.Clear();
         }
-        ////D.AssertEqual(Constants.Zero, _targetsPreviouslyTrackedAsDampenable.Count);
-        ////D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
     }
 
     #region Debug

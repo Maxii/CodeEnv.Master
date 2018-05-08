@@ -15,9 +15,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using Common;
 
     /// <summary>
@@ -34,15 +31,6 @@ namespace CodeEnv.Master.GameContent {
         public SensorStat ReqdSRSensorStat { get; private set; }
 
         public abstract Priority HQPriority { get; }
-
-        /// <summary>
-        /// The minimum cost in units of production required to refit an Element using this Design.
-        /// <remarks>The actual production cost required to refit an Element using this Design is
-        /// determined separately. This value is present so the algorithm used won't assign
-        /// a refit cost below this minimum. Typically used when refitting an Element to an older
-        /// and/or obsolete Design whose cost is significantly less than what the current Element costs.</remarks>
-        /// </summary>
-        ////public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
 
         /// <summary>
         /// The minimum cost in units of production required to disband an Element from this Design.

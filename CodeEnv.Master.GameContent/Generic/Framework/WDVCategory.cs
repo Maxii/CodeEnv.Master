@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Enum delineating the categories of WeaponDeliveryVehicles available.
     /// </summary>
+    [Obsolete("Replaced by EquipmentCategory that are Weapons")]
     public enum WDVCategory {
 
         None,

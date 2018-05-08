@@ -61,6 +61,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// </summary>
     public abstract float Mass { get; }
 
+    protected abstract float HitPts { get; set; }
+
+    protected abstract DamageStrength DmgMitigation { get; }
+
     protected sealed override Layers Layer { get { return Layers.Projectiles; } }
 
     protected override bool ToShowMuzzleEffects { get { return base.ToShowMuzzleEffects && !_hasWeaponFired; } }
@@ -366,26 +370,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     public Vector3 Position { get { return transform.position; } }
 
-    public void TakeHit(WDVStrength interceptStrength) {
-        if (DeliveryVehicleStrength.Category != interceptStrength.Category) {
-            D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", DebugName, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
-            return;
-        }
-        if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
-            // This problem was caused by the ActiveCMRangeMonitor adding this threat to all ActiveCMs when it came within
-            // the monitor's range. As the ActiveCMs that get the add, IMMEDIATELY can try to destroy the threat, the threat can
-            // be destroyed before it is ever added to the ActiveCMs later in the list. Thus, with the threat already destroyed, the
-            // late CM that is notified of a 'live' threat tries to destroy it, resulting in this warning and the subsequent "object already
-            // destroyed" error.
-            D.Error("{0} has been intercepted when VehicleStrength.Value = 0. IsOperational = {1}. Bypassing duplicate termination.",
-                DebugName, IsOperational);
-        }
-        else {
-            if (__IsActiveCMInterceptAllowed) {
-                //D.Log(ShowDebugLog, "{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", DebugName, interceptStrength, DeliveryVehicleStrength);
-                DeliveryVehicleStrength = DeliveryVehicleStrength - interceptStrength;
-                if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
-                    ReportInterdiction();
+    public void TakeHit(DamageStrength interceptStrength) {
+        if (__IsActiveCMInterceptAllowed) {
+            D.Log(ShowDebugLog, "{0} intercepted. InterceptStrength: {1}, Remaining: DmgMitigation = {2}, HitPts = {3:0.#}.", DebugName, interceptStrength, DmgMitigation, HitPts);
+            DamageStrength dmg = interceptStrength - DmgMitigation;
+            if (dmg.__Total > Constants.ZeroF) {
+                ReportInterdiction();
+                HitPts -= dmg.__Total;
+                if (HitPts <= Constants.ZeroF) {
                     D.Log(ShowDebugLog, "{0} was intercepted and destroyed.", DebugName);
                     if (IsOperational) {
                         // ordnance has not already been terminated by other paths such as the death of the target

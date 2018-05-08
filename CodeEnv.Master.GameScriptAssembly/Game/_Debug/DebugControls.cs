@@ -262,6 +262,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _deactivateLRSensors = false;
     public bool DeactivateLRSensors { get { return _deactivateLRSensors; } }
 
+    [Tooltip("Check if DesignWindows should include Designs that are Obsolete in the designs it displays as available")]
+    [SerializeField]
+    private bool _includeObsoleteDesigns = false;
+    /// <summary>
+    /// If <c>true</c> the DesignWindow will include Designs that are Obsolete when it shows the existing designs.
+    /// </summary>
+    public bool IncludeObsoleteDesigns { get { return _includeObsoleteDesigns; } }
+
     [Tooltip("Check if all Technologies start fully researched at the beginning of the game")]
     [SerializeField]
     private bool _isAllTechResearched = false;
@@ -852,8 +860,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #endregion
 
-
-
     #region Cleanup
 
     protected override void Cleanup() {
@@ -891,11 +897,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         Neutral,
         ColdWar,
         War
-    }
-
-    public enum UnityMoveTech {
-        Physics,
-        Kinematic
     }
 
     public enum EquipmentLoadout {

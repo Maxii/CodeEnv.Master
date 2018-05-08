@@ -94,11 +94,13 @@ namespace CodeEnv.Master.GameContent {
         public float WeaponRangeMultiplier { get { return _speciesStat.WeaponRangeMultiplier; } }
 
         [Obsolete("Use only during creation or refit")]
-        public float CountermeasureRangeMultiplier { get { return _speciesStat.ActiveCountermeasureRangeMultiplier; } }
+        public float CmRangeMultiplier { get { return _speciesStat.CmRangeMultiplier; } }
 
         public float WeaponReloadPeriodMultiplier { get { return _speciesStat.WeaponReloadPeriodMultiplier; } }
 
-        public float CountermeasureReloadPeriodMultiplier { get { return _speciesStat.CountermeasureReloadPeriodMultiplier; } }
+        public float CmReloadPeriodMultiplier { get { return _speciesStat.CmReloadPeriodMultiplier; } }
+
+        public float BuyoutCostMultiplier { get { return _speciesStat.BuyoutCostMultiplier; } }
 
         public IEnumerable<Player> OtherKnownPlayers { get { return _currentRelationship.Keys.Where(p => IsKnown(p)).Except(this); } }
 

@@ -36,6 +36,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float OrdnanceDrag { get; private set; }
 
+        public float OrdnanceHitPts { get; private set; }
+
+        public DamageStrength OrdnanceDmgMitigation { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AProjectileWeaponStat" /> class.
         /// </summary>
@@ -51,25 +55,29 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="deliveryVehicleStrength">The delivery strength.</param>
+        /// <param name="ordDmgMitigation">The ordnance damage mitigation.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
-        /// <param name="damagePotential">The damage potential.</param>
-        /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
-        /// <param name="ordnanceMass">The mass of the ordnance.</param>
-        /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
+        /// <param name="ordDmgPotential">The ordnance damage potential.</param>
+        /// <param name="ordMaxSpeed">The ordnance maximum speed.</param>
+        /// <param name="ordMass">The ordnance mass.</param>
+        /// <param name="ordDrag">The ordnance drag.</param>
+        /// <param name="ordHitPts">The ordnance hit points.</param>
         public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
-            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
-            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
-            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
-            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
-                  rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
-            D.Assert(ordnanceMaxSpeed > Constants.ZeroF);
-            D.Assert(ordnanceMass > Constants.ZeroF);
-            D.Assert(ordnanceDrag > Constants.ZeroF);
-            MaxSpeed = ordnanceMaxSpeed;
-            OrdnanceMass = ordnanceMass;
-            OrdnanceDrag = ordnanceDrag;
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat,
+            DamageStrength ordDmgMitigation, float reloadPeriod, DamageStrength ordDmgPotential, float ordMaxSpeed, float ordMass,
+            float ordDrag, float ordHitPts)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat,
+                  reloadPeriod, ordDmgPotential) {
+            D.Assert(ordMaxSpeed > Constants.ZeroF);
+            D.Assert(ordMass > Constants.ZeroF);
+            D.Assert(ordDrag > Constants.ZeroF);
+            OrdnanceDmgMitigation = ordDmgMitigation;
+            MaxSpeed = ordMaxSpeed;
+            OrdnanceMass = ordMass;
+            OrdnanceDrag = ordDrag;
+            OrdnanceHitPts = ordHitPts;
         }
+
 
 
         #region Value-based Equality Archive

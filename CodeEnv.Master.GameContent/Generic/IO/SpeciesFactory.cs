@@ -59,9 +59,10 @@ namespace CodeEnv.Master.GameContent {
             private string _speciesImageFilenameTagName = "ImageFilename";
             private string _speciesSensorRangeMultiplierTagName = "SensorRangeMultiplier";
             private string _speciesWeaponRangeMultiplierTagName = "WeaponRangeMultiplier";
-            private string _speciesActiveCountermeasureRangeMultiplierTagName = "ActiveCountermeasureRangeMultiplier";
+            private string _speciesActiveCmRangeMultiplierTagName = "ActiveCmRangeMultiplier";
             private string _speciesWeaponReloadPeriodMultiplierTagName = "WeaponReloadPeriodMultiplier";
-            private string _speciesActiveCountermeasureReloadPeriodMultiplierTagName = "ActiveCountermeasureReloadPeriodMultiplier";
+            private string _speciesActiveCmReloadPeriodMultiplierTagName = "ActiveCmReloadPeriodMultiplier";
+            private string _speciesBuyoutCostMultiplierTagName = "BuyoutCostMultiplier";
 
             protected override string XmlFilename { get { return "SpeciesValues"; } }
 
@@ -84,10 +85,12 @@ namespace CodeEnv.Master.GameContent {
                         string filename = speciesNode.Element(_speciesImageFilenameTagName).Value;
                         float sensorRangeMultiplier = float.Parse(speciesNode.Element(_speciesSensorRangeMultiplierTagName).Value);
                         float weaponRangeMultiplier = float.Parse(speciesNode.Element(_speciesWeaponRangeMultiplierTagName).Value);
-                        float activeCountermeasureRangeMultiplier = float.Parse(speciesNode.Element(_speciesActiveCountermeasureRangeMultiplierTagName).Value);
+                        float activeCmRangeMultiplier = float.Parse(speciesNode.Element(_speciesActiveCmRangeMultiplierTagName).Value);
                         float weaponReloadPeriodMultiplier = float.Parse(speciesNode.Element(_speciesWeaponReloadPeriodMultiplierTagName).Value);
-                        float activeCountermeasureReloadPeriodMultiplier = float.Parse(speciesNode.Element(_speciesActiveCountermeasureReloadPeriodMultiplierTagName).Value);
-                        stat = new SpeciesStat(species, pluralName, description, atlasID, filename, sensorRangeMultiplier, weaponRangeMultiplier, activeCountermeasureRangeMultiplier, weaponReloadPeriodMultiplier, activeCountermeasureReloadPeriodMultiplier);
+                        float activeCmReloadPeriodMultiplier = float.Parse(speciesNode.Element(_speciesActiveCmReloadPeriodMultiplierTagName).Value);
+                        float buyoutCostMultiplier = float.Parse(speciesNode.Element(_speciesBuyoutCostMultiplierTagName).Value);
+                        stat = new SpeciesStat(species, pluralName, description, atlasID, filename, sensorRangeMultiplier, weaponRangeMultiplier,
+                            activeCmRangeMultiplier, weaponReloadPeriodMultiplier, activeCmReloadPeriodMultiplier, buyoutCostMultiplier);
                         break;
                     }
                 }

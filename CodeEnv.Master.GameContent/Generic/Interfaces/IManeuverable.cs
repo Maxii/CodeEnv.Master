@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Interface for Items that can maneuver, aka have engines.
+    /// <remarks>5.6.18 Currently only Ships.</remarks>
     /// </summary>
     public interface IManeuverable : IDetectable, INavigableDestination {
 

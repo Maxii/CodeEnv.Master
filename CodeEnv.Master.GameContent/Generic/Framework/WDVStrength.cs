@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable data container for survivability and interdiction strength values of weapon delivery vehicles.
     /// </summary>
+    [Obsolete("Replaced by DamageStrength")]
     public struct WDVStrength : IEquatable<WDVStrength>, IComparable<WDVStrength> {
 
         private const string VehicleIconFormat = "{0} {1}";
@@ -200,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() { return DebugName; }
 
-        #region IEquatable<DeliveryStrength> Members
+        #region IEquatable<WDVStrength> Members
 
         public bool Equals(WDVStrength other) {
             return Category == other.Category && Value == other.Value;
@@ -208,7 +209,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IComparable<DeliveryStrength> Members
+        #region IComparable<WDVStrength> Members
 
         public int CompareTo(WDVStrength other) {
             return Value.CompareTo(other.Value);

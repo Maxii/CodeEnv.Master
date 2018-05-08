@@ -243,7 +243,7 @@ public abstract class AGuiWindow : AMonoBase {
                 // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
                 // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
                 // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                ////__ValidateKilledFadeJobReference(_fadeInJob);
+                //__ValidateKilledFadeJobReference(_fadeInJob);
             }
             else {
                 //D.Log("{0}.FadeInJob jobCompleted called in Frame {1}.", DebugName, Time.frameCount);
@@ -283,7 +283,7 @@ public abstract class AGuiWindow : AMonoBase {
                 // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
                 // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
                 // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                ////__ValidateKilledFadeJobReference(_fadeOutJob);
+                //__ValidateKilledFadeJobReference(_fadeOutJob);
             }
             else {
                 //D.Log("{0}.FadeOutJob jobCompleted called in Frame {1}.", DebugName, Time.frameCount);
@@ -364,6 +364,10 @@ public abstract class AGuiWindow : AMonoBase {
         ContentHolder.gameObject.SetActive(true);
     }
 
+    /// <summary>
+    /// Resets this window and all forms in preparation for reuse.
+    /// <remarks>Called when Window's hide action is complete.</remarks>
+    /// </summary>
     protected abstract void ResetForReuse();
 
     protected virtual void Unsubscribe() {

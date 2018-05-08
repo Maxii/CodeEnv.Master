@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// The amount of damage this generator can mitigate when the Item it is apart of takes a hit.
         /// This value has nothing to do with the capacity of this generator to absorb impacts.
         /// </summary>
-        public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
+        public DamageStrength DmgMitigation { get { return Stat.DmgMitigation; } }
 
         protected bool ShowDebugLog { get { return Shield != null ? Shield.ShowDebugLog : true; } }
 
@@ -155,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleInitialActivation() {
             base.HandleInitialActivation();
-            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CountermeasureReloadPeriodMultiplier);
+            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CmReloadPeriodMultiplier);
         }
 
         protected override void IsOperationalPropChangedHandler() {

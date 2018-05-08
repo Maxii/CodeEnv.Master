@@ -170,59 +170,61 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     /// <summary>
-    /// Replaces facilityToReplace with replacingFacility in this Base.
-    /// <remarks>Only called after a facility refit has successfully completed.</remarks>
-    /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, HQ state and 
-    /// formation assignment and position. Client must create the replacingFacility, complete initialization,
-    /// commence operations and destroy facilityToReplace.</remarks>
+    /// Replaces elementToReplace with refittedElement in this Cmd.
+    /// <remarks>Only called after a element refit has successfully completed.</remarks>
+    /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, position,
+    /// HQ state and formation assignment. Client must create the refittedElement, 
+    /// complete initialization, commence operations and destroy elementToReplace.</remarks>
+    /// <remarks>Facilities assign Topography via their constructor so refittedElement already has it.</remarks>
     /// </summary>
-    /// <param name="facilityToReplace">The facility to replace.</param>
-    /// <param name="replacingFacility">The replacing facility.</param>
-    public void ReplaceRefittedElement(FacilityItem facilityToReplace, FacilityItem replacingFacility) {
-        D.Assert(facilityToReplace.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Refit));
+    /// <param name="elementToReplace">The element to replace.</param>
+    /// <param name="refittedElement">The refitted element that is replacing elementToReplace.</param>
+    public void ReplaceRefittedElement(FacilityItem elementToReplace, FacilityItem refittedElement) {
+        D.Assert(elementToReplace.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Refit));
         // AddElement without dealing with Cmd death, HQ or FormationManager
-        Elements.Add(replacingFacility);
-        Data.AddElement(replacingFacility.Data);
-        replacingFacility.Command = this;
-        replacingFacility.AttachAsChildOf(UnitContainer);
-        UnifiedSRSensorMonitor.Add(replacingFacility.SRSensorMonitor);
+        Elements.Add(refittedElement);
+        Data.AddElement(refittedElement.Data);
+        refittedElement.Command = this;
+        refittedElement.AttachAsChildOf(UnitContainer);
+        UnifiedSRSensorMonitor.Add(refittedElement.SRSensorMonitor);
 
-        replacingFacility.subordinateDeathOneShot += SubordinateDeathEventHandler;
-        replacingFacility.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
-        replacingFacility.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
-        replacingFacility.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
-        replacingFacility.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
+        refittedElement.subordinateDeathOneShot += SubordinateDeathEventHandler;
+        refittedElement.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
+        refittedElement.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
+        refittedElement.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
+        refittedElement.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
 
         // RemoveElement without dealing with Cmd death, HQ or FormationManager
-        bool isRemoved = Elements.Remove(facilityToReplace);
+        bool isRemoved = Elements.Remove(elementToReplace);
         D.Assert(isRemoved);
-        Data.RemoveElement(facilityToReplace.Data);
+        Data.RemoveElement(elementToReplace.Data);
 
-        UnifiedSRSensorMonitor.Remove(facilityToReplace.SRSensorMonitor);
+        UnifiedSRSensorMonitor.Remove(elementToReplace.SRSensorMonitor);
 
-        facilityToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
-        facilityToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
-        facilityToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
-        facilityToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
-        facilityToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
-        // no need to null Command as facilityToReplace will be destroyed
+        elementToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
+        elementToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
+        elementToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
+        elementToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
+        elementToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
+        // no need to null Command as elementToReplace will be destroyed
 
-        // no need to AssessIcon as replacingFacility only has enhanced performance
+        // no need to AssessIcon as replacingElement only has enhanced performance
         // no need to worry about IsJoinable as there shouldn't be any checks when using this method
-        replacingFacility.transform.rotation = facilityToReplace.transform.rotation;
+        refittedElement.transform.rotation = elementToReplace.transform.rotation;
+        D.AssertEqual(refittedElement.Topography, elementToReplace.Topography);
 
-        if (facilityToReplace.IsHQ) {
+        if (elementToReplace.IsHQ) {
             // handle all HQ change here without firing HQ change handlers
-            _hqElement = replacingFacility;
-            replacingFacility.IsHQ = true;
-            Data.HQElementData = replacingFacility.Data;
+            _hqElement = refittedElement;
+            refittedElement.IsHQ = true;
+            Data.HQElementData = refittedElement.Data;
             AttachCmdToHQElement(); // needs to occur before formation changed
         }
-        FormationMgr.ReplaceElement(facilityToReplace, replacingFacility);
+        FormationMgr.ReplaceElement(elementToReplace, refittedElement);
 
-        // 11.26.17 Don't communicate removal/addition to FSM as this only occurs after a Facility refit has been successful.
-        // ReplacingFacility has already been refit so doesn't need to try it again, and facilityToReplace has already 
-        // called back with success so base is not waiting for it.
+        // 11.26.17 Don't communicate removal/addition to FSM as this method is called after a Element refit has been successful.
+        // ReplacingElement has already been refit so doesn't need to try it again, and elementToReplace has already 
+        // called back with success so Cmd is not waiting for it.
     }
 
     /// <summary>
@@ -254,10 +256,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         string name = unitFactory.__GetUniqueFacilityName(design.DesignName);
         FacilityItem facilityToConstruct = unitFactory.MakeFacilityInstance(Owner, Data.Topography, design, name, UnitContainer.gameObject);
 
+        AddElement(facilityToConstruct);
+
         // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud
+        // 4.29.18 Must be added AFTER addition to Base so UnitHud will find facility as part of Base when it receives the QueueChanged event
         ConstructionMgr.AddToQueue(design, facilityToConstruct);
 
-        AddElement(facilityToConstruct);
         facilityToConstruct.FinalInitialize();
         AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(facilityToConstruct);
         facilityToConstruct.CommenceOperations();
@@ -271,10 +275,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         string name = unitFactory.__GetUniqueShipName(design.DesignName);
         ShipItem shipToConstruct = unitFactory.MakeShipInstance(Owner, design, name, UnitContainer.gameObject);
 
-        // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud
+        Hanger.AddShip(shipToConstruct);
+
+        // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud.
+        // 4.29.18 Must be added AFTER addition to Hanger so UnitHud will find ship in Hanger when it receives the QueueChanged event
         ConstructionMgr.AddToQueue(design, shipToConstruct);
 
-        Hanger.AddShip(shipToConstruct);
         shipToConstruct.FinalInitialize();
         AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(shipToConstruct);
         shipToConstruct.CommenceOperations();
@@ -1242,6 +1248,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());  // Should not have been called if no elements can be refit
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the CmdModule should be included in the refit.
+    /// If true, the returned value indicates which facility should be ordered to include the CmdModule in its refit.
+    /// </summary>
+    /// <param name="candidates">The candidates to pick from.</param>
+    /// <param name="facility">The facility selected to include the CmdModule refit.</param>
+    /// <returns></returns>
+    protected abstract bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility);
+
     #endregion
 
     protected void ExecuteRefitOrder_UponPreconfigureState() {
@@ -1260,14 +1275,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
 
-        D.LogBold("{0} is issuing a RefitOrder to {1} Facilities: {2}.", DebugName, _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count,
+        int refitQty = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count;
+
+        FacilityItem facilityToRefitCmdModule;
+        bool toRefitCmdModule = TryPickFacilityToRefitCmdModule(_fsmFacilitiesExpectedToCallbackWithOrderOutcome, out facilityToRefitCmdModule);
+
+        D.Log(ShowDebugLog, "{0} is issuing a RefitOrder to {1} Facilities: {2}.", DebugName, refitQty,
             _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
         foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
             FacilityDesign refitDesign;
             bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
             D.Assert(isDesignAvailable);
 
-            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination);
+            bool toIncludeCmdModuleInThisFacilityRefit = facility == facilityToRefitCmdModule;
+
+            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination,
+                toIncludeCmdModuleInThisFacilityRefit);
             facility.CurrentOrder = refitOrder;
         }
 
@@ -1276,16 +1299,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        // 11.26.17 Placeholder for refitting the CmdModule which is not currently supported
-        StartEffectSequence(EffectSequenceID.Refitting);
-        Data.__RemoveDamageFromCmdModuleEquipment();
-        StopEffectSequence(EffectSequenceID.Refitting);
+        if (toRefitCmdModule) {
+            StartEffectSequence(EffectSequenceID.Refitting);
+        }
 
         while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
             // Wait here until facilities are all refitted
             yield return null;
         }
-        D.LogBold(/*ShowDebugLog, */"{0}'s has completed refit of all Elements.", DebugName);
+
+        string cmdModuleMsg = string.Empty;
+        if (toRefitCmdModule) {
+            StopEffectSequence(EffectSequenceID.Refitting);
+            cmdModuleMsg = ", including the CmdModule";
+        }
+        D.LogBold("{0} has completed refit of {1} facilities{2}.", DebugName, refitQty, cmdModuleMsg);
         CurrentState = BaseState.Idling;
     }
 
@@ -1356,11 +1384,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     FacilityDesign refitDesign;
                     bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
                     D.Assert(isDesignAvailable);
+                    bool includeCmdModuleInRefit = false;
 
                     D.LogBold("{0} will {1} after becoming available to {2} during state {3}.", facility.DebugName,
                         FacilityDirective.Refit.GetValueName(), DebugName, CurrentState.GetValueName());
                     FacilityRefitOrder facilityRefitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign,
-                        _fsmTgt as IElementNavigableDestination);
+                        _fsmTgt as IElementNavigableDestination, includeCmdModuleInRefit);
                     facility.CurrentOrder = facilityRefitOrder;
                 }
             }
@@ -1424,6 +1453,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         var refitOrderID = _executingOrderID;
         ResetCommonNonCallableStateValues();
         ClearAnyRemainingElementOrdersIssuedBy(refitOrderID);
+        StopEffectSequence(EffectSequenceID.Refitting);
     }
 
     #endregion
@@ -1865,7 +1895,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateKnowledgeOfOrderTarget(BaseOrder order) {
         var target = order.Target;
@@ -1920,8 +1949,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 return false;
             }
 
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
             foreach (var e in Elements) {
                 string eFailCause;
                 if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Attack, out eFailCause)) {
@@ -1936,23 +1966,32 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
 
         if (orderDirective == BaseDirective.Refit) {
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            // Authorizing a Unit Refit requires at least 1 element to be refitable, independent of whether there is a CmdModule upgrade available
+            bool toAuthorizeRefit = false;
+            IList<string> elementFailCauses = new List<string> {
+                    "No Authorized Elements: "
+            };
+
             foreach (var e in Elements) {
+                FacilityItem facility = e as FacilityItem;
                 string eFailCause;
-                if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Refit, out eFailCause)) {
-                    return true;
-                }
-                else {
+                toAuthorizeRefit = facility.__TryAuthorizeNewOrder(FacilityDirective.Refit, out eFailCause);
+                if (!toAuthorizeRefit) {
                     elementFailCauses.Add(eFailCause);
+                    continue;
                 }
+                break;
             }
-            failCause = elementFailCauses.Concatenate();
-            return false;
+
+            if (!toAuthorizeRefit) {
+                failCause = elementFailCauses.Concatenate();
+            }
+            return toAuthorizeRefit;
         }
         if (orderDirective == BaseDirective.Disband) {
-            IList<string> elementFailCauses = new List<string>();
-            elementFailCauses.Add("No Authorized Elements: ");
+            IList<string> elementFailCauses = new List<string> {
+                "No Authorized Elements: "
+            };
             foreach (var e in Elements) {
                 string eFailCause;
                 if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Disband, out eFailCause)) {
@@ -1973,8 +2012,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
             if (Data.UnitHealth < Constants.OneHundredPercent) {
                 // one or more elements are damaged but element(s) could be unavailable
-                IList<string> elementFailCauses = new List<string>();
-                elementFailCauses.Add("No Authorized Elements: ");
+                IList<string> elementFailCauses = new List<string> {
+                    "No Authorized Elements: "
+                };
                 foreach (var e in Elements) {
                     string eFailCause;
                     if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Repair, out eFailCause)) {

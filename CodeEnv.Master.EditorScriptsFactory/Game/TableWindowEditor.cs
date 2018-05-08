@@ -24,5 +24,13 @@ using UnityEditor;
 [CustomEditor(typeof(TableWindow))]
 public class TableWindowEditor : AGuiWindowEditor<TableWindow> {
 
+    protected override void DrawDerivedClassProperties() {
+        base.DrawDerivedClassProperties();
+
+        NGUIEditorTools.DrawProperty("Title Label", serializedObject, "_titleLabel");
+        NGUIEditorTools.DrawProperty("Done Button", serializedObject, "_doneButton");
+
+    }
+
 }
 

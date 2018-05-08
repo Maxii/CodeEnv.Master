@@ -37,6 +37,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float OrdnanceDrag { get { return Stat.OrdnanceDrag; } }
 
+        public float OrdnanceHitPts { get { return Stat.OrdnanceHitPts; } }
+
+        public DamageStrength OrdnanceDmgMitigation { get { return Stat.OrdnanceDmgMitigation; } }
+
         /// <summary>
         /// The maximum inaccuracy of this Weapon's bearing when launched in degrees.
         /// </summary>

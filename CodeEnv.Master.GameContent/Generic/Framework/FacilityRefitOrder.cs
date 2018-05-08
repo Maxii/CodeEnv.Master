@@ -36,6 +36,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityDesign RefitDesign { get; private set; }
 
+        public bool IncludeCmdModule { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityRefitOrder" /> class.
         /// <remarks>11.24.17 For use when an order outcome callback is expected.</remarks>
@@ -44,21 +46,24 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
         /// <param name="refitDesign">The design to use for the refit.</param>
         /// <param name="target">The target.</param>
-        public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign, IElementNavigableDestination target)
+        /// <param name="includeCmd">If <c>true</c>, also refit the CmdModule.</param>
+        public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign, IElementNavigableDestination target, bool includeCmd)
             : base(FacilityDirective.Refit, source, cmdOrderID, target) {
             D.Assert(target is IUnitBaseCmd);
             RefitDesign = refitDesign;
+            IncludeCmdModule = includeCmd;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityRefitOrder" /> class.
-        /// <remarks>11.24.17 For use when an order outcome callback is not expected.</remarks>
+        /// <remarks>11.24.17 For use when an order outcome callback is not expected. Typically used when the order does not
+        /// emanate from the Unit.</remarks>
         /// </summary>
         /// <param name="source">The source of this order.</param>
         /// <param name="refitDesign">The design to use for the refit.</param>
         /// <param name="target">The target.</param>
         public FacilityRefitOrder(OrderSource source, FacilityDesign refitDesign, IElementNavigableDestination target)
-            : this(source, default(Guid), refitDesign, target) {
+            : this(source, default(Guid), refitDesign, target, false) {
         }
 
     }

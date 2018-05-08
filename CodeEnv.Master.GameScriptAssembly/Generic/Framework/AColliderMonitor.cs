@@ -63,8 +63,10 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
     public IOwnerItem ParentItem {
         get { return _parentItem; }
         set {
-            D.AssertNull(_parentItem);   // should only happen once
-            SetProperty<IOwnerItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
+            if (_parentItem == null) {
+                SetProperty<IOwnerItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
+            }
+            D.AssertEqual(_parentItem, value);  // Should only be set once, or if attempted again, to the same parent as before
         }
     }
 

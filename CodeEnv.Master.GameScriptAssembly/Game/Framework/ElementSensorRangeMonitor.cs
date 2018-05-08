@@ -34,63 +34,63 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     protected override void HandleEnemyElementAdded(IUnitElement_Ltd enemyElement) {
         base.HandleEnemyElementAdded(enemyElement);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddEnemyElement(enemyElement, this);
     }
 
     protected override void HandleWarEnemyElementAdded(IUnitElement_Ltd enemyElement) {
         base.HandleWarEnemyElementAdded(enemyElement);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddWarEnemyElement(enemyElement, this);
     }
 
     protected override void HandleEnemyCmdAdded(IUnitCmd_Ltd command) {
         base.HandleEnemyCmdAdded(command);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddEnemyCmd(command, this);
     }
 
     protected override void HandleWarEnemyCmdAdded(IUnitCmd_Ltd command) {
         base.HandleWarEnemyCmdAdded(command);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddWarEnemyCmd(command, this);
     }
 
     protected override void HandleEnemyElementRemoved(IUnitElement_Ltd enemyElement) {
         base.HandleEnemyElementRemoved(enemyElement);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveEnemyElement(enemyElement, this);
     }
 
     protected override void HandleWarEnemyElementRemoved(IUnitElement_Ltd enemyElement) {
         base.HandleWarEnemyElementRemoved(enemyElement);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveWarEnemyElement(enemyElement, this);
     }
 
     protected override void HandleEnemyCmdRemoved(IUnitCmd_Ltd command) {
         base.HandleEnemyCmdRemoved(command);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveEnemyCmd(command, this);
     }
 
     protected override void HandleWarEnemyCmdRemoved(IUnitCmd_Ltd command) {
         base.HandleWarEnemyCmdRemoved(command);
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveWarEnemyCmd(command, this);
     }
 
     protected override void HandleSensorDetectedItemsCleared() {
         base.HandleSensorDetectedItemsCleared();
-        D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
+        __ValidateCommandPresence();
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.Remove(this);
     }
@@ -121,7 +121,23 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateCommandPresence() {
+        if (ParentItem.Command == null) {
+            D.Error("{0}: {1}.Command is null.", DebugName, ParentItem.DebugName);
+            if (ParentItem is IShip) {
+                string inHangerMsg = (ParentItem as IShip).IsLocatedInHanger ? "in" : "not in";
+                D.Warn("{0}: {1} is {2} hanger.", DebugName, ParentItem.DebugName, inHangerMsg);
+            }
+        }
+    }
+
     protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }
+
+    protected override void __HandleUnknownTargetDetectedAndAdded(IElementAttackable unknownTgt) {
+        base.__HandleUnknownTargetDetectedAndAdded(unknownTgt);
+        D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
+    }
 
     #endregion
 

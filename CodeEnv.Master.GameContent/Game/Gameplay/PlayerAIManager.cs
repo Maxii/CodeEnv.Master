@@ -419,6 +419,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Returns <c>true</c> if a base is found, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestBase">The closest base.</param>
+        /// <param name="excludedBases">The excluded bases.</param>
+        /// <returns></returns>
+        public bool TryFindClosestBase(Vector3 worldPosition, out IUnitBaseCmd closestBase, params IUnitBaseCmd[] excludedBases) {
+            IEnumerable<IUnitBaseCmd> baseCandidates = Knowledge.OwnerBases.Except(excludedBases);
+            if (baseCandidates.Any()) {
+                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestBase = null;
+            return false;
+        }
+
+        /// <summary>
         /// Returns <c>true</c> if a base is found that will repair both the fleet's ships and its CmdModule, <c>false</c> otherwise.
         /// </summary>
         /// <param name="worldPosition">The world position.</param>

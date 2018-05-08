@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class NewGameUnitGenerator {
 
-    private const string DesignNameFormat = "{0}{1}";
+    private const string RootDesignNameFormat = "{0}{1}";
 
     /// <summary>
     /// Static counter used to provide a unique name for each design name.
@@ -43,13 +43,13 @@ public class NewGameUnitGenerator {
     /// <param name="hullCategoryName">The hull category name.</param>
     /// <returns></returns>
     private static string GetUniqueElementRootDesignName(string hullCategoryName) {
-        var designName = DesignNameFormat.Inject(hullCategoryName, _rootDesignNameCounter);
+        var designName = RootDesignNameFormat.Inject(hullCategoryName, _rootDesignNameCounter);
         _rootDesignNameCounter++;
         return designName;
     }
 
     private static string GetUniqueCmdRootDesignName() {
-        var designName = DesignNameFormat.Inject("Cmd", _rootDesignNameCounter);
+        var designName = RootDesignNameFormat.Inject("Cmd", _rootDesignNameCounter);
         _rootDesignNameCounter++;
         return designName;
     }
@@ -95,27 +95,19 @@ public class NewGameUnitGenerator {
                 RegisterDesign(player, facilityDesign, optionalRootDesignName: facilityDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
-            FleetCmdDesign currentFleetCmdTemplateDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1,
+            FleetCmdModuleDesign currentFleetCmdTemplateDesign = MakeFleetCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
                 status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             RegisterDesign(player, currentFleetCmdTemplateDesign, optionalRootDesignName: TempGameValues.FleetCmdTemplateRootDesignName);
 
-            SettlementCmdDesign currentSettlementCmdTemplateDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1,
+            SettlementCmdModuleDesign currentSettlementCmdTemplateDesign = MakeSettlementCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
                 status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
             RegisterDesign(player, currentSettlementCmdTemplateDesign, optionalRootDesignName: TempGameValues.SettlementCmdTemplateRootDesignName);
 
-            StarbaseCmdDesign currentStarbaseCmdTemplateDesign;
-            if (TryMakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template,
+            StarbaseCmdModuleDesign currentStarbaseCmdTemplateDesign;
+            if (TryMakeStarbaseCmdModDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template,
                 design: out currentStarbaseCmdTemplateDesign)) {
                 RegisterDesign(player, currentStarbaseCmdTemplateDesign, TempGameValues.StarbaseCmdTemplateRootDesignName);
             }
-
-            // If this basic FleetCmdDesign is added before the TemplateDesign, RegisterCmdDesign()'s IsDesignPresent will throw an error 
-            // when the TemplateDesign is added as it has the same content as this default design. Adding after the TemplateDesign is OK 
-            // as TemplateDesigns are not considered when testing whether the design is already present.
-            FleetCmdDesign currentFleetCmdDefaultDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status:
-                AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-
-            RegisterDesign(player, currentFleetCmdDefaultDesign, optionalRootDesignName: TempGameValues.FleetCmdDefaultRootDesignName);
         }
     }
 
@@ -136,8 +128,8 @@ public class NewGameUnitGenerator {
 
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        FleetCmdModuleDesign cmdModDesign = MakeFleetCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         var hullStats = GetCurrentShipHullStats(owner, editorSettings);
         IEnumerable<ShipCombatStance> stances = SelectCombatStances(editorSettings.StanceExclusions);
@@ -152,7 +144,7 @@ public class NewGameUnitGenerator {
             elementDesignNames.Add(registeredDesignName);
         }
 
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
         //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugFleetCreator).Name, owner);
@@ -185,8 +177,8 @@ public class NewGameUnitGenerator {
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
 
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        SettlementCmdModuleDesign cmdModDesign = MakeSettlementCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         var hullStats = GetCurrentFacilityHullStats(owner, editorSettings);
 
@@ -200,7 +192,7 @@ public class NewGameUnitGenerator {
             elementDesignNames.Add(registeredDesignName);
         }
 
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         creator.Configuration = config;
         SystemFactory.Instance.InstallCelestialItemInOrbit(creator.gameObject, system.SettlementOrbitData);
         D.Log(ShowDebugLog, "{0} has installed a {1} for {2} in System {3}.", DebugName, typeof(DebugSettlementCreator).Name, owner,
@@ -234,9 +226,9 @@ public class NewGameUnitGenerator {
 
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign;
-        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
-            string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        StarbaseCmdModuleDesign cmdModDesign;
+        if (TryMakeStarbaseCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdModDesign)) {
+            string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
             var hullStats = GetCurrentFacilityHullStats(owner, editorSettings);
 
@@ -250,7 +242,7 @@ public class NewGameUnitGenerator {
                 elementDesignNames.Add(registeredDesignName);
             }
 
-            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
             creator.Configuration = config;
             creator.transform.position = location;
             //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugStarbaseCreator).Name, owner);
@@ -287,8 +279,8 @@ public class NewGameUnitGenerator {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        FleetCmdModuleDesign cmdModDesign = MakeFleetCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
         var hullStats = GetCurrentShipHullStats(owner, elementQty);
@@ -309,7 +301,7 @@ public class NewGameUnitGenerator {
             elementDesignNames.Add(registeredDesignName);
         }
 
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoFleetCreator).Name, owner);
         return UnitFactory.Instance.MakeFleetCreator(location, config);
     }
@@ -338,8 +330,8 @@ public class NewGameUnitGenerator {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        SettlementCmdModuleDesign cmdModDesign = MakeSettlementCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
         var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
@@ -358,7 +350,7 @@ public class NewGameUnitGenerator {
             string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         D.Log(ShowDebugLog, "{0} has placed a preset {1} for {2} in orbit in System {3}.", DebugName, typeof(AutoSettlementCreator).Name, owner, system.DebugName);
         return UnitFactory.Instance.MakeSettlementCreator(config, system);
     }
@@ -390,9 +382,9 @@ public class NewGameUnitGenerator {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign;
-        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
-            string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        StarbaseCmdModuleDesign cmdModDesign;
+        if (TryMakeStarbaseCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdModDesign)) {
+            string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
             int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
             var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
@@ -412,7 +404,7 @@ public class NewGameUnitGenerator {
                 elementDesignNames.Add(registeredDesignName);
             }
 
-            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
             //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
             creator = UnitFactory.Instance.MakeStarbaseCreator(location, config);
             return true;
@@ -451,8 +443,8 @@ public class NewGameUnitGenerator {
     public AutoFleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        FleetCmdModuleDesign cmdModDesign = MakeFleetCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
         var hullStats = GetCurrentShipHullStats(owner, elementQty);
@@ -473,7 +465,7 @@ public class NewGameUnitGenerator {
             elementDesignNames.Add(registeredDesignName);
         }
 
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoFleetCreator).Name, owner);
         return UnitFactory.Instance.MakeFleetCreator(location, config);
     }
@@ -501,8 +493,8 @@ public class NewGameUnitGenerator {
     public AutoSettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
-        string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        SettlementCmdModuleDesign cmdModDesign = MakeSettlementCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
         var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
@@ -522,7 +514,7 @@ public class NewGameUnitGenerator {
             elementDesignNames.Add(registeredDesignName);
         }
 
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
         D.Log(ShowDebugLog, "{0} has placed a random {1} for {2} in orbit in System {3}.", DebugName, typeof(AutoSettlementCreator).Name,
             owner, system.DebugName);
         return UnitFactory.Instance.MakeSettlementCreator(config, system);
@@ -554,9 +546,9 @@ public class NewGameUnitGenerator {
     public bool TryGenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate, out AutoStarbaseCreator creator) {
         int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign;
-        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
-            string cmdDesignName = RegisterDesign(owner, cmdDesign);
+        StarbaseCmdModuleDesign cmdModDesign;
+        if (TryMakeStarbaseCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdModDesign)) {
+            string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
             int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
             var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
@@ -576,7 +568,7 @@ public class NewGameUnitGenerator {
                 elementDesignNames.Add(registeredDesignName);
             }
 
-            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdModDesignName, elementDesignNames);
             //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
             creator = UnitFactory.Instance.MakeStarbaseCreator(location, config);
             return true;
@@ -739,15 +731,13 @@ public class NewGameUnitGenerator {
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = optionalRootDesignName;
-            return registeredDesignName;
+            registeredDesignName = design.DesignName;
         }
-
-        if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
+        else if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueElementRootDesignName(design.HullCategory.GetValueName());
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = rootDesignName;
+            registeredDesignName = design.DesignName;
             __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
         else {
@@ -756,7 +746,7 @@ public class NewGameUnitGenerator {
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            D.AssertNotDefault((int)existingDesign.Status);
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
                 DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
@@ -780,15 +770,13 @@ public class NewGameUnitGenerator {
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = optionalRootDesignName;
-            return registeredDesignName;
+            registeredDesignName = design.DesignName;
         }
-
-        if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
+        else if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueElementRootDesignName(design.HullCategory.GetValueName());
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = rootDesignName;
+            registeredDesignName = design.DesignName;
             __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
         else {
@@ -797,7 +785,7 @@ public class NewGameUnitGenerator {
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            D.AssertNotDefault((int)existingDesign.Status);
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
                 DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
@@ -809,7 +797,7 @@ public class NewGameUnitGenerator {
 
     #region Command Designs
 
-    private FleetCmdDesign MakeFleetCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
+    private FleetCmdModuleDesign MakeFleetCmdModDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
@@ -823,7 +811,7 @@ public class NewGameUnitGenerator {
         FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
         FleetCmdModuleStat cmdStat = ownerDesigns.GetCurrentFleetCmdModuleStat();
 
-        FleetCmdDesign design = new FleetCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+        FleetCmdModuleDesign design = new FleetCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -837,7 +825,7 @@ public class NewGameUnitGenerator {
         return design;
     }
 
-    private SettlementCmdDesign MakeSettlementCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
+    private SettlementCmdModuleDesign MakeSettlementCmdModDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
@@ -851,7 +839,7 @@ public class NewGameUnitGenerator {
         FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
         SettlementCmdModuleStat cmdStat = ownerDesigns.GetCurrentSettlementCmdModuleStat();
 
-        SettlementCmdDesign design = new SettlementCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+        SettlementCmdModuleDesign design = new SettlementCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -865,7 +853,7 @@ public class NewGameUnitGenerator {
         return design;
     }
 
-    private bool TryMakeStarbaseCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status, out StarbaseCmdDesign design) {
+    private bool TryMakeStarbaseCmdModDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status, out StarbaseCmdModuleDesign design) {
         Utility.ValidateForRange(passiveCmQty, Constants.Zero, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, Constants.One, TempGameValues.__MaxCmdSensors);
 
@@ -879,7 +867,7 @@ public class NewGameUnitGenerator {
 
             FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
 
-            design = new StarbaseCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+            design = new StarbaseCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
                 Status = status
             };
             AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -896,7 +884,7 @@ public class NewGameUnitGenerator {
         return false;
     }
 
-    private string RegisterDesign(Player player, FleetCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, FleetCmdModuleDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         string registeredDesignName;
         string existingDesignName;
@@ -905,28 +893,29 @@ public class NewGameUnitGenerator {
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = optionalRootDesignName;
-            return registeredDesignName;
+            registeredDesignName = design.DesignName;
         }
-
-        if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
+        else if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = rootDesignName;
-            // TODO __CreateUpgrade...
+            registeredDesignName = design.DesignName;
+            __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
         else {
             D.AssertNotNull(existingDesignName);
-            FleetCmdDesign existingDesign = playerDesigns.GetFleetCmdDesign(existingDesignName);
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            FleetCmdModuleDesign existingDesign = playerDesigns.GetFleetCmdModDesign(existingDesignName);
+            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
+                D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
+            }
+            D.AssertNotDefault((int)existingDesign.Status);
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
         }
         return registeredDesignName;
     }
 
-    private string RegisterDesign(Player player, SettlementCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, SettlementCmdModuleDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         string registeredDesignName;
         string existingDesignName;
@@ -935,28 +924,29 @@ public class NewGameUnitGenerator {
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = optionalRootDesignName;
-            return registeredDesignName;
+            registeredDesignName = design.DesignName;
         }
-
-        if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
+        else if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = rootDesignName;
+            registeredDesignName = design.DesignName;
             __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
         else {
             D.AssertNotNull(existingDesignName);
-            SettlementCmdDesign existingDesign = playerDesigns.GetSettlementCmdDesign(existingDesignName);
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            SettlementCmdModuleDesign existingDesign = playerDesigns.GetSettlementCmdModDesign(existingDesignName);
+            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
+                D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
+            }
+            D.AssertNotDefault((int)existingDesign.Status);
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
         }
         return registeredDesignName;
     }
 
-    private string RegisterDesign(Player player, StarbaseCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, StarbaseCmdModuleDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         string registeredDesignName;
         string existingDesignName;
@@ -965,21 +955,22 @@ public class NewGameUnitGenerator {
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = optionalRootDesignName;
-            return registeredDesignName;
+            registeredDesignName = design.DesignName;
         }
-
-        if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
+        else if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            registeredDesignName = rootDesignName;
+            registeredDesignName = design.DesignName;
             __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
         else {
             D.AssertNotNull(existingDesignName);
-            StarbaseCmdDesign existingDesign = playerDesigns.GetStarbaseCmdDesign(existingDesignName);
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            StarbaseCmdModuleDesign existingDesign = playerDesigns.GetStarbaseCmdModDesign(existingDesignName);
+            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
+                D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
+            }
+            D.AssertNotDefault((int)existingDesign.Status);
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
         }
@@ -1333,7 +1324,6 @@ public class NewGameUnitGenerator {
         return Enumerable.Empty<SensorStat>();
     }
 
-
     private int GetPassiveCmQty(DebugPassiveCMLoadout loadout, int maxAllowed) {
         switch (loadout) {
             case DebugPassiveCMLoadout.None:
@@ -1443,10 +1433,11 @@ public class NewGameUnitGenerator {
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
     private void __CreateAndRegisterRandomUpgradedDesign(Player player, ShipDesign designToConsiderUpgrading) {
+        D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToConsiderUpgrading.Status);
         bool toUpgrade = RandomExtended.SplitChance();
         if (toUpgrade) {
             ShipDesign upgradedDesign = new ShipDesign(designToConsiderUpgrading);
-            upgradedDesign.IncrementDesignLevelAndName();
+            upgradedDesign.IncrementDesignLevelAndName();   // DesignName will be [HullName][Unique#]_[IncrementedDesignLevel]
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             playerDesigns.ObsoleteDesign(designToObsolete);
@@ -1462,10 +1453,11 @@ public class NewGameUnitGenerator {
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
     private void __CreateAndRegisterRandomUpgradedDesign(Player player, FacilityDesign designToConsiderUpgrading) {
+        D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToConsiderUpgrading.Status);
         bool toUpgrade = RandomExtended.SplitChance();
         if (toUpgrade) {
             FacilityDesign upgradedDesign = new FacilityDesign(designToConsiderUpgrading);
-            upgradedDesign.IncrementDesignLevelAndName();
+            upgradedDesign.IncrementDesignLevelAndName();   // DesignName will be [HullName][Unique#]_[IncrementedDesignLevel]
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             playerDesigns.ObsoleteDesign(designToObsolete);
@@ -1480,11 +1472,12 @@ public class NewGameUnitGenerator {
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
-    private void __CreateAndRegisterRandomUpgradedDesign(Player player, SettlementCmdDesign designToConsiderUpgrading) {
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, SettlementCmdModuleDesign designToConsiderUpgrading) {
+        D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToConsiderUpgrading.Status);
         bool toUpgrade = RandomExtended.SplitChance();
         if (toUpgrade) {
-            SettlementCmdDesign upgradedDesign = new SettlementCmdDesign(designToConsiderUpgrading);
-            upgradedDesign.IncrementDesignLevelAndName();
+            SettlementCmdModuleDesign upgradedDesign = new SettlementCmdModuleDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();   // DesignName will be [Cmd][Unique#]_[IncrementedDesignLevel]
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             playerDesigns.ObsoleteDesign(designToObsolete);
@@ -1499,11 +1492,12 @@ public class NewGameUnitGenerator {
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
-    private void __CreateAndRegisterRandomUpgradedDesign(Player player, StarbaseCmdDesign designToConsiderUpgrading) {
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, StarbaseCmdModuleDesign designToConsiderUpgrading) {
+        D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToConsiderUpgrading.Status);
         bool toUpgrade = RandomExtended.SplitChance();
         if (toUpgrade) {
-            StarbaseCmdDesign upgradedDesign = new StarbaseCmdDesign(designToConsiderUpgrading);
-            upgradedDesign.IncrementDesignLevelAndName();
+            StarbaseCmdModuleDesign upgradedDesign = new StarbaseCmdModuleDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();   // DesignName will be [Cmd][Unique#]_[IncrementedDesignLevel]
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             playerDesigns.ObsoleteDesign(designToObsolete);
@@ -1518,11 +1512,12 @@ public class NewGameUnitGenerator {
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
-    private void __CreateAndRegisterRandomUpgradedDesign(Player player, FleetCmdDesign designToConsiderUpgrading) {
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, FleetCmdModuleDesign designToConsiderUpgrading) {
+        D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToConsiderUpgrading.Status);
         bool toUpgrade = RandomExtended.SplitChance();
         if (toUpgrade) {
-            FleetCmdDesign upgradedDesign = new FleetCmdDesign(designToConsiderUpgrading);
-            upgradedDesign.IncrementDesignLevelAndName();
+            FleetCmdModuleDesign upgradedDesign = new FleetCmdModuleDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();   // DesignName will be [Cmd][Unique#]_[IncrementedDesignLevel]
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             playerDesigns.ObsoleteDesign(designToObsolete);
@@ -1530,7 +1525,6 @@ public class NewGameUnitGenerator {
             D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
         }
     }
-
 
     /// <summary>
     /// Determines whether [is starbase command module stat available] [the specified player].

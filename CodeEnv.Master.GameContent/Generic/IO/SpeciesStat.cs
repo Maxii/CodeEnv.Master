@@ -56,14 +56,17 @@ namespace CodeEnv.Master.GameContent {
 
         public float WeaponRangeMultiplier { get; private set; }
 
-        public float ActiveCountermeasureRangeMultiplier { get; private set; }
+        public float CmRangeMultiplier { get; private set; }
 
         public float WeaponReloadPeriodMultiplier { get; private set; }
 
-        public float CountermeasureReloadPeriodMultiplier { get; private set; }
+        public float CmReloadPeriodMultiplier { get; private set; }
+
+        public float BuyoutCostMultiplier { get; private set; }
 
         public SpeciesStat(Species species, string pluralName, string description, AtlasID imageAtlasID, string imageFilename,
-            float sensorRangeMultiplier, float weaponRangeMultiplier, float activeCountermeasureRangeMultiplier, float weaponReloadPeriodMultiplier, float countermeasureReloadPeriodMultiplier) {
+            float sensorRangeMultiplier, float weaponRangeMultiplier, float cmRangeMultiplier, float weaponReloadPeriodMultiplier,
+            float cmReloadPeriodMultiplier, float buyoutCostMultiplier) {
             Species = species;
             Name_Plural = pluralName;
             Description = description;
@@ -71,9 +74,10 @@ namespace CodeEnv.Master.GameContent {
             ImageFilename = imageFilename;
             SensorRangeMultiplier = sensorRangeMultiplier;
             WeaponRangeMultiplier = weaponRangeMultiplier;
-            ActiveCountermeasureRangeMultiplier = activeCountermeasureRangeMultiplier;
+            CmRangeMultiplier = cmRangeMultiplier;
             WeaponReloadPeriodMultiplier = weaponReloadPeriodMultiplier;
-            CountermeasureReloadPeriodMultiplier = countermeasureReloadPeriodMultiplier;
+            CmReloadPeriodMultiplier = cmReloadPeriodMultiplier;
+            BuyoutCostMultiplier = buyoutCostMultiplier;
         }
 
         #region Object.Equals and GetHashCode Override
@@ -100,9 +104,10 @@ namespace CodeEnv.Master.GameContent {
                 hash = hash * 31 + ImageFilename.GetHashCode();
                 hash = hash * 31 + SensorRangeMultiplier.GetHashCode();
                 hash = hash * 31 + WeaponRangeMultiplier.GetHashCode();
-                hash = hash * 31 + ActiveCountermeasureRangeMultiplier.GetHashCode();
+                hash = hash * 31 + CmRangeMultiplier.GetHashCode();
                 hash = hash * 31 + WeaponReloadPeriodMultiplier.GetHashCode();
-                hash = hash * 31 + CountermeasureReloadPeriodMultiplier.GetHashCode();
+                hash = hash * 31 + CmReloadPeriodMultiplier.GetHashCode();
+                hash = hash * 31 + BuyoutCostMultiplier.GetHashCode();
                 return hash;
             }
         }
@@ -119,9 +124,10 @@ namespace CodeEnv.Master.GameContent {
             return Name == other.Name && Name_Plural == other.Name_Plural && Description == other.Description && ImageAtlasID == other.ImageAtlasID
                 && ImageFilename == other.ImageFilename && SensorRangeMultiplier == other.SensorRangeMultiplier
                 && WeaponRangeMultiplier == other.WeaponRangeMultiplier
-                && ActiveCountermeasureRangeMultiplier == other.ActiveCountermeasureRangeMultiplier
+                && CmRangeMultiplier == other.CmRangeMultiplier
                 && WeaponReloadPeriodMultiplier == other.WeaponReloadPeriodMultiplier
-                && CountermeasureReloadPeriodMultiplier == other.CountermeasureReloadPeriodMultiplier;
+                && CmReloadPeriodMultiplier == other.CmReloadPeriodMultiplier
+                && BuyoutCostMultiplier == other.BuyoutCostMultiplier;
         }
 
         #endregion

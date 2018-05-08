@@ -52,8 +52,6 @@ public abstract class ABaseUnitHudForm : AForm {
     private MyNguiToggleButton _unitRefitButton = null;
     [SerializeField]
     private MyNguiToggleButton _unitDisbandButton = null;
-    //[SerializeField]
-    //private MyNguiToggleButton _cmdModuleRefitButton = null;
 
     [SerializeField]
     private MyNguiToggleButton _facilityRepairButton = null;
@@ -124,7 +122,6 @@ public abstract class ABaseUnitHudForm : AForm {
         _unitRepairButton.Initialize();
         _unitRefitButton.Initialize();
         _unitDisbandButton.Initialize();
-        //_cmdModuleRefitButton.Initialize();
 
         _facilityRepairButton.Initialize();
         _facilityRefitButton.Initialize();
@@ -217,10 +214,6 @@ public abstract class ABaseUnitHudForm : AForm {
     private void UnitDisbandButtonToggleChangedEventHandler(object sender, EventArgs e) {
         HandleUnitDisbandButtonToggleChanged();
     }
-
-    //private void CmdModuleRefitButtonToggleChangedEventHandler(object sender, EventArgs e) {
-    //    HandleCmdModuleRefitButtonToggleChanged();
-    //}
 
     private void UnitScuttleButtonClickedEventHandler() {
         HandleUnitScuttleButtonClicked();
@@ -379,8 +372,6 @@ public abstract class ABaseUnitHudForm : AForm {
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
         AssessUnitButtons();
     }
-
-    //private void HandleCmdModuleRefitButtonToggleChanged() {    }
 
     private void HandleUnitScuttleButtonClicked() {
         var scuttleOrder = new BaseOrder(BaseDirective.Scuttle, OrderSource.User);
@@ -796,7 +787,6 @@ public abstract class ABaseUnitHudForm : AForm {
         var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipRefitButton.IsToggledIn) {
-
             ShipDesign designToBeRefit = pickedShip.Data.Design;
             ShipDesign refitDesign;
             bool isRefitDesignAvailable = _playerAiMgr.Designs.TryGetUpgradeDesign(designToBeRefit, out refitDesign);
@@ -983,7 +973,7 @@ public abstract class ABaseUnitHudForm : AForm {
             CreateAndAddIcon(ship, iconSize);
         }
 
-        //D.Log("{0}: Built ShipIcons in sequence: {1}.", DebugName, _sortedHangerShipIconTransforms.Select(t => t.name).Concatenate());
+        D.Log("{0}: Built ShipIcons in sequence: {1}.", DebugName, _sortedHangerShipIconTransforms.Select(t => t.name).Concatenate());
         _hangerShipIconsGrid.repositionNow = true;
     }
 

@@ -31,14 +31,14 @@ namespace CodeEnv.Master.GameContent {
 
         public GameDate DeployDate { get; private set; }
 
-        public string CmdDesignName { get; private set; }
+        public string CmdModDesignName { get; private set; }
 
         public IEnumerable<string> ElementDesignNames { get; private set; }
 
-        public UnitCreatorConfiguration(Player owner, GameDate deployDate, string cmdDesignName, IEnumerable<string> elementDesignNames) {
+        public UnitCreatorConfiguration(Player owner, GameDate deployDate, string cmdModDesignName, IEnumerable<string> elementDesignNames) {
             Owner = owner;
             DeployDate = deployDate;
-            CmdDesignName = cmdDesignName;
+            CmdModDesignName = cmdModDesignName;
             ElementDesignNames = elementDesignNames;
             __ValidateDeployDate();
         }
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
             }
             D.AssertNotDefault(earliestDate);
             if (DeployDate < earliestDate) {
-                D.Error("{0}.DeployDate {1} < {2}!", CmdDesignName, DeployDate, earliestDate);
+                D.Error("{0}.DeployDate {1} < {2}!", CmdModDesignName, DeployDate, earliestDate);
             }
         }
 

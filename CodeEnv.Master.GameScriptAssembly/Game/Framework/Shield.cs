@@ -53,27 +53,24 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         generator.Shield = this;
     }
 
-    ////[Obsolete("Not currently used")]
     protected override bool Remove(ShieldGenerator generator) {
         bool hasEquipmentRemaining = base.Remove(generator);
         generator.hasChargeChanged -= GeneratorHasChargeChangedEventHandler;
         return hasEquipmentRemaining;
     }
 
-    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(ShieldGenerator generator) {
         generator.Shield = null;
     }
 
     /// <summary>
-    /// Absorbs the impact value of this deliveryVehicleStrength. If the impact value exceeds the capacity of this shield to absorb it, 
+    /// Absorbs the impact value of this Beam. If the impact value exceeds the capacity of this shield to absorb it, 
     /// the shield will drop allowing subsequent impacts to be delivered to the target via TakeHit(damage).
     /// </summary>
-    /// <param name="deliveryVehicleStrength">The strength of the delivery vehicle impacting this shield.</param>
-    public void AbsorbImpact(WDVStrength deliveryVehicleStrength) {
-        D.AssertEqual(WDVCategory.Beam, deliveryVehicleStrength.Category);    // for now limiting to only defending against beams
+    /// <param name="expendedBeamStrength">The strength of the beam impacting this shield.</param>
+    public void AbsorbImpact(DamageStrength expendedBeamStrength) {
         var operationalGeneratorsWithCharge = _equipmentList.Where(gen => gen.IsOperational && gen.HasCharge);
-        DistributeShieldImpactTo(operationalGeneratorsWithCharge, deliveryVehicleStrength.Value);
+        DistributeShieldImpactTo(operationalGeneratorsWithCharge, expendedBeamStrength.__Total);
         // if all the generators go down, the shield will go down allowing the beam to potentially find the parent element during its next raycast
     }
 

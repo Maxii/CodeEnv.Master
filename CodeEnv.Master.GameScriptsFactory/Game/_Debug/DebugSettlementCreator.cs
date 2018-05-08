@@ -103,7 +103,8 @@ public class DebugSettlementCreator : ADebugUnitCreator {
             // deactivate any preset elements that don't yet have a design available due to lack of a HullStat from research
             var existingElementsWithoutDesigns = existingElements.Except(_elements);
             if (existingElementsWithoutDesigns.Any()) {
-                D.Warn("{0} is deactivating {1} preset elements without designs: {2}.", DebugName, existingElementsWithoutDesigns.Count(),
+                // Occurs when Hulls are not yet researched
+                D.Log(ShowDebugLog, "{0} is deactivating {1} preset elements without designs: {2}.", DebugName, existingElementsWithoutDesigns.Count(),
                     existingElementsWithoutDesigns.Select(e => e.DebugName).Concatenate());
                 existingElementsWithoutDesigns.ForAll(e => e.gameObject.SetActive(false));
             }
@@ -120,10 +121,10 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     protected override void MakeCommand() {
         if (IsCompositionPreset) {
             _command = gameObject.GetSingleComponentInChildren<SettlementCmdItem>();
-            _factory.PopulateInstance(Owner, Configuration.CmdDesignName, ref _command, UnitName, _formation.Convert());
+            _factory.PopulateInstance(Owner, Configuration.CmdModDesignName, ref _command, UnitName, _formation.Convert());
         }
         else {
-            _command = _factory.MakeSettlementCmdInstance(Owner, Configuration.CmdDesignName, gameObject, UnitName, _formation.Convert());
+            _command = _factory.MakeSettlementCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName, _formation.Convert());
         }
     }
 

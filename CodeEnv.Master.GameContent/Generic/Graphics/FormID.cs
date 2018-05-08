@@ -76,7 +76,11 @@ namespace CodeEnv.Master.GameContent {
         FleetTableRow,
         SystemsTableRow,
 
-        Research
+        Research,
+
+        TextDialog,
+        [System.Obsolete]
+        SelectDesignScreenDialog
     }
 }
 

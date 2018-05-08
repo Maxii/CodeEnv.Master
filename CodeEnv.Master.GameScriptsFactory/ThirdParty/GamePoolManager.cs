@@ -25,6 +25,9 @@ using UnityEngine;
 
 /// <summary>
 /// My pooling manager singleton using Enums to interface with PathologicalGames.PoolManager.
+/// <remarks>Prefab names are the name of the prefab GameObject. If I change the 
+/// ID I'm using to find the prefab (e.g. switch from WDVCategory enum to EquipmentCategory
+/// enum for Ordnance), I'll need to add an extension method to GameEnumExtensions to find the prefab name.</remarks>
 /// </summary>
 public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager {
 
@@ -168,7 +171,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
             avgProjectilesInFlightPerElement *= 0.2F;
         }
         preloadAmt = Mathf.RoundToInt(avgProjectilesInFlightPerElement * maxElements);
-        if (_debugCntls.MovementTech == DebugControls.UnityMoveTech.Kinematic) {
+        if (_debugCntls.MovementTech == UnityMoveTech.Kinematic) {
             CreatePrefabPool(OrdnancePoolName, _kinematicProjectilePrefab, preloadAmt);
             CreatePrefabPool(OrdnancePoolName, _physicsProjectilePrefab, 0);
         }
@@ -212,20 +215,16 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
 
     public Transform OrdnanceSpawnPool { get { return PoolManager.Pools[OrdnancePoolName].transform; } }
 
-    public Transform Spawn(WDVCategory ordnanceID, Vector3 location) {
-        return Spawn(ordnanceID, location, Quaternion.identity);
+    public Transform Spawn(EquipmentCategory ordID, Vector3 location) {
+        return Spawn(ordID, location, Quaternion.identity);
     }
 
-    public Transform Spawn(WDVCategory ordnanceID, Vector3 location, Quaternion rotation) {
-        return Spawn(ordnanceID, location, rotation, OrdnanceSpawnPool);
+    public Transform Spawn(EquipmentCategory ordID, Vector3 location, Quaternion rotation) {
+        return Spawn(ordID, location, rotation, OrdnanceSpawnPool);
     }
 
-    public Transform Spawn(WDVCategory ordnanceID, Vector3 location, Quaternion rotation, Transform parent) {
-        string prefabName = ordnanceID.GetValueName();
-        if (ordnanceID == WDVCategory.Projectile) {
-            prefabName = _debugCntls.MovementTech == DebugControls.UnityMoveTech.Kinematic ?
-                "KinematicProjectile" : "PhysicsProjectile";
-        }
+    public Transform Spawn(EquipmentCategory ordID, Vector3 location, Quaternion rotation, Transform parent) {
+        string prefabName = ordID.GetPoolPrefabName();
         return PoolManager.Pools[OrdnancePoolName].Spawn(prefabName, location, rotation, parent);
     }
 
@@ -252,7 +251,9 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     }
 
     public IEffect Spawn(EffectID effectID, Vector3 location, Quaternion rotation, Transform parent) {
-        Transform effectTransform = PoolManager.Pools[EffectsPoolName].Spawn(effectID.GetValueName(), location, rotation, parent);
+        // TODO: When I expand beyond Explosion Effects, I'll want to add a effectID.GetPoolPrefabName() extension method to GameEnumExtensions
+        string prefabName = effectID.GetValueName();
+        Transform effectTransform = PoolManager.Pools[EffectsPoolName].Spawn(prefabName, location, rotation, parent);
         return effectTransform.GetComponent<IEffect>();
     }
 

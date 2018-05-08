@@ -479,10 +479,9 @@ public abstract class AFleetUnitHudForm : AForm {
         var pickedUnit = _pickedUnitIcons.First().Unit;
         bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
         if (isButtonToggledIn) {
-            int reqdHangerSlots = pickedUnit.GetRefittableShipCount();
             IUnitBaseCmd closestRefitBase;
-            bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestRefitBase);
-            D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
+            bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, out closestRefitBase);
+            D.Assert(isBaseFound);  // 5.2.18 Button should not be enabled if no owner bases to orbit while refitting
 
             FleetOrder refitOrder = new FleetOrder(FleetDirective.Refit, OrderSource.User, closestRefitBase as IFleetNavigableDestination);
             pickedUnit.CurrentOrder = refitOrder;
@@ -689,7 +688,7 @@ public abstract class AFleetUnitHudForm : AForm {
             }
         }
         else {
-            // if more than 1 picked unit, un-toggle without notify and disable all
+            // if more than 1 picked unit, remove toggle without notify and disable all
             ResetUnitOrderToggleButtons();
         }
         _unitClearOrdersButton.isEnabled = isUnitClearOrdersButtonEnabled;

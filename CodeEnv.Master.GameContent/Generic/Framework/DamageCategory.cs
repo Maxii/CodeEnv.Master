@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DamageCategory.cs
-// The category of damage either inflicted by a weapon or mitigated by a countermeasure.
+// The category of damage either inflicted by a weapon's ordnance or mitigated by other equipment.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// The category of damage either inflicted by a weapon or mitigated by a countermeasure.
+    /// The category of damage either inflicted by a weapon's ordnance or mitigated by other equipment.
     /// </summary>
     public enum DamageCategory {
 

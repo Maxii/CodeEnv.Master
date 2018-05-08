@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void RecalcDefensiveValues() {
             var undamagedCMs = PassiveCountermeasures.Where(cm => !cm.IsDamaged);
             var defaultValueIfEmpty = default(DamageStrength);
-            DamageMitigation = undamagedCMs.Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
+            DamageMitigation = undamagedCMs.Select(cm => cm.DmgMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
             DefensiveStrength = new CombatStrength(undamagedCMs.Cast<ICountermeasure>());
         }
 
@@ -216,7 +216,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="damageSustained">The damage sustained.</param>
         /// <param name="damageSeverity">The damage severity.</param>
         public virtual bool ApplyDamage(DamageStrength damageSustained, out float damageSeverity) {
-            var initialDamage = damageSustained.Total;
+            var initialDamage = damageSustained.__Total;
             if (CurrentHitPoints <= initialDamage) {
                 // didn't survive so no point in applying to equipment
                 CurrentHitPoints -= initialDamage;

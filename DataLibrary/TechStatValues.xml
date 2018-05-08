@@ -1,4 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+
+<!-- Client is TechStatXmlReader : AXmlReader -->
 
 <Values>
   <TechStat>
@@ -17,7 +20,7 @@
       <Name></Name>
     </PrereqTechs>
     <EnabledStats>
-      <!-- Start Required -->
+      <!-- Start Required Equip -->
       <EquipID>
         <EquipCat>SRSensor</EquipCat>
         <Level>One</Level>
@@ -50,7 +53,7 @@
         <EquipCat>SHullColonizer</EquipCat>
         <Level>One</Level>
       </EquipID>
-      <!-- End Required -->
+      <!-- End Required Equip -->
       <EquipID>
         <EquipCat>StarbaseCmdModule</EquipCat>
         <Level>One</Level>

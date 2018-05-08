@@ -102,7 +102,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     /// </summary>
     public bool AreWarEnemyPlanetoidsInRange { get; private set; }
 
-    private HashSet<IElementAttackable> _enemyTargetsDetected = new HashSet<IElementAttackable>();
+    protected HashSet<IElementAttackable> _enemyTargetsDetected = new HashSet<IElementAttackable>();
     /// <summary>
     /// A copy of all the detected enemy targets that are in range of the sensors of this monitor.
     /// <remarks>Can contain both ColdWar and War enemies.</remarks>
@@ -114,7 +114,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IElementAttackable>(_enemyTargetsDetected); }
     }
 
-    private HashSet<IUnitElement_Ltd> _enemyElementsDetected = new HashSet<IUnitElement_Ltd>();
+    protected HashSet<IUnitElement_Ltd> _enemyElementsDetected = new HashSet<IUnitElement_Ltd>();
     /// <summary>
     /// A copy of all the detected enemy UnitElements that are in range of the sensors of this monitor.
     /// <remarks>Can contain both ColdWar and War enemies.</remarks>
@@ -123,7 +123,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IUnitElement_Ltd>(_enemyElementsDetected); }
     }
 
-    private HashSet<IUnitCmd_Ltd> _enemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
+    protected HashSet<IUnitCmd_Ltd> _enemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
     /// <summary>
     /// A copy of all the detected enemy UnitCmds that are in range of the sensors of this monitor.
     /// <remarks>Can contain both ColdWar and War enemies.</remarks>
@@ -133,7 +133,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IUnitCmd_Ltd>(_enemyCmdsDetected); }
     }
 
-    private HashSet<IPlanetoid_Ltd> _enemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
+    protected HashSet<IPlanetoid_Ltd> _enemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
     /// <summary>
     /// A copy of all the detected enemy 'Bombardable' Planetoids that are in range of the sensors of this monitor.
     /// </summary>
@@ -141,7 +141,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IPlanetoid_Ltd>(_enemyPlanetoidsDetected); }
     }
 
-    private HashSet<IElementAttackable> _warEnemyTargetsDetected = new HashSet<IElementAttackable>();
+    protected HashSet<IElementAttackable> _warEnemyTargetsDetected = new HashSet<IElementAttackable>();
     /// <summary>
     /// A copy of all the detected war enemy targets that are in range of the sensors of this monitor.
     /// <remarks>TODO 3.27.17 Not currently used as planetoids no longer IElementAttackable, aka Targets
@@ -152,7 +152,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IElementAttackable>(_warEnemyTargetsDetected); }
     }
 
-    private HashSet<IUnitElement_Ltd> _warEnemyElementsDetected = new HashSet<IUnitElement_Ltd>();
+    protected HashSet<IUnitElement_Ltd> _warEnemyElementsDetected = new HashSet<IUnitElement_Ltd>();
     /// <summary>
     /// A copy of all the detected war enemy UnitElements that are in range of the sensors of this monitor.
     /// </summary>
@@ -160,7 +160,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IUnitElement_Ltd>(_warEnemyElementsDetected); }
     }
 
-    private HashSet<IUnitCmd_Ltd> _warEnemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
+    protected HashSet<IUnitCmd_Ltd> _warEnemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
     /// <summary>
     /// A copy of all the detected war enemy UnitCmds that are in range of the sensors of this monitor.
     /// <remarks>While a UnitCmd is not itself detectable, its HQElement is.</remarks>
@@ -169,7 +169,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IUnitCmd_Ltd>(_warEnemyCmdsDetected); }
     }
 
-    private HashSet<IPlanetoid_Ltd> _warEnemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
+    protected HashSet<IPlanetoid_Ltd> _warEnemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
     /// <summary>
     /// A copy of all the detected war enemy 'Bombardable' Planetoids that are in range of the sensors of this monitor.
     /// </summary>
@@ -177,8 +177,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         get { return new HashSet<IPlanetoid_Ltd>(_warEnemyPlanetoidsDetected); }
     }
 
-
-    private HashSet<IElementAttackable> _unknownTargetsDetected = new HashSet<IElementAttackable>();
+    protected HashSet<IElementAttackable> _unknownTargetsDetected = new HashSet<IElementAttackable>();
     /// <summary>
     /// A copy of all the detected but unknown relationship targets that are in range of the sensors of this monitor.
     /// </summary>
@@ -200,7 +199,6 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         sensor.RangeMonitor = this;
     }
 
-    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(ASensor sensor) {
         sensor.RangeMonitor = null;
     }
@@ -711,12 +709,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     private bool AddUnknownTarget(IElementAttackable unknownTgt) {
         bool isAdded = _unknownTargetsDetected.Add(unknownTgt);
         if (isAdded) {
-            if (RangeCategory == RangeCategory.Short) {
-                D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
-            }
-            if (RangeCategory == RangeCategory.Medium) {
-                D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
-            }
+            __HandleUnknownTargetDetectedAndAdded(unknownTgt);
             //D.Log(ShowDebugLog, "{0} added {1} to UnknownTarget tracking.", DebugName, unknownTgt.DebugName);
         }
         return isAdded;
@@ -797,8 +790,6 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         D.Assert(!AreWarEnemyElementsInRange);
         D.Assert(!AreWarEnemyCmdsInRange);
         D.Assert(!AreWarEnemyPlanetoidsInRange);
-
-        ////D.AssertNull(enemyTargetsInRangeChgd);
     }
 
     #region Cleanup
@@ -816,6 +807,16 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     /// Indicates whether this SensorRangeMonitor is currently handling a IsHQChgd event from a detected element.
     /// </summary>
     protected bool __IsMonitorHandlingADetectedElementIsHQChgdEvent { get; private set; }
+
+    /// <summary>
+    /// Debug hook for derived classes to warn if addition of unknownTgt is unexpected.
+    /// <remarks>e.g. SRSensors should never classify something as unknown as they should always be able to determine the owner.</remarks>
+    /// </summary>
+    /// <param name="unknownTgt">The unknown TGT.</param>
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __HandleUnknownTargetDetectedAndAdded(IElementAttackable unknownTgt) {
+        D.Assert(!unknownTgt.IsOwnerAccessibleTo(Owner));
+    }
 
     protected override void __ValidateRangeDistance() {
         base.__ValidateRangeDistance();

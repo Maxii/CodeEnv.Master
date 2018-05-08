@@ -173,6 +173,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1
 		DeadCode\ColoredTextList_String.cs = DeadCode\ColoredTextList_String.cs
 		DeadCode\ColoredTextList`1.cs = DeadCode\ColoredTextList`1.cs
 		DeadCode\CombatStrength.cs = DeadCode\CombatStrength.cs
+		DeadCode\CombatStrength_WDV.cs = DeadCode\CombatStrength_WDV.cs
 		DeadCode\CoroutineManager.cs = DeadCode\CoroutineManager.cs
 		DeadCode\CoroutineNode.cs = DeadCode\CoroutineNode.cs
 		DeadCode\CoroutineScheduler.cs = DeadCode\CoroutineScheduler.cs

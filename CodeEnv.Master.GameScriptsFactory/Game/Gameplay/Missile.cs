@@ -96,6 +96,10 @@ public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecur
         set { SetProperty<Vector3>(ref _elementVelocityAtLaunch, value, "ElementVelocityAtLaunch"); }
     }
 
+    protected override DamageStrength DmgMitigation { get { return Weapon.OrdnanceDmgMitigation; } }
+
+    protected override float HitPts { get; set; }
+
     protected new MissileLauncher Weapon { get { return base.Weapon as MissileLauncher; } }
 
     /// <summary>
@@ -121,6 +125,7 @@ public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecur
 
     public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
         base.Launch(target, weapon, topography);
+        HitPts = Weapon.HitPoints;
         _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
@@ -280,7 +285,7 @@ public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecur
                 }
 
                 ReportTargetHit();
-                impactedTarget.TakeHit(DamagePotential);
+                impactedTarget.TakeHit(DmgPotential);
                 if (__objectsEncounteredBeforeTarget > 0) {
                     D.LogBold(ShowDebugLog, "{0} has hit {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
                         DebugName, impactedTarget.DebugName, Time.frameCount, __objectsEncounteredBeforeTarget);
@@ -548,6 +553,8 @@ public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecur
         KillCourseUpdateProcess();
         DisengageDriftCorrection();
         Target.deathOneShot -= TargetDeathEventHandler;
+
+        HitPts = Constants.ZeroF;
 
         __ResetTurnTimeWarningFields();
         __allowedAndActualTurnSteps = null;

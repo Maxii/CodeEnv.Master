@@ -117,30 +117,34 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Immediately makes and commences operations of a fleet instance parented to a new Creator from the provided ships.
+    /// The fleet will use the default FleetCmdModuleDesign.
     /// </summary>
     /// <param name="creatorLocation">The creator location.</param>
     /// <param name="ships">The ships.</param>
     /// <param name="formation">The formation.</param>
-    /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
+    /// <param name="optionalRootUnitName">Optional RootName of the Unit.</param>
     /// <returns></returns>
     public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
-        return MakeFleetInstance(creatorLocation, TempGameValues.FleetCmdDefaultRootDesignName, ships, formation, optionalRootUnitName);
+        Player player = ships.First().Owner;
+        PlayerDesigns playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        FleetCmdModuleDesign defaultCmdModDesign = playerDesigns.GetDefaultFleetCmdModDesign();
+        return MakeFleetInstance(creatorLocation, defaultCmdModDesign.DesignName, ships, formation, optionalRootUnitName);
     }
 
     /// <summary>
     /// Immediately makes and commences operations of a fleet instance parented to a new Creator from the provided ships using a Cmd 
-    /// built from a CmdModule design acquired using the cmdDesignName.
+    /// built from a CmdModule design acquired using the cmdModDesignName.
     /// </summary>
     /// <param name="creatorLocation">The creator location.</param>
-    /// <param name="cmdDesignName">Name of the command design.</param>
+    /// <param name="cmdModDesignName">Name of the cmd module design.</param>
     /// <param name="ships">The ships.</param>
     /// <param name="formation">The formation.</param>
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, string cmdDesignName, IEnumerable<ShipItem> ships, Formation formation,
+    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, string cmdModDesignName, IEnumerable<ShipItem> ships, Formation formation,
         string optionalRootUnitName = null) {
         Player owner = ships.First().Owner;
-        var creator = MakeFleetCreator(creatorLocation, ships, cmdDesignName);
+        var creator = MakeFleetCreator(creatorLocation, ships, cmdModDesignName);
         if (optionalRootUnitName != null) {
             creator.RootUnitName = optionalRootUnitName;
         }
@@ -151,13 +155,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return cmd;
     }
 
-    private FleetCreator MakeFleetCreator(Vector3 creatorLocation, IEnumerable<ShipItem> ships, string cmdDesignName) {
+    private FleetCreator MakeFleetCreator(Vector3 creatorLocation, IEnumerable<ShipItem> ships, string cmdModDesignName) {
         GameObject creatorGo = new GameObject();
         UnityUtility.AttachChildToParent(creatorGo, FleetsFolder.Instance.gameObject);
         creatorGo.transform.position = creatorLocation;
         var creator = creatorGo.AddComponent<FleetCreator>();
         creator.Elements = ships;
-        creator.CmdDesignName = cmdDesignName;
+        creator.CmdModDesignName = cmdModDesignName;
         return creator;
     }
 
@@ -171,7 +175,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public FleetCmdItem MakeFleetCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
-        FleetCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdDesign(designName);
+        FleetCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdModDesign(designName);
         return MakeFleetCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
@@ -184,7 +188,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdDesign design, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdModuleDesign design, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _fleetCmdPrefab);
         D.AssertEqual((Layers)_fleetCmdPrefab.layer, (Layers)cmdGo.layer);
         FleetCmdItem cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
@@ -201,7 +205,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref FleetCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        FleetCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdDesign(designName);
+        FleetCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdModDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -213,7 +217,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, FleetCmdDesign design, ref FleetCmdItem cmd, string unitName,
+    public void PopulateInstance(Player owner, FleetCmdModuleDesign design, ref FleetCmdItem cmd, string unitName,
         Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
@@ -334,7 +338,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
     Formation formation = Formation.Globe) {
-        StarbaseCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdDesign(designName);
+        StarbaseCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdModDesign(designName);
         return MakeStarbaseCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
@@ -347,7 +351,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, StarbaseCmdDesign design, GameObject unitContainer, string unitName,
+    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, StarbaseCmdModuleDesign design, GameObject unitContainer, string unitName,
         Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
@@ -364,7 +368,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        StarbaseCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdDesign(designName);
+        StarbaseCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdModDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -376,7 +380,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The Cmd instance to populate.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, StarbaseCmdDesign design, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, StarbaseCmdModuleDesign design, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -428,7 +432,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
     Formation formation = Formation.Globe) {
-        SettlementCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdDesign(designName);
+        SettlementCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdModDesign(designName);
         return MakeSettlementCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
@@ -441,7 +445,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdDesign design, GameObject unitContainer, string unitName,
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdModuleDesign design, GameObject unitContainer, string unitName,
         Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         //D.Log("{0}: {1}.localPosition = {2} after creation.", DebugName, design.CmdStat.UnitName, cmdGo.transform.localPosition);
@@ -459,7 +463,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        SettlementCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdDesign(designName);
+        SettlementCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdModDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -471,7 +475,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, SettlementCmdDesign design, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, SettlementCmdModuleDesign design, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -488,17 +492,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         cmd.Data = data;
         cmd.Data.UnitName = unitName;
     }
-
-    ////public void UpgradeCmdInstance(SettlementCmdDesign cmdModuleDesign, ref SettlementCmdItem cmd) {
-    ////    var sensorMonitors = cmd.SensorMonitors;
-    ////    sensorMonitors.ForAll(mon => mon.ResetForReuse());
-    ////    cmd.FtlDampenerMonitor.ResetForReuse();
-
-    ////    var passiveCmReplacements = MakeCountermeasures(cmdModuleDesign);
-    ////    var sensorReplacements = MakeSensors(cmdModuleDesign, cmd); // makes new sensors and attaches monitors from Cmd
-    ////    var ftlDampenerReplacement = MakeFtlDampener(cmdModuleDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
-    ////    cmd.ChangeDesign(cmdModuleDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
-    ////}
 
     #endregion
 
@@ -565,16 +558,25 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Support Members
 
-    public void UpgradeCmdInstance(AUnitCmdDesign cmdModuleDesign, AUnitCmdItem cmd) {
-        D.Warn("{0}.UpgradeCmdInstance() called for {1} using {2}.", DebugName, cmd.DebugName, cmdModuleDesign.DebugName);
-        var sensorMonitors = cmd.SensorMonitors;
-        sensorMonitors.ForAll(mon => mon.ResetForReuse());
+    /// <summary>
+    /// Refits the provided instance of <c>cmd</c> to be consistent with the specifications in the provided <c>cmdModuleDesign</c>.
+    /// </summary>
+    /// <param name="cmdModDesign">The command module design.</param>
+    /// <param name="cmd">The command instance to be refit.</param>
+    public void RefitCmdInstance(AUnitCmdModuleDesign cmdModDesign, AUnitCmdItem cmd) {
+        D.Assert(cmdModDesign.DesignLevel > cmd.Data.CmdModuleDesign.DesignLevel);
+        //D.Log("{0}.RefitCmdInstance() called for {1} using {2}.", DebugName, cmd.DebugName, cmdModDesign.DebugName);
+        // Deactivate, decouple and remove all CmdSensors and the FtlDampener from their Monitors
+        cmd.SensorMonitors.ForAll(mon => mon.ResetForReuse());
         cmd.FtlDampenerMonitor.ResetForReuse();
 
-        var passiveCmReplacements = MakeCountermeasures(cmdModuleDesign);
-        var sensorReplacements = MakeSensors(cmdModuleDesign, cmd); // makes new sensors and attaches monitors from Cmd
-        var ftlDampenerReplacement = MakeFtlDampener(cmdModuleDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
-        cmd.ChangeDesign(cmdModuleDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
+        // Generate the replacement equipment
+        var passiveCmReplacements = MakeCountermeasures(cmdModDesign);
+        var sensorReplacements = MakeSensors(cmdModDesign, cmd); // makes new sensors and attaches monitor(s) from Cmd
+        var ftlDampenerReplacement = MakeFtlDampener(cmdModDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
+
+        // Apply the design and new equipment to the Cmd
+        cmd.RefitCmdModule(cmdModDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
     }
 
     private FollowableItemCameraStat MakeElementCameraStat(FacilityHullStat hullStat) {
@@ -740,19 +742,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return sensors;
     }
 
-    private IEnumerable<CmdSensor> MakeSensors(AUnitCmdDesign cmdDesign, AUnitCmdItem cmd) {
+    private IEnumerable<CmdSensor> MakeSensors(AUnitCmdModuleDesign cmdModDesign, AUnitCmdItem cmd) {
         int nameCounter = Constants.One;
         var sensors = new List<CmdSensor>();
 
-        SensorStat reqdMRSensorStat = cmdDesign.ReqdMRSensorStat;
+        SensorStat reqdMRSensorStat = cmdModDesign.ReqdMRSensorStat;
         string sName = reqdMRSensorStat.Name + nameCounter;
         nameCounter++;
         CmdSensor reqdMRSensor = new CmdSensor(reqdMRSensorStat, sName);
         sensors.Add(reqdMRSensor);
         AttachMonitor(reqdMRSensor, cmd);
 
-        List<AEquipmentStat> optionalSensorStats = cmdDesign.GetOptEquipStatsFor(EquipmentCategory.MRSensor).ToList();
-        optionalSensorStats.AddRange(cmdDesign.GetOptEquipStatsFor(EquipmentCategory.LRSensor));
+        List<AEquipmentStat> optionalSensorStats = cmdModDesign.GetOptEquipStatsFor(EquipmentCategory.MRSensor).ToList();
+        optionalSensorStats.AddRange(cmdModDesign.GetOptEquipStatsFor(EquipmentCategory.LRSensor));
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -1029,7 +1031,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Debug
 
-    private const string __UnitElementUniqueNameFormat = "{0}_{1}";    // aka DesignName_Count
+    private const string __UnitElementUniqueNameFormat = "{0}#{1}";    // aka DesignName#1, distinguished from  DesignName1
 
     private IDictionary<string, int> __facilityNameCountLookup = new Dictionary<string, int>();
     private IDictionary<string, int> __shipNameCountLookup = new Dictionary<string, int>();

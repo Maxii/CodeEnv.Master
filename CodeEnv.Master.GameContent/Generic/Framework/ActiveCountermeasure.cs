@@ -62,11 +62,11 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<GameTimeDuration>(ref _reloadPeriod, value, "ReloadPeriod"); }
         }
 
-        public WDVStrength[] InterceptStrengths { get { return Stat.InterceptStrengths; } }
+        public DamageStrength InterceptStrength { get { return Stat.InterceptStrength; } }
 
-        public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
+        public DamageStrength DmgMitigation { get { return Stat.DamageMitigation; } }
 
-        public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
+        public CountermeasureAccuracy InterceptAccy { get { return Stat.InterceptAccy; } }
 
         public Player Owner { get { return RangeMonitor.Owner; } }
 
@@ -122,19 +122,16 @@ namespace CodeEnv.Master.GameContent {
 
             //D.Log(ShowDebugLog, "{0} is firing on {1}. Qualified Threats = {2}.", DebugName, threat.DebugName, _qualifiedThreats.Select(t => t.DebugName).Concatenate());
             bool isThreatHit = false;
-            float hitChance = InterceptAccuracy;
+
+            EquipmentCategory threatCat = threat.WeaponCategory;
+            float hitChance = InterceptAccy.GetAccuracy(threatCat);
             if (RandomExtended.Chance(hitChance)) {
                 isThreatHit = true;
-                var threatWdvCategory = threat.DeliveryVehicleStrength.Category;
-                WDVStrength interceptStrength = GetInterceptStrength(threatWdvCategory);
-                threat.TakeHit(interceptStrength);
+                threat.TakeHit(InterceptStrength);
             }
+
             HandleFiringComplete();
             return isThreatHit;
-        }
-
-        private WDVStrength GetInterceptStrength(WDVCategory threatWdvCategory) {
-            return InterceptStrengths.Single(intS => intS.Category == threatWdvCategory);
         }
 
         // Note: Unlike Weapons, there is no reason to have a HandleDeclinedToFire() method as CMs on automatic 
@@ -202,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleInitialActivation() {
             base.HandleInitialActivation();
             // IMPROVE If/when Owner's ReloadPeriodMultiplier can change, ReloadPeriod will need to change with it
-            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CountermeasureReloadPeriodMultiplier);
+            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CmReloadPeriodMultiplier);
         }
 
         private void IsReadyPropChangedHandler() {
@@ -238,9 +235,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private bool CheckIfQualified(IInterceptableOrdnance threat) {
-            bool isQualified = InterceptStrengths.Select(intS => intS.Category).Contains(threat.DeliveryVehicleStrength.Category);
+            bool isQualified = InterceptAccy.GetAccuracy(threat.WeaponCategory).IsGreaterThan(Constants.ZeroPercent);
             string isQualMsg = isQualified ? "is qualified" : "is not qualified";
-            //D.Log(ShowDebugLog, "{0} {1} to intercept {2} which uses a {3} WDV.", Name, isQualMsg, threat.DebugName, threat.DeliveryVehicleStrength.Category.GetValueName());
+            D.Log(ShowDebugLog, "{0} {1} to intercept {2}.", Name, isQualMsg, threat.DebugName);
             return isQualified;
         }
 

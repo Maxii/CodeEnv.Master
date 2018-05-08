@@ -103,20 +103,23 @@
       <HitPoints>2.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <Accuracy>0.50</Accuracy>
       <Reload>0.2</Reload>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <WdvStrengths>
-        <WdvCategory>Missile</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <DmgStrengths>
+      <CmAccuracies>
+        <CmAccyWeapCategory>MissileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.50</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>ProjectileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.30</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>AssaultWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.70</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>       
-      </DmgStrengths>
+      </ElemDmgMitigations>
     </Level>
     <Level LevelName="Two">
       <Name>CIWS+</Name>
@@ -129,20 +132,27 @@
       <HitPoints>3.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <Accuracy>0.50</Accuracy>
       <Reload>0.2</Reload>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <WdvStrengths>
-        <WdvCategory>Projectile</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <DmgStrengths>
+      <CmAccuracies>
+        <CmAccyWeapCategory>MissileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.60</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>ProjectileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.40</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>AssaultWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.75</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <ElemDmgMitigations>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
     </Level>
   </EquipmentCategory>
 
@@ -158,24 +168,23 @@
       <HitPoints>2.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <Accuracy>0.80</Accuracy>
       <Reload>2</Reload>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <WdvStrengths>
-        <WdvCategory>Projectile</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-        <WdvStrengths>
-      </WdvStrengths>
-        <WdvCategory>Missile</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <DmgStrengths>
-        <DmgCategory>Thermal</DmgCategory>
+      <CmAccuracies>
+        <CmAccyWeapCategory>MissileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.30</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>ProjectileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.10</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>AssaultWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.40</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <ElemDmgMitigations>
+        <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
     </Level>
     <Level LevelName="Two">
       <Name>ADS+</Name>
@@ -190,22 +199,26 @@
       <Expense>1.0</Expense>
       <Accuracy>0.80</Accuracy>
       <Reload>2</Reload>
-      <WdvStrengths>
-        <WdvCategory>Missile</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <WdvStrengths>
-        <WdvCategory>AssaultVehicle</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>2</WdvCatValue>
-      </WdvStrengths>
-      <DmgStrengths>
+      <CmAccuracies>
+        <CmAccyWeapCategory>MissileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.40</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>ProjectileWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.15</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <CmAccuracies>
+        <CmAccyWeapCategory>AssaultWeapon</CmAccyWeapCategory>
+        <CmAccyWeapCatValue>0.45</CmAccyWeapCatValue>
+      </CmAccuracies>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </ElemDmgMitigations>
     </Level>
   </EquipmentCategory>
 
@@ -315,10 +328,14 @@
       <HitPoints>2.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>1</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
-        <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>1</DmgCatValue>
+      </ElemDmgMitigations>
     </Level>
     <Level LevelName="Two">
       <Name>Armor+</Name>
@@ -331,10 +348,18 @@
       <HitPoints>3.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
-        <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>2</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>1</DmgCatValue>
+      </ElemDmgMitigations>
     </Level>
   </EquipmentCategory>
 
@@ -354,10 +379,18 @@
       <MaxCharge>20</MaxCharge>
       <ChargeRate>1.0</ChargeRate>
       <Reload>20</Reload>
-      <DmgStrengths>
+      <ElemDmgMitigations>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>0</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
-        <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>1</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory></DmgCategory>
+        <DmgCatValue></DmgCatValue>
+      </ElemDmgMitigations>
     </Level>
     <Level LevelName="Two">
       <Name>ShieldGen+</Name>
@@ -374,10 +407,18 @@
       <MaxCharge>30</MaxCharge>
       <ChargeRate>1.5</ChargeRate>
       <Reload>15</Reload>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
-        <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>1</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
+        <DmgCategory></DmgCategory>
+        <DmgCatValue></DmgCatValue>
+      </ElemDmgMitigations>
     </Level>
   </EquipmentCategory>
   
@@ -490,15 +531,15 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Short</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>6</WdvCatValue>
-      </WdvStrengths>
-      <Reload>10</Reload>
-      <DmgStrengths>
+      <BeamIntegrityStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </BeamIntegrityStrengths>
+      <OrdDmgPotentials>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>6</DmgCatValue>
-      </DmgStrengths>
+      </OrdDmgPotentials>
+      <Reload>10</Reload>
       <Accuracy>3</Accuracy>
       <Duration>2</Duration>
     </Level>
@@ -514,15 +555,19 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Short</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Beam</WdvCategory>
-        <WdvCatValue>6.5</WdvCatValue>
-      </WdvStrengths>
-      <Reload>9</Reload>
-      <DmgStrengths>
+      <BeamIntegrityStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </BeamIntegrityStrengths>
+      <BeamIntegrityStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </BeamIntegrityStrengths>
+      <OrdDmgPotentials>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>8</DmgCatValue>
-      </DmgStrengths>
+      </OrdDmgPotentials>
+      <Reload>9</Reload>
       <Accuracy>2.5</Accuracy>
       <Duration>2.5</Duration>
     </Level>
@@ -541,17 +586,22 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Medium</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Projectile</WdvCategory>
-        <WdvCatValue>4</WdvCatValue>
-      </WdvStrengths>
-      <Reload>6</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>1</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
         <DmgCategory>Structural</DmgCategory>
-        <DmgCatValue>5</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>0</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </OrdDmgPotentials>
+      <Reload>6</Reload>
       <MaxSpeed>15</MaxSpeed>
-      <OrdnanceMass>1</OrdnanceMass>
+      <OrdMass>1</OrdMass>
+      <OrdHitPts>1</OrdHitPts>
       <Drag>0.01</Drag>
       <Accuracy>3</Accuracy>
     </Level>
@@ -567,17 +617,22 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Medium</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Projectile</WdvCategory>
-        <WdvCatValue>5</WdvCatValue>
-      </WdvStrengths>
-      <Reload>5.5</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>1.5</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
         <DmgCategory>Structural</DmgCategory>
-        <DmgCatValue>6</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>0</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>4</DmgCatValue>
+      </OrdDmgPotentials>
+      <Reload>5.5</Reload>
       <MaxSpeed>16</MaxSpeed>
-      <OrdnanceMass>1</OrdnanceMass>
+      <OrdMass>1</OrdMass>
+      <OrdHitPts>2</OrdHitPts>
       <Drag>0.01</Drag>
       <Accuracy>2.5</Accuracy>
     </Level>
@@ -596,17 +651,22 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Long</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Missile</WdvCategory>
-        <WdvCatValue>6</WdvCatValue>
-      </WdvStrengths>
-      <Reload>18</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>1</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>1</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>6</DmgCatValue>
-      </DmgStrengths>
+      </OrdDmgPotentials>
+      <Reload>18</Reload>
       <MaxSpeed>8</MaxSpeed>
-      <OrdnanceMass>5</OrdnanceMass>
+      <OrdMass>5</OrdMass>
+      <OrdHitPts>5</OrdHitPts>
       <Drag>0.02</Drag>
       <Accuracy>3</Accuracy>
       <MaxTurnRate>700</MaxTurnRate>
@@ -624,17 +684,26 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Long</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>Missile</WdvCategory>
-        <WdvCatValue>6.5</WdvCatValue>
-      </WdvStrengths>
-      <Reload>17</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
         <DmgCategory>Structural</DmgCategory>
-        <DmgCatValue>8</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>2</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>10</DmgCatValue>
+      </OrdDmgPotentials>
+      <OrdDmgPotentials>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </OrdDmgPotentials>
+      <Reload>17</Reload>
       <MaxSpeed>9</MaxSpeed>
-      <OrdnanceMass>5</OrdnanceMass>
+      <OrdMass>5</OrdMass>
+      <OrdHitPts>7</OrdHitPts>
       <Drag>0.02</Drag>
       <Accuracy>2.5</Accuracy>
       <MaxTurnRate>700</MaxTurnRate>
@@ -655,22 +724,28 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Long</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>AssaultVehicle</WdvCategory>
-        <WdvCatValue>6</WdvCatValue>
-      </WdvStrengths>
-      <Reload>28</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
         <DmgCategory>Incursion</DmgCategory>
-        <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>6</DmgCatValue>
+      </OrdDmgPotentials>
+      <Reload>28</Reload>
       <MaxSpeed>3</MaxSpeed>
-      <OrdnanceMass>10</OrdnanceMass>
+      <OrdMass>10</OrdMass>
+      <OrdHitPts>8</OrdHitPts>
       <Drag>0.03</Drag>
       <Accuracy>1</Accuracy>
       <MaxTurnRate>270</MaxTurnRate>
       <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
-    </Level>
+    
+  </Level>
     <Level LevelName="Two">
       <Name>AssaultLauncher+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
@@ -683,17 +758,22 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <RangeCategory>Long</RangeCategory>
-      <WdvStrengths>
-        <WdvCategory>AssaultVehicle</WdvCategory>
-        <WdvCatValue>6.5</WdvCatValue>
-      </WdvStrengths>
-      <Reload>26</Reload>
-      <DmgStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <ProjectileDmgMitigationStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </ProjectileDmgMitigationStrengths>
+      <OrdDmgPotentials>
         <DmgCategory>Incursion</DmgCategory>
-        <DmgCatValue>4</DmgCatValue>
-      </DmgStrengths>
+        <DmgCatValue>9</DmgCatValue>
+      </OrdDmgPotentials>
+      <Reload>26</Reload>
       <MaxSpeed>4</MaxSpeed>
-      <OrdnanceMass>10</OrdnanceMass>
+      <OrdMass>10</OrdMass>
+      <OrdHitPts>10</OrdHitPts>
       <Drag>0.03</Drag>
       <Accuracy>0.8</Accuracy>
       <MaxTurnRate>270</MaxTurnRate>
@@ -714,18 +794,18 @@
       <HitPoints>100</HitPoints>
       <ConstructionCost>400</ConstructionCost>
       <Expense>0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Primary</HqPriority>
       <Food>10</Food>
       <Science>5</Science>
@@ -744,18 +824,18 @@
       <HitPoints>100</HitPoints>
       <ConstructionCost>400</ConstructionCost>
       <Expense>0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Primary</HqPriority>
       <Food>20</Food>
       <Science>10</Science>
@@ -776,18 +856,18 @@
       <HitPoints>80</HitPoints>
       <ConstructionCost>290</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -806,18 +886,18 @@
       <HitPoints>80</HitPoints>
       <ConstructionCost>290</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -838,18 +918,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>260</ConstructionCost>
       <Expense>0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -868,18 +948,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>260</ConstructionCost>
       <Expense>0</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -900,18 +980,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>250</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -930,18 +1010,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>250</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -962,18 +1042,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>270</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>10</Food>
       <Science>0</Science>
@@ -992,18 +1072,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>270</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>20</Food>
       <Science>0</Science>
@@ -1024,18 +1104,18 @@
       <HitPoints>80</HitPoints>
       <ConstructionCost>300</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -1054,18 +1134,18 @@
       <HitPoints>80</HitPoints>
       <ConstructionCost>300</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <Food>0</Food>
       <Science>0</Science>
@@ -1086,18 +1166,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>280</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>10</Science>
@@ -1116,18 +1196,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>280</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <Food>0</Food>
       <Science>10</Science>
@@ -1151,18 +1231,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>130</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>5</Science>
@@ -1180,18 +1260,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>130</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>10</Science>
@@ -1211,18 +1291,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>480</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Primary</HqPriority>
       <TurnRateConstraint>0.50</TurnRateConstraint>
       <Science>0</Science>
@@ -1240,18 +1320,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>480</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Primary</HqPriority>
       <TurnRateConstraint>0.50</TurnRateConstraint>
       <Science>0</Science>
@@ -1271,18 +1351,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>470</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <TurnRateConstraint>0.60</TurnRateConstraint>
       <Science>0</Science>
@@ -1300,18 +1380,18 @@
       <HitPoints>60</HitPoints>
       <ConstructionCost>470</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <TurnRateConstraint>0.60</TurnRateConstraint>
       <Science>0</Science>
@@ -1331,18 +1411,18 @@
       <HitPoints>50</HitPoints>
       <ConstructionCost>245</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <TurnRateConstraint>0.60</TurnRateConstraint>
       <Science>0</Science>
@@ -1360,18 +1440,18 @@
       <HitPoints>50</HitPoints>
       <ConstructionCost>245</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Secondary</HqPriority>
       <TurnRateConstraint>0.60</TurnRateConstraint>
       <Science>0</Science>
@@ -1391,18 +1471,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>355</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Tertiary</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>0</Science>
@@ -1420,18 +1500,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>355</ConstructionCost>
       <Expense>5</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Tertiary</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>0</Science>
@@ -1451,18 +1531,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>350</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Tertiary</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>0</Science>
@@ -1480,18 +1560,18 @@
       <HitPoints>40</HitPoints>
       <ConstructionCost>350</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Tertiary</HqPriority>
       <TurnRateConstraint>0.75</TurnRateConstraint>
       <Science>0</Science>
@@ -1511,18 +1591,18 @@
       <HitPoints>30</HitPoints>
       <ConstructionCost>240</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.90</TurnRateConstraint>
       <Science>0</Science>
@@ -1540,18 +1620,18 @@
       <HitPoints>30</HitPoints>
       <ConstructionCost>240</ConstructionCost>
       <Expense>3</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.90</TurnRateConstraint>
       <Science>0</Science>
@@ -1571,18 +1651,18 @@
       <HitPoints>30</HitPoints>
       <ConstructionCost>200</ConstructionCost>
       <Expense>2</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.90</TurnRateConstraint>
       <Science>0</Science>
@@ -1600,18 +1680,18 @@
       <HitPoints>30</HitPoints>
       <ConstructionCost>200</ConstructionCost>
       <Expense>2</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>0.90</TurnRateConstraint>
       <Science>0</Science>
@@ -1631,18 +1711,18 @@
       <HitPoints>20</HitPoints>
       <ConstructionCost>125</ConstructionCost>
       <Expense>1</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>1.0</TurnRateConstraint>
       <Science>0</Science>
@@ -1660,18 +1740,18 @@
       <HitPoints>20</HitPoints>
       <ConstructionCost>125</ConstructionCost>
       <Expense>1</Expense>
-      <DmgStrengths>
+      <ElemDmgMitigations>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
-      <DmgStrengths>
+      </ElemDmgMitigations>
+      <ElemDmgMitigations>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrengths>
+      </ElemDmgMitigations>
       <HqPriority>Low</HqPriority>
       <TurnRateConstraint>1.0</TurnRateConstraint>
       <Science>0</Science>

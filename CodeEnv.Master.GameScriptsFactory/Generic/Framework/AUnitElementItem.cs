@@ -29,7 +29,7 @@ using UnityEngine;
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipBlastable,
     ISensorDetectable, ISensorDetector, IFsmEventSubscriptionMgrClient, IAssaultable {
 
-    private const string __HQNameAddendum = "[HQ]";
+    protected const string __HQNameAddendum = "[HQ]";
 
     private static float _healthThreshold_Damaged;
     protected static float HealthThreshold_Damaged {
@@ -252,12 +252,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     /// <summary>
-    /// Subscribes to sensor events.
-    /// <remarks>Must be called after initial runtime state is set, aka Idling. 
-    /// Otherwise events can arrive immediately as sensors activate.</remarks>
+    /// Subscribes to SRSensor events.
+    /// <remarks>Intended to connect this element's SRSensor detections to the Captain's decisions, if any. 
+    /// SRSensors separately communicate their detections to Cmd's UnifiedSRSensorMonitor. This method does not affect that.</remarks>
+    /// <remarks>Must be called after initial runtime state is set, aka Idling,
+    /// otherwise events can arrive immediately as sensors activate.</remarks>
     /// <remarks>UNDONE 5.13.17 No use yet in Elements for responding to what their SRSensors detect.</remarks>
     /// </summary>
-    protected void __SubscribeToSensorEvents() {
+    protected void __SubscribeLocallyToSRSensorEvents() {
         __ValidateStateForSensorEventSubscription();
     }
 
@@ -328,12 +330,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     internal abstract void PrepareForRemovalFromCmd();
 
+    /// <summary>
+    /// Called just before IsDead becomes true.
+    /// </summary>
     protected override void PrepareForDeath() {
         base.PrepareForDeath();
         // 11.19.17 Must occur before Data.IsDead is set which deactivates all equipment generating events from SensorRangeMonitors
-        __UnsubscribeFromSensorEvents();
+        __UnsubscribeLocallyFromSRSensorEvents();
     }
 
+    /// <summary>
+    /// The first prep method called after IsDead becomes true.
+    /// </summary>
     protected override void PrepareForDeathSequence() {
         base.PrepareForDeathSequence();
         Data.Weapons.ForAll(weap => weap.readytoFire -= WeaponReadyToFireEventHandler);
@@ -430,34 +438,34 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
         Vector3 launchLoc = weapon.WeaponMount.MuzzleLocation;
         Quaternion launchRotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
-        WDVCategory category = weapon.DeliveryVehicleCategory;
+        EquipmentCategory weapCat = weapon.Category;
         Transform ordnanceTransform;
-        if (category == WDVCategory.Beam) {
-            ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
+        if (weapCat == EquipmentCategory.BeamWeapon) {
+            ordnanceTransform = GamePoolManager.Instance.Spawn(weapCat, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
             Beam beam = ordnanceTransform.GetComponent<Beam>();
             beam.Launch(target, weapon);
         }
         else {
             // Projectiles are collected under GamePoolManager in the scene
-            ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation);
+            ordnanceTransform = GamePoolManager.Instance.Spawn(weapCat, launchLoc, launchRotation);
             Collider ordnanceCollider = UnityUtility.ValidateComponentPresence<Collider>(ordnanceTransform.gameObject);
             D.Assert(ordnanceTransform.gameObject.activeSelf);  // ordnanceGo must be active for IgnoreCollision
             Physics.IgnoreCollision(ordnanceCollider, _primaryCollider);
 
-            if (category == WDVCategory.Missile) {
+            if (weapCat == EquipmentCategory.MissileWeapon) {
                 Missile missile = ordnanceTransform.GetComponent<Missile>();
                 missile.ElementVelocityAtLaunch = Rigidbody.velocity;
                 missile.Launch(target, weapon, Topography);
             }
-            else if (category == WDVCategory.AssaultVehicle) {
+            else if (weapCat == EquipmentCategory.AssaultWeapon) {
                 AssaultVehicle shuttle = ordnanceTransform.GetComponent<AssaultVehicle>();
                 shuttle.ElementVelocityAtLaunch = Rigidbody.velocity;
                 shuttle.Launch(target, weapon, Topography);
             }
             else {
-                D.AssertEqual(WDVCategory.Projectile, category);
+                D.AssertEqual(EquipmentCategory.ProjectileWeapon, weapCat);
                 AProjectileOrdnance projectile;
-                if (DebugControls.Instance.MovementTech == DebugControls.UnityMoveTech.Kinematic) {
+                if (_debugCntls.MovementTech == UnityMoveTech.Kinematic) {
                     projectile = ordnanceTransform.GetComponent<KinematicProjectile>();
                 }
                 else {
@@ -494,7 +502,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 LaunchOrdnance(losWeapon, target);
             }
             else {
-                D.Log("{0} no longer has a bead on Target {1}. Canceling firing solution.", losWeapon.DebugName, target.DebugName);
+                D.Log(ShowDebugLog, "{0} no longer has a bead on Target {1}. Canceling firing solution.", losWeapon.DebugName, target.DebugName);
                 losWeapon.HandleElementDeclinedToFire();
             }
         }
@@ -894,8 +902,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Storage for the values of this element prior to Rework.
     /// <remarks>Used to restore values when Refit or Disband Rework is canceled prior to
     /// any construction completion progress.</remarks>
+    /// <remarks>Does not include any values in support of a CmdModuleRefit which only 
+    /// occurs after the element successfully completes its refit.</remarks>
     /// </summary>
-    protected AUnitElementData.PreReworkValuesStorage _preReworkValues;
+    protected AUnitElementData.PreReworkValuesStorage _elementPreReworkValues;
 
     protected abstract bool IsCurrentStateCalled { get; }
 
@@ -903,6 +913,43 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (DisplayMgr != null) {
             DisplayMgr.RefreshReworkingVisuals(ReworkUnderway, percentCompletion);
         }
+    }
+
+    protected float __CalcRefitCost(AUnitMemberDesign refitDesign, AUnitMemberDesign existingDesign) {
+        float refitCost = refitDesign.ConstructionCost - existingDesign.ConstructionCost;
+        if (refitCost < refitDesign.MinimumRefitCost) {
+            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
+            refitCost = refitDesign.MinimumRefitCost;
+        }
+        return refitCost;
+    }
+
+    protected bool TryGetUpgradeDesign(AUnitCmdModuleDesign currentCmdModDesign, out AUnitCmdModuleDesign upgradedCmdModDesign) {
+        var ownerDesigns = OwnerAiMgr.Designs;
+        if (currentCmdModDesign is SettlementCmdModuleDesign) {
+            SettlementCmdModuleDesign settleCmdModDesign;
+            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as SettlementCmdModuleDesign, out settleCmdModDesign)) {
+                upgradedCmdModDesign = settleCmdModDesign;
+                return true;
+            }
+        }
+        else if (currentCmdModDesign is StarbaseCmdModuleDesign) {
+            StarbaseCmdModuleDesign sbCmdModDesign;
+            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as StarbaseCmdModuleDesign, out sbCmdModDesign)) {
+                upgradedCmdModDesign = sbCmdModDesign;
+                return true;
+            }
+        }
+        else {
+            D.Assert(currentCmdModDesign is FleetCmdModuleDesign);
+            FleetCmdModuleDesign fCmdModDesign;
+            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as FleetCmdModuleDesign, out fCmdModDesign)) {
+                upgradedCmdModDesign = fCmdModDesign;
+                return true;
+            }
+        }
+        upgradedCmdModDesign = null;
+        return false;
     }
 
     /// <summary>
@@ -1340,15 +1387,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected override void Unsubscribe() {
         base.Unsubscribe();
         CleanupIconSubscriptions();
-        __UnsubscribeFromSensorEvents();
+        __UnsubscribeLocallyFromSRSensorEvents();
     }
 
     /// <summary>
     /// Unsubscribes from SRSensor events.
-    /// <remarks>UNDONE 11.19.17 __SubscribeToSensorEvents() currently does nothing as elements 
-    /// don't do anything yet when their SRSensors detect anything.</remarks>
+    /// <remarks>Intended to disconnect the link from this element's SRSensor detections to the Captain's decisions, if any. 
+    /// SRSensors separately communicate their detections to Cmd's UnifiedSRSensorMonitor. This method does not affect that.</remarks>
+    /// <remarks>UNDONE 5.3.18 No use yet in Elements for responding to what their SRSensors detect.</remarks>
     /// </summary>
-    private void __UnsubscribeFromSensorEvents() { }
+    protected void __UnsubscribeLocallyFromSRSensorEvents() { }
 
     #endregion
 
@@ -1531,11 +1579,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         D.Assert(!IsDead);
         DamageStrength damageSustained = damagePotential - Data.DamageMitigation;
-        if (damageSustained.Total == Constants.ZeroF) {
+        if (damageSustained.__Total == Constants.ZeroF) {
             //D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", DebugName);
             return;
         }
-        D.Log(ShowDebugLog, "{0} has been hit, taking {1:0.#} damage.", DebugName, damageSustained.Total);
+        D.Log(ShowDebugLog, "{0} has been hit, taking {1:0.#} damage.", DebugName, damageSustained.__Total);
 
         float damageSeverity;
         bool didElementSurvive = Data.ApplyDamage(damageSustained, out damageSeverity);
@@ -1717,11 +1765,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
 
         DamageStrength damageSustained = damagePotential - Data.DamageMitigation;
-        if (damageSustained.Total == Constants.ZeroF) {
+        if (damageSustained.__Total == Constants.ZeroF) {
             //D.Log(ShowDebugLog, "{0} has been assaulted but incurred no damage.", DebugName);
             return false;
         }
-        D.Log(ShowDebugLog, "{0} has been assaulted, taking {1:0.#} damage.", DebugName, damageSustained.Total);
+        D.Log(ShowDebugLog, "{0} has been assaulted, taking {1:0.#} damage.", DebugName, damageSustained.__Total);
 
         float damageSeverity;
         bool didElementSurvive = Data.ApplyDamage(damageSustained, out damageSeverity);

@@ -119,7 +119,6 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     /// </summary>
     /// <param name="pieceOfEquipment">The piece of equipment.</param>
     /// <returns></returns>
-    ////[Obsolete("Not currently used")]
     protected virtual bool Remove(EquipmentType pieceOfEquipment) {
         D.Assert(!pieceOfEquipment.IsActivated);
 
@@ -139,7 +138,6 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
     }
 
-    ////[Obsolete("Not currently used")]
     protected abstract void RemoveMonitorFrom(EquipmentType pieceOfEquipment);
 
     //**********************************************************************************************************

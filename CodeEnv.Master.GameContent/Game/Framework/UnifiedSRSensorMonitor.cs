@@ -612,6 +612,21 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Debug
+
+        /// <summary>
+        /// Returns <c>true</c> if the provided maneuverableItem (ship) is detected by the SRSensors of the fleet.
+        /// <remarks>Currently only tracks Enemy elements, so friendly elements won't be present.</remarks>
+        /// </summary>
+        /// <param name="maneuverableItem">The maneuverable item.</param>
+        /// <returns></returns>
+        public bool __IsPresentAsEnemy(IManeuverable maneuverableItem) {
+            D.Assert(maneuverableItem is IShip);
+            return _enemyElementsDetected.Contains(maneuverableItem as IUnitElement_Ltd);
+        }
+
+        #endregion
+
         public override string ToString() {
             return DebugName;
         }

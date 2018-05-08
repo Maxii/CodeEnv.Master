@@ -35,7 +35,7 @@ public class FleetCreator : AUnitCreator {
 
     public IEnumerable<ShipItem> Elements { get; set; }
 
-    public string CmdDesignName { get; set; }
+    public string CmdModDesignName { get; set; }
 
     protected override Player Owner { get { return Elements.First().Owner; } }
 
@@ -58,7 +58,7 @@ public class FleetCreator : AUnitCreator {
     }
 
     private FleetCmdItem MakeCommand() {
-        return _factory.MakeFleetCmdInstance(Owner, CmdDesignName, gameObject, UnitName);
+        return _factory.MakeFleetCmdInstance(Owner, CmdModDesignName, gameObject, UnitName);
     }
 
     protected override void CompleteUnitInitialization() {

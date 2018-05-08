@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsDamaged { get; }
 
-        DamageStrength DamageMitigation { get; }
+        DamageStrength DmgMitigation { get; }
 
     }
 }

@@ -40,6 +40,8 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipDesign RefitDesign { get; private set; }
 
+        public bool IncludeCmdModule { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipRefitOrder" /> class.
         /// <remarks>11.24.17 For use when an order outcome callback is expected.</remarks>
@@ -48,21 +50,24 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
         /// <param name="refitDesign">The design to use to refit the ship.</param>
         /// <param name="target">The target of this order.</param>
-        public ShipRefitOrder(OrderSource source, Guid cmdOrderID, ShipDesign refitDesign, IShipNavigableDestination target)
+        /// <param name="includeCmd">If <c>true</c>, also refit the CmdModule.</param>
+        public ShipRefitOrder(OrderSource source, Guid cmdOrderID, ShipDesign refitDesign, IShipNavigableDestination target, bool includeCmd)
             : base(ShipDirective.Refit, source, cmdOrderID, target) {
             D.Assert(target is IUnitBaseCmd);
             RefitDesign = refitDesign;
+            IncludeCmdModule = includeCmd;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipRefitOrder" /> class.
-        /// <remarks>11.24.17 For use when an order outcome callback is not expected.</remarks>
+        /// <remarks>11.24.17 For use when an order outcome callback is not expected. Typically used when the order does not
+        /// emanate from the Unit. The ships will be in a hanger.</remarks>
         /// </summary>
         /// <param name="source">The source of this order.</param>
         /// <param name="refitDesign">The design to use to refit the ship.</param>
         /// <param name="target">The target of this order.</param>
         public ShipRefitOrder(OrderSource source, ShipDesign refitDesign, IShipNavigableDestination target)
-            : this(source, default(Guid), refitDesign, target) {
+            : this(source, default(Guid), refitDesign, target, false) {
         }
 
 

@@ -96,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
         /// join a designated fleet owned by the same owner. Only available from a ship UserCtxMenu.
         /// <remarks>12.30.17 Requires a non-null (Fleet) Target.</remarks>
         /// </summary>
-        JoinFleet,
+        JoinFleetShortcut,
 
         /// <summary>
         /// A convenience 'short cut' directive for the user that implements the Fleet.JoinHanger directive for a single ship.
@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         /// join a designated Base Hanger owned by the same owner. Only available from a ship UserCtxMenu.
         /// <remarks>12.30.17 Requires a non-null (Base) Target.</remarks>
         /// </summary>
-        JoinHanger,
+        JoinHangerShortcut,
 
         /// <summary>
         /// Instructs the ship to attempt to transfer from its existing fleet and enter the hanger of the target base. 

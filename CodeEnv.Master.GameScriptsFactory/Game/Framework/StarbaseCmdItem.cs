@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -100,6 +101,23 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     }
 
     #region Event and Property Change Handlers
+
+    #endregion
+
+    #region StateMachine Support Members
+
+    protected override bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility) {
+        D.Assert(!candidates.IsNullOrEmpty());
+        facility = null;
+        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.CmdModuleDesign);
+        if (toRefitCmdModule) {
+            facility = candidates.SingleOrDefault(f => f.IsHQ);
+            if (facility == null) {
+                facility = candidates.First();
+            }
+        }
+        return toRefitCmdModule;
+    }
 
     #endregion
 

@@ -100,6 +100,10 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
         set { SetProperty<Vector3>(ref _elementVelocityAtLaunch, value, "ElementVelocityAtLaunch"); }
     }
 
+    protected override DamageStrength DmgMitigation { get { return Weapon.OrdnanceDmgMitigation; } }
+
+    protected override float HitPts { get; set; }
+
     protected new AssaultLauncher Weapon { get { return base.Weapon as AssaultLauncher; } }
 
     /// <summary>
@@ -125,6 +129,7 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
 
     public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
         base.Launch(target, weapon, topography);
+        HitPts = Weapon.HitPoints;
         _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
@@ -302,7 +307,7 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
                             DebugName, prevAssaultTgtName, Time.frameCount);
                     }
                 }
-                bool isAssaultSuccessful = impactedTarget.AttemptAssault(Owner, DamagePotential, DebugName);
+                bool isAssaultSuccessful = impactedTarget.AttemptAssault(Owner, DmgPotential, DebugName);
                 if (areAssaultsAlwaysSuccessful) {
                     D.Assert(isAssaultSuccessful);
                 }
@@ -577,6 +582,8 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
         KillCourseUpdateProcess();
         DisengageDriftCorrection();
         Target.deathOneShot -= TargetDeathEventHandler;
+
+        HitPts = Constants.ZeroF;
 
         __ResetTurnTimeWarningFields();
         __allowedAndActualTurnSteps = null;

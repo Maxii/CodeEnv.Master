@@ -54,6 +54,7 @@ namespace CodeEnv.Master.GameContent {
 
         void HandlePendingCollisionAverted(IObstacle obstacle);
 
+        void DisengageCollisionAvoidancePropulsion();
     }
 }
 

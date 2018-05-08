@@ -148,8 +148,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
             case FleetDirective.Refit:
-                // only allows order if this specific Base hanger has room
-                return !isOrderAuthorizedByUserRemoteFleet || !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.GetRefittableShipCount());
+                // 5.2.18 Fleet Refit no longer requires use of any slots in the Base's hanger as it refits in HighOrbit
+                return !isOrderAuthorizedByUserRemoteFleet;
             case FleetDirective.Disband:
                 // only allows order if this specific Base hanger has room
                 return !isOrderAuthorizedByUserRemoteFleet || !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.ElementCount);

@@ -154,7 +154,7 @@ namespace CodeEnv.Master.GameContent {
         bool ShowStarIcons { get; }
 
 
-
+        UnityMoveTech MovementTech { get; }
 
     }
 }
