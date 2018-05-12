@@ -94,22 +94,6 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
         UIEventListener.Get(_remainingTimeContainer.gameObject).onTooltip += RemainingConstructionTimeTooltipEventHandler;
     }
 
-    #region Event and Property Change Handlers
-
-    private void ConstructionPropSetHandler() {
-        _isConstructionPropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-            Show();
-        }
-    }
-
-    private void RemainingConstructionTimeTooltipEventHandler(GameObject go, bool toShow) {
-        ShowRemainingConstructionTimeTooltip(toShow);
-    }
-
-    #endregion
-
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
         if (Construction == null) {
@@ -125,6 +109,22 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
         _progressBar.value = Construction.CompletionPercentage;
         _tooltipContent = TooltipFormat.Inject(Construction.Name);
     }
+
+    #region Event and Property Change Handlers
+
+    private void ConstructionPropSetHandler() {
+        _isConstructionPropSet = true;
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
+            Show();
+        }
+    }
+
+    private void RemainingConstructionTimeTooltipEventHandler(GameObject go, bool toShow) {
+        ShowRemainingConstructionTimeTooltip(toShow);
+    }
+
+    #endregion
 
     protected override void HandleValuesUnknown() {
         base.HandleValuesUnknown();

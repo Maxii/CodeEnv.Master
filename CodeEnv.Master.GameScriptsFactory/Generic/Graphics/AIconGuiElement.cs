@@ -28,6 +28,26 @@ using UnityEngine;
 /// </summary>
 public abstract class AIconGuiElement : AGuiElement {
 
+    private const float DisabledShowHideControlWidgetAlpha = 0.30F;
+
+    private bool _isEnabled = true;
+    /// <summary>
+    /// Enables this IconGuiElement to allow interaction. Default is true.
+    /// <remarks>When disabled, the icon shouldn't respond to mouse interaction but will still 
+    /// show tooltips and any info associated with hovering.</remarks>
+    /// </summary>
+    public bool IsEnabled {
+        get { return _isEnabled; }
+        set {
+            if (_isEnabled != value) {
+                _isEnabled = value;
+                IsEnabledPropChangedHandler();
+            }
+        }
+    }
+
+    protected bool IsShowing { get; private set; }
+
     protected virtual UISprite.Type IconImageSpriteType { get { return UIBasicSprite.Type.Simple; } }
 
     /// <summary>
@@ -46,10 +66,13 @@ public abstract class AIconGuiElement : AGuiElement {
     /// </summary>
     protected UIWidget _iconShowHideControlWidget;
 
+    private Collider _collider;
+
     protected override void InitializeValuesAndReferences() {
         _iconShowHideControlWidget = ShowHideControlWidgetGameObject.GetComponent<UIWidget>();
         _iconImageSprite = AcquireIconImageSprite();
         _iconImageSprite.type = IconImageSpriteType;
+        _collider = GetComponent<Collider>();
         AcquireAdditionalWidgets();
         Hide();
     }
@@ -60,12 +83,22 @@ public abstract class AIconGuiElement : AGuiElement {
 
     protected virtual void Show(GameColor color = GameColor.White) {
         D.Assert(IsInitialized);
+        IsShowing = true;
         _iconImageSprite.color = color.ToUnityColor();
-        _iconShowHideControlWidget.alpha = Constants.OneF;
+        ////_iconShowHideControlWidget.alpha = Constants.OneF;
+        //_iconShowHideControlWidget.alpha = IsEnabled ? Constants.OneF : DisabledShowHideControlWidgetAlpha;
+        AssessShowHideControlWidgetAlpha();
+        _collider.enabled = true;
     }
 
     protected void Hide() {
-        _iconShowHideControlWidget.alpha = Constants.ZeroF;
+        if (!IsEnabled) {
+            D.Warn("{0} is hiding when disabled?", DebugName);
+        }
+        IsShowing = false;
+        //_iconShowHideControlWidget.alpha = Constants.ZeroF;
+        _collider.enabled = false;
+        AssessShowHideControlWidgetAlpha();
     }
 
     #region Event and Property Change Handlers
@@ -78,7 +111,27 @@ public abstract class AIconGuiElement : AGuiElement {
         HandleGuiElementHovered(isOver);
     }
 
+    private void IsEnabledPropChangedHandler() {
+        HandleIsEnabledChanged();
+    }
+
     #endregion
+
+    protected virtual void HandleIsEnabledChanged() {
+        if (IsEnabled && !IsShowing) {
+            D.Warn("{0} is enabling while hidden?", DebugName);
+        }
+        AssessShowHideControlWidgetAlpha();
+    }
+
+    private void AssessShowHideControlWidgetAlpha() {
+        if (IsShowing) {
+            _iconShowHideControlWidget.alpha = IsEnabled ? Constants.OneF : DisabledShowHideControlWidgetAlpha;
+        }
+        else {
+            _iconShowHideControlWidget.alpha = Constants.ZeroF;
+        }
+    }
 
     protected abstract void HandleGuiElementHovered(bool isOver);
 
@@ -92,6 +145,7 @@ public abstract class AIconGuiElement : AGuiElement {
             _iconImageSprite.atlas = AtlasID.None.GetAtlas();
             _iconImageSprite.spriteName = null;
         }
+        _isEnabled = true;
         Hide();
     }
 
@@ -101,7 +155,8 @@ public abstract class AIconGuiElement : AGuiElement {
         base.__ValidateOnAwake();
         UnityUtility.ValidateComponentPresence<UIWidget>(ShowHideControlWidgetGameObject);
         // there must be a collider on this element's GameObject to enable Hover and Click functionality
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        Collider collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+        D.Assert(collider.enabled);
     }
 
     #endregion

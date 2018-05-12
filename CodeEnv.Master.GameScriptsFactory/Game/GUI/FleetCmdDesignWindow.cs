@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCmdDesignWindow.cs
-// GuiWindow used by the User to design FleetCmds, managed by the DesignScreensManager.
+// GuiWindow used by the User to design FleetCmdModules, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow used by the User to design FleetCmds, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design FleetCmdModules, managed by the DesignScreensManager.
 /// </summary>
 public class FleetCmdDesignWindow : AUnitDesignWindow {
 
@@ -42,7 +42,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return UserDesigns.GetAllFleetCmdModDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllDeployableFleetCmdModDesigns(includeObsolete, includeDefault: false).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {

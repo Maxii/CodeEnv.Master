@@ -256,11 +256,54 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return isJoinable;
     }
 
+    /// <summary>
+    /// Forms a fleet from the provided ship using the default FleetCmdModuleDesign.
+    /// </summary>
+    /// <param name="fleetRootname">The fleet root name.</param>
+    /// <param name="ship">The ship.</param>
+    /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, ShipItem ship) {
         return FormFleetFrom(fleetRootname, new ShipItem[] { ship });
     }
 
+    /// <summary>
+    /// Forms a fleet from the provided ships using the default FleetCmdModuleDesign.
+    /// </summary>
+    /// <param name="fleetRootname">The fleet root name.</param>
+    /// <param name="ships">The ships.</param>
+    /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, IEnumerable<ShipItem> ships) {
+        PlayerDesigns ownerDesigns = OwnerAiMgr.Designs;
+        FleetCmdModuleDesign defaultCmdModDesign = ownerDesigns.GetFleetCmdModDefaultDesign();
+        return FormFleetFrom(fleetRootname, defaultCmdModDesign, ships);
+
+        ////Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
+        ////ships.ForAll(ship => {
+        ////    D.Assert(ship.IsOperational);
+        ////    D.Assert(Contains(ship));
+        ////});
+
+        ////if (ships.Count() == ElementCount) {
+        ////    D.Log("{0} did not need to form a new fleet as it already is the desired fleet.", DebugName);
+        ////    return this;
+        ////}
+
+        ////ships.ForAll(ship => RemoveElement(ship));
+
+        ////// canceling any existing ship orders (like repair) will be handled by the AutoFleetCreator
+        ////Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
+        ////var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, Formation, fleetRootname);
+        ////return fleet;
+    }
+
+    /// <summary>
+    /// Forms a fleet from the provided ships using the provided FleetCmdModuleDesign.
+    /// </summary>
+    /// <param name="fleetRootname">The fleet root name.</param>
+    /// <param name="cmdModDesign">The command mod design.</param>
+    /// <param name="ships">The ships.</param>
+    /// <returns></returns>
+    public FleetCmdItem FormFleetFrom(string fleetRootname, FleetCmdModuleDesign cmdModDesign, IEnumerable<ShipItem> ships) {
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
         ships.ForAll(ship => {
             D.Assert(ship.IsOperational);
@@ -276,9 +319,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         // canceling any existing ship orders (like repair) will be handled by the AutoFleetCreator
         Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
-        var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, Formation, fleetRootname);
+        var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, cmdModDesign, ships, Formation, fleetRootname);
         return fleet;
     }
+
+
 
     /// <summary>
     /// Returns <c>true</c> if this fleet is in orbit, <c>false</c> otherwise. If in high orbit,
@@ -5330,7 +5375,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private bool TryPickShipToRefitCmdModule(IEnumerable<ShipItem> candidates, out ShipItem ship) {
         D.Assert(!candidates.IsNullOrEmpty());
         ship = null;
-        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.CmdModuleDesign);
+        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.CmdModuleDesign);
         if (toRefitCmdModule) {
             ship = candidates.SingleOrDefault(s => s.IsHQ);
             if (ship == null) {

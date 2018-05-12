@@ -44,7 +44,7 @@ public class AnimateOnHoverEditor : Editor {
 
             spriteSO.ApplyModifiedProperties();
 
-            NGUIEditorTools.DrawSpriteField("HoveredSprite", serializedObject, atlas, serializedObject.FindProperty("hoveredSpriteName"), true);
+            NGUIEditorTools.DrawSpriteField("HoveredSprite", serializedObject, atlas, serializedObject.FindProperty("_hoveredSpriteName"), true);
         }
         serializedObject.ApplyModifiedProperties();
     }

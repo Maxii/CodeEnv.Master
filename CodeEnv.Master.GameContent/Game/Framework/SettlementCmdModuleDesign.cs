@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
     /// The design of a Settlement Command Module for a player.
     /// </summary>
@@ -41,6 +43,8 @@ namespace CodeEnv.Master.GameContent {
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
+            D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, designToImprove.Status);
+
             OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
             while (designToImprove.TryGetNextOptEquipStat(out slotID, out equipStat)) {
@@ -60,8 +64,8 @@ namespace CodeEnv.Master.GameContent {
             InitializeValuesAndReferences();
         }
 
-        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            return base.IsNonStatContentEqual(oDesign);
+        protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            return base.IsNonOptionalStatContentEqual(oDesign);
         }
 
         #region Value-based Equality Archive

@@ -51,14 +51,9 @@ public class SelectDesignScreenDialogForm : APopupDialogForm {
     }
 
     protected override void InitializeMenuControls() {
-        D.Assert(Settings.ShowAcceptButton);
-        D.Assert(Settings.ShowCancelButton);
-
-        D.AssertNotNull(Settings.AcceptButtonDelegate);
+        NGUITools.SetActive(_acceptButton.gameObject, true);
         EventDelegate.Set(_acceptButton.onClick, HandleAcceptButtonClicked);
-
-        // The CancelButtonDelegate is optional. If not used, the buttons themselves or this class will need to Hide the window.
-        D.AssertNotNull(Settings.CancelButtonDelegate);
+        NGUITools.SetActive(_cancelButton.gameObject, true);
         EventDelegate.Set(_cancelButton.onClick, Settings.CancelButtonDelegate);
     }
 
@@ -82,6 +77,11 @@ public class SelectDesignScreenDialogForm : APopupDialogForm {
         }
     }
 
+    protected override void DeactivateAllMenuControls() {
+        NGUITools.SetActive(_acceptButton.gameObject, false);
+        NGUITools.SetActive(_cancelButton.gameObject, false);
+    }
+
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();
         // nothing to reset beside menu control subscriptions
@@ -98,6 +98,14 @@ public class SelectDesignScreenDialogForm : APopupDialogForm {
         base.__ValidateOnAwake();
         D.AssertNotNull(_acceptButton);
         D.AssertNotNull(_cancelButton);
+    }
+
+    protected override void __Validate(DialogSettings settings) {
+        D.Assert(settings.ShowAcceptButton);
+        D.Assert(settings.ShowCancelButton);
+        D.AssertNotNull(settings.AcceptButtonDelegate);
+        // The CancelButtonDelegate is optional. If not used, the buttons themselves or this class will need to Hide the window.
+        D.AssertNotNull(settings.CancelButtonDelegate);
     }
 
     #endregion

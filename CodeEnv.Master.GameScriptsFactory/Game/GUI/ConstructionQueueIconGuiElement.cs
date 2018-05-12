@@ -109,6 +109,17 @@ public class ConstructionQueueIconGuiElement : AMultiSizeIconGuiElement {
         EventDelegate.Add(_iconBuyoutButton.onClick, BuyoutButtonClickedEventHandler);
     }
 
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        _iconImageSprite.atlas = Construction.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = Construction.ImageFilename;
+        _iconImageNameLabel.text = Construction.Name;
+        _iconProgressBar.value = Construction.CompletionPercentage;
+        _iconRemainingTimeLabel.text = RemainingConstructionTimeFormat.Inject(Construction.TimeToCompletion.TotalInHours);
+        _iconBuyoutCostLabel.text = CreateBuyoutCostText();
+        _iconBuyoutButton.isEnabled = Construction.CanBuyout;
+    }
+
     #region Event and Property Change Handlers
 
     private void DragDropEndedEventHandler(object sender, EventArgs e) {
@@ -159,17 +170,6 @@ public class ConstructionQueueIconGuiElement : AMultiSizeIconGuiElement {
         else {
             HoveredHudWindow.Instance.Hide();
         }
-    }
-
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        _iconImageSprite.atlas = Construction.ImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = Construction.ImageFilename;
-        _iconImageNameLabel.text = Construction.Name;
-        _iconProgressBar.value = Construction.CompletionPercentage;
-        _iconRemainingTimeLabel.text = RemainingConstructionTimeFormat.Inject(Construction.TimeToCompletion.TotalInHours);
-        _iconBuyoutCostLabel.text = CreateBuyoutCostText();
-        _iconBuyoutButton.isEnabled = Construction.CanBuyout;
     }
 
     private string CreateBuyoutCostText() {

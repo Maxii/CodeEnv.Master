@@ -65,8 +65,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\ASelectDesignDialogForm.cs" />
     <Compile Include="Generic\Graphics\APopupDialogForm.cs" />
-    <Compile Include="TextDialogForm.cs" />
+    <Compile Include="Game\GUI\SelectFleetCmdModDesignDialogForm.cs" />
+    <Compile Include="Game\GUI\TextDialogForm.cs" />
     <Compile Include="Game\GUI\DialogWindow.cs" />
     <Compile Include="Generic\Graphics\AGuiWaitForInitializeMember.cs" />
     <Compile Include="Generic\Graphics\AResearchTreeNode.cs" />
@@ -146,6 +148,8 @@
     <Compile Include="Generic\Graphics\ResearchTreeLink.cs" />
     <Compile Include="Generic\_Debug\InvisibleWmgNodeIdentifier.cs" />
     <Compile Include="Game\GUI\SelectDesignScreenDialogForm.cs" />
+    <Compile Include="Game\GUI\SelectSettlementCmdModDesignDialogForm.cs" />
+    <Compile Include="Game\GUI\SelectStarbaseCmdModDesignDialogForm.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />

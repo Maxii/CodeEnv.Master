@@ -108,8 +108,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            if (base.IsNonStatContentEqual(oDesign)) {
+        protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonOptionalStatContentEqual(oDesign)) {
                 var cmdModDesign = oDesign as AUnitCmdModuleDesign;
                 return cmdModDesign.FtlDampenerStat == FtlDampenerStat && cmdModDesign.ReqdMRSensorStat == ReqdMRSensorStat
                     && cmdModDesign.CmdModuleStat == CmdModuleStat;

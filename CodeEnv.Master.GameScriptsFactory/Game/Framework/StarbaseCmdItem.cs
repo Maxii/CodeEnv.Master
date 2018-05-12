@@ -109,7 +109,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     protected override bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility) {
         D.Assert(!candidates.IsNullOrEmpty());
         facility = null;
-        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.CmdModuleDesign);
+        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.CmdModuleDesign);
         if (toRefitCmdModule) {
             facility = candidates.SingleOrDefault(f => f.IsHQ);
             if (facility == null) {

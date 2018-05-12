@@ -59,6 +59,7 @@ public class EquipmentIconGuiElement : AEquipmentIconGuiElement {
     #region Event and Property Change Handlers
 
     void OnDragStart() {
+        D.Assert(IsEnabled);
         _isInitialDrag = true;
     }
 
@@ -74,6 +75,7 @@ public class EquipmentIconGuiElement : AEquipmentIconGuiElement {
     }
 
     void OnDragEnd() {
+        D.Assert(IsEnabled);
         _isInitialDrag = false;
         UpdateCursor(null);
     }

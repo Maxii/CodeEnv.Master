@@ -92,6 +92,12 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
+    private void Subscribe() {
+        _subscriptions = _subscriptions ?? new List<IDisposable>();
+        _subscriptions.Add(Element.Data.SubscribeToPropertyChanged<AUnitElementData, float>(eData => eData.Health, ElementHealthPropChangedHandler));
+        _subscriptions.Add(Element.SubscribeToPropertyChanged<AUnitElementItem, ReworkingMode>(e => e.ReworkUnderway, ElementReworkUnderwayPropChangedHandler));
+    }
+
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
         var design = Element.Data.Design;
@@ -100,12 +106,6 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageNameLabel.text = Element.name;
         PopulateHealthBarValues();
         AssessReworkingSprite();
-    }
-
-    private void Subscribe() {
-        _subscriptions = _subscriptions ?? new List<IDisposable>();
-        _subscriptions.Add(Element.Data.SubscribeToPropertyChanged<AUnitElementData, float>(eData => eData.Health, ElementHealthPropChangedHandler));
-        _subscriptions.Add(Element.SubscribeToPropertyChanged<AUnitElementItem, ReworkingMode>(e => e.ReworkUnderway, ElementReworkUnderwayPropChangedHandler));
     }
 
     #region Event and Property Change Handlers
@@ -138,6 +138,7 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
     }
 
     private void HandleIsPickedChanged() {
+        D.Assert(IsEnabled);
         if (IsPicked) {
             //D.Log("{0} has been picked.", DebugName);
             Show(TempGameValues.SelectedColor);

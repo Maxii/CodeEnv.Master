@@ -177,8 +177,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-        public override void RefitCmdModule(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.RefitCmdModule(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
+        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
             // No FleetCmdModule-specific values to consider dealing with
         }
 

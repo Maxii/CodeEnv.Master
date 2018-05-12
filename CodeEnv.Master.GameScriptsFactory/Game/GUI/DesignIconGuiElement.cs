@@ -28,6 +28,7 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}{1}";
+    private const string StatusTooltipFormat = "[{0}]";
 
     public override GuiElementID ElementID { get { return GuiElementID.DesignIcon; } }
 
@@ -40,8 +41,9 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
 
     protected override string TooltipContent {
         get {
-            string obsoleteText = _design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete ? "[Obsolete]" : string.Empty;
-            return TooltipFormat.Inject(_design.DesignName, obsoleteText);
+            string statusText = _design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current ? string.Empty
+                : StatusTooltipFormat.Inject(_design.Status.GetEnumAttributeText());
+            return TooltipFormat.Inject(_design.DesignName, statusText);
         }
     }
 
@@ -78,6 +80,13 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        _iconImageSprite.atlas = Design.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = Design.ImageFilename;
+        _iconImageNameLabel.text = Design.DesignName;
+    }
+
     #region Event and Property Change Handlers
 
     private void DesignPropSetHandler() {
@@ -103,14 +112,8 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
         }
     }
 
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        _iconImageSprite.atlas = Design.ImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = Design.ImageFilename;
-        _iconImageNameLabel.text = Design.DesignName;
-    }
-
     private void HandleIsPickedChanged() {
+        D.Assert(IsEnabled);
         if (IsPicked) {
             //D.Log("{0} has been picked.", DebugName);
             Show(TempGameValues.SelectedColor);
@@ -121,6 +124,11 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
             Show();
             SFXManager.Instance.PlaySFX(SfxClipID.UnSelect);
         }
+    }
+
+    protected override void HandleIsEnabledChanged() {
+        base.HandleIsEnabledChanged();
+        D.Assert(!IsPicked);    // Should never change while picked
     }
 
     public override void ResetForReuse() {

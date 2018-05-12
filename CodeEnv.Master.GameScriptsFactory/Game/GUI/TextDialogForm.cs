@@ -16,18 +16,17 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// APopupDialogForm for text. Also includes an optional Title and Icon.
 /// <remarks>MenuControls include an optional Done button or Accept/Cancel buttons. 
-/// A warning will occur if no buttons are supposed to show.</remarks>
+/// Will throw an error if no buttons are supposed to show.</remarks>
+/// <remarks>IMPROVE Allow use of supplied UISprite in place of default existing version.
+/// Would allow for a supplied sprite to come with additional functionality like Tooltip support, etc.</remarks>
+/// <remaris>IMPROVE Allow for changing names of buttons - Accept/Yes, Cancel/No, Done/OK.</remaris>
 /// </summary>
 public class TextDialogForm : APopupDialogForm {
 
@@ -64,16 +63,16 @@ public class TextDialogForm : APopupDialogForm {
     }
 
     protected override void InitializeMenuControls() {
-        DeactivateAllMenuControls();
+        ////DeactivateAllMenuControls();
 
         // activate and subscribe to menu controls
-        bool isShowingButton = false;
+        ////bool isShowingButton = false;
         if (Settings.ShowDoneButton) {
             _doneButton.gameObject.SetActive(true);
             if (Settings.DoneButtonDelegate != null) {
                 EventDelegate.Set(_doneButton.onClick, Settings.DoneButtonDelegate);
             }
-            isShowingButton = true;
+            ////isShowingButton = true;
         }
         else {
             if (Settings.ShowCancelButton) {
@@ -81,20 +80,20 @@ public class TextDialogForm : APopupDialogForm {
                 if (Settings.CancelButtonDelegate != null) {
                     EventDelegate.Set(_cancelButton.onClick, Settings.CancelButtonDelegate);
                 }
-                isShowingButton = true;
+                ////isShowingButton = true;
             }
             if (Settings.ShowAcceptButton) {
                 _acceptButton.gameObject.SetActive(true);
                 if (Settings.AcceptButtonDelegate != null) {
                     EventDelegate.Set(_acceptButton.onClick, Settings.AcceptButtonDelegate);
                 }
-                isShowingButton = true;
+                ////isShowingButton = true;
             }
         }
 
-        if (!isShowingButton) {
-            D.Warn("{0} is not showing a button?", DebugName);
-        }
+        ////if (!isShowingButton) {
+        ////    D.Warn("{0} is not showing a button?", DebugName);
+        ////}
     }
 
     protected override void UnsubscribeFromMenuControls() {
@@ -109,7 +108,7 @@ public class TextDialogForm : APopupDialogForm {
         }
     }
 
-    private void DeactivateAllMenuControls() {
+    protected override void DeactivateAllMenuControls() {
         NGUITools.SetActive(_cancelButton.gameObject, false);
         NGUITools.SetActive(_doneButton.gameObject, false);
         NGUITools.SetActive(_acceptButton.gameObject, false);
@@ -117,7 +116,7 @@ public class TextDialogForm : APopupDialogForm {
 
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();
-        DeactivateAllMenuControls();
+        ////DeactivateAllMenuControls();
 
         _titleLabel.text = string.Empty;
         _icon.atlas = AtlasID.None.GetAtlas();
@@ -142,7 +141,20 @@ public class TextDialogForm : APopupDialogForm {
         D.AssertNotNull(_titleLabel);
         D.AssertNotNull(_icon);
         D.AssertNotNull(_textLabel);
+    }
 
+    protected override void __Validate(DialogSettings settings) {
+        if (settings.ShowDoneButton) {
+            D.Assert(!settings.ShowAcceptButton);
+            D.Assert(!settings.ShowCancelButton);
+        }
+        else {
+            D.Assert(settings.ShowAcceptButton);
+            D.AssertNotNull(settings.AcceptButtonDelegate);
+            D.Assert(settings.ShowCancelButton);
+        }
+        Utility.ValidateForContent(settings.Text);
+        D.AssertEqual(settings.Player, TempGameValues.NoPlayer);
     }
 
     #endregion

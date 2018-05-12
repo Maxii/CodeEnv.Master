@@ -94,6 +94,28 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageNameLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Name).GetComponent<UILabel>();
     }
 
+    protected virtual void Subscribe() {
+        _subscriptions = _subscriptions ?? new List<IDisposable>();
+        _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, float>(data => data.UnitHealth, UnitHealthPropChangedHandler));
+        _subscriptions.Add(Unit.DisplayMgr.SubscribeToPropertyChanged<UnitCmdDisplayManager, TrackingIconInfo>(unit => unit.IconInfo, UnitIconInfoPropChangedHandler));
+        _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, string>(data => data.UnitName, UnitNamePropChangedHandler));
+    }
+
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        TrackingIconInfo unitIconInfo = Unit.DisplayMgr.IconInfo;
+        _unitCompositionIcon.atlas = unitIconInfo.AtlasID.GetAtlas();
+        _unitCompositionIcon.spriteName = unitIconInfo.Filename;
+        _unitCompositionIcon.color = unitIconInfo.Color.ToUnityColor();
+
+        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.ElementCount, MaxElementsPerUnit);
+        _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();
+        _iconImageSprite.spriteName = UnitImageFilename;
+        _iconImageNameLabel.text = Unit.UnitName;
+
+        PopulateHealthBarValues();
+    }
+
     #region Event and Property Change Handlers
 
     private void UnitPropSetHandler() {
@@ -134,29 +156,8 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         Unit.ShowHoveredHud(isOver);
     }
 
-    protected virtual void Subscribe() {
-        _subscriptions = _subscriptions ?? new List<IDisposable>();
-        _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, float>(data => data.UnitHealth, UnitHealthPropChangedHandler));
-        _subscriptions.Add(Unit.DisplayMgr.SubscribeToPropertyChanged<UnitCmdDisplayManager, TrackingIconInfo>(unit => unit.IconInfo, UnitIconInfoPropChangedHandler));
-        _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, string>(data => data.UnitName, UnitNamePropChangedHandler));
-    }
-
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        TrackingIconInfo unitIconInfo = Unit.DisplayMgr.IconInfo;
-        _unitCompositionIcon.atlas = unitIconInfo.AtlasID.GetAtlas();
-        _unitCompositionIcon.spriteName = unitIconInfo.Filename;
-        _unitCompositionIcon.color = unitIconInfo.Color.ToUnityColor();
-
-        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.ElementCount, MaxElementsPerUnit);
-        _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();
-        _iconImageSprite.spriteName = UnitImageFilename;
-        _iconImageNameLabel.text = Unit.UnitName;
-
-        PopulateHealthBarValues();
-    }
-
     private void HandleIsPickedChanged() {
+        D.Assert(IsEnabled);
         if (IsPicked) {
             //D.Log("{0} has been picked.", DebugName);
             Show(TempGameValues.SelectedColor);

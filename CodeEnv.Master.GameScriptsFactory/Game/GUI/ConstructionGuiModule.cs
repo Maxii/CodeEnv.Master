@@ -450,11 +450,11 @@ public class ConstructionGuiModule : AMonoBase {
     private IEnumerable<AUnitElementDesign> GetConstructibleDesigns(bool includeFacilities, bool includeShips) {
         List<AUnitElementDesign> designs = new List<AUnitElementDesign>();
         if (includeFacilities) {
-            var facilityDesigns = _playerAiMgr.Designs.GetAllFacilityDesigns().Cast<AUnitElementDesign>();
+            var facilityDesigns = _playerAiMgr.Designs.GetAllDeployableFacilityDesigns().Cast<AUnitElementDesign>();
             designs.AddRange(facilityDesigns);
         }
         if (includeShips) {
-            var shipDesigns = _playerAiMgr.Designs.GetAllShipDesigns().Cast<AUnitElementDesign>();
+            var shipDesigns = _playerAiMgr.Designs.GetAllDeployableShipDesigns().Cast<AUnitElementDesign>();
             designs.AddRange(shipDesigns);
         }
         return designs;

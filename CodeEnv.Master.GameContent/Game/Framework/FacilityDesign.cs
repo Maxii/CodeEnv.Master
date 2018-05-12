@@ -80,11 +80,14 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>This version automatically improves any Reqd EquipmentStats (including the HullStat) to the highest Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
+        /// <remarks>Warning: Does NOT transfer over Status which will be the default until externally changed.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public FacilityDesign(FacilityDesign designToImprove)
             : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdSRSensorStat),
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.HullStat)) {
+
+            D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, designToImprove.Status);
 
             OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
@@ -146,8 +149,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            if (base.IsNonStatContentEqual(oDesign)) {
+        protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonOptionalStatContentEqual(oDesign)) {
                 var fDesign = oDesign as FacilityDesign;
                 return fDesign.HullStat == HullStat;
             }

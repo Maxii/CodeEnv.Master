@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DialogWindow.cs
-// Singleton. COMMENT - one line to give a brief idea of what this file does.
+// Singleton. AGuiWindow that handles dialogs of various types that popup in the center of the screen.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,7 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Singleton. AGuiWindow that handles dialogs of various types that popup in the center of the screen.
@@ -39,7 +33,7 @@ public class DialogWindow : AHudWindow<DialogWindow> {
         }
     }
 
-    public void Show(FormID formID, DialogSettings settings) {
+    public void Show(FormID formID, APopupDialogForm.DialogSettings settings) {
         var form = PrepareForm(formID);
         (form as APopupDialogForm).Settings = settings;
         ShowForm(form);
@@ -59,42 +53,6 @@ public class DialogWindow : AHudWindow<DialogWindow> {
         // Calls ResetForReuse from base class AGuiWindow
         _gameMgr.RequestPauseStateChange(toPause: false);
     }
-
-    #region Nested Classes
-
-    public class DialogSettings {
-
-        public EventDelegate CancelButtonDelegate { get; set; }
-
-        public EventDelegate DoneButtonDelegate { get; set; }
-
-        public EventDelegate AcceptButtonDelegate { get; set; }
-
-        public bool ShowCancelButton { get; set; }
-
-        public bool ShowDoneButton { get; set; }
-
-        public bool ShowAcceptButton { get; set; }
-
-        public string DebugName { get { return GetType().Name; } }
-
-        public string Title { get; set; }
-
-        public AtlasID IconAtlasID { get; set; }
-
-        public string IconFilename { get; set; }
-
-        public string Text { get; set; }
-
-        public DialogSettings() { }
-
-        public override string ToString() {
-            return DebugName;
-        }
-
-    }
-
-    #endregion
 
 }
 

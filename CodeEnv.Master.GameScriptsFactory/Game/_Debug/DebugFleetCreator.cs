@@ -108,7 +108,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         if (IsCompositionPreset) {
             IList<ShipDesign> designs = new List<ShipDesign>();
             foreach (var designName in Configuration.ElementDesignNames) {
-                ShipDesign design = _ownerDesigns.GetShipDesign(designName);
+                ShipDesign design = _ownerDesigns.__GetShipDesign(designName);
                 designs.Add(design);
             }
 
@@ -146,7 +146,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         }
         else {
             foreach (var designName in Configuration.ElementDesignNames) {
-                ShipDesign design = _ownerDesigns.GetShipDesign(designName);
+                ShipDesign design = _ownerDesigns.__GetShipDesign(designName);
                 string name = _factory.__GetUniqueShipName(design.DesignName);
                 _elements.Add(_factory.MakeShipInstance(Owner, design, name, gameObject));
             }

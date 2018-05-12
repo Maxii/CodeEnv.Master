@@ -63,6 +63,18 @@ public class OwnerIconGuiElement : AIconGuiElement, IComparable<OwnerIconGuiElem
         _iconImageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        if (Owner == null) {
+            HandleValuesUnknown();
+            return;
+        }
+
+        _iconImageSprite.atlas = Owner.LeaderImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = Owner.LeaderImageFilename;
+        _iconImageNameLabel.text = Owner.LeaderName.SurroundWith(Owner.Color);
+    }
+
     #region Event and Property Change Handlers
 
     private void OwnerPropSetHandler() {
@@ -82,18 +94,6 @@ public class OwnerIconGuiElement : AIconGuiElement, IComparable<OwnerIconGuiElem
         else {
             HoveredHudWindow.Instance.Hide();
         }
-    }
-
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        if (Owner == null) {
-            HandleValuesUnknown();
-            return;
-        }
-
-        _iconImageSprite.atlas = Owner.LeaderImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = Owner.LeaderImageFilename;
-        _iconImageNameLabel.text = Owner.LeaderName.SurroundWith(Owner.Color);
     }
 
     protected override void HandleValuesUnknown() {

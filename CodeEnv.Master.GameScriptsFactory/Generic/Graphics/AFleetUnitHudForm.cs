@@ -77,8 +77,9 @@ public abstract class AFleetUnitHudForm : AForm {
 
     protected HashSet<FleetIconGuiElement> _pickedUnitIcons;
     protected HashSet<ShipIconGuiElement> _pickedShipIcons;
+
+    protected PlayerAIManager _playerAiMgr;
     private GameManager _gameMgr;
-    private PlayerAIManager _playerAiMgr;
 
     private HashSet<MyNguiToggleButton> _toggleButtonsUsedThisSession;
     private IList<Transform> _sortedUnitIconTransforms;
@@ -804,13 +805,19 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(icon.Element);
     }
 
-    private void HandleShipCreateFleetButtonClicked() {
+    protected abstract void HandleShipCreateFleetButtonClicked();
+
+    /// <summary>
+    /// Called by derived classes when the player has selected a CmdModuleDesign to apply to the fleet being created.
+    /// </summary>
+    /// <param name="cmdModDesign">The command mod design.</param>
+    protected void ApplyToFleetBeingCreated(FleetCmdModuleDesign cmdModDesign) {
         Utility.ValidateForRange(_pickedShipIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
 
+        // organize the picked ships under their current Cmds
         var pickedCmds = _pickedUnitIcons.Select(icon => icon.Unit);
         var pickedShips = _pickedShipIcons.Select(icon => icon.Element);
         IDictionary<FleetCmdItem, IList<ShipItem>> shipsByCmdLookup = new Dictionary<FleetCmdItem, IList<ShipItem>>(_pickedUnitIcons.Count);
-        // populate the lookup
         foreach (var cmd in pickedCmds) {
             foreach (var ship in pickedShips) {
                 if (cmd.Contains(ship)) {
@@ -836,8 +843,10 @@ public abstract class AFleetUnitHudForm : AForm {
             resultingFleet = GameScriptsUtility.Merge(fleetsToMerge);
         }
         else {
-            resultingFleet = fleetsToMerge.First();
+            resultingFleet = fleetsToMerge.Single();
         }
+
+        UnitFactory.Instance.ReplaceCmdModuleWith(cmdModDesign, resultingFleet);
 
         var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
         bool isAdded = allFleets.Add(resultingFleet);

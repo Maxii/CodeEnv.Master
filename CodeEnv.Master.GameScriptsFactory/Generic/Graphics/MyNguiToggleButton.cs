@@ -26,6 +26,12 @@ using UnityEngine;
 /// <summary>
 /// Button that toggles between 'in' and 'out' when clicked.
 /// <remarks>Warning: Radio button implementation must be done manually by the user. Do not use UIToggle.group.</remarks>
+/// <remarks>IMPROVE To allow this toggle button to show a tooltip when it is not enabled requires a few changes.
+/// 1) the collider must remain enabled, 2) the UIToggle will need to become a child to keep its OnClick() event from firing
+/// when the disabled button is clicked, 3) an OnClick() method needs to be added to this class and filtered with IsEnabled.
+/// It should not pass on the OnClick to the child UIToggle when not enabled. UIButton does not need to worry about its OnClick()
+/// as it is already filtered with UIButton.isEnabled.</remarks> 
+/// <remarks>Other changes include avoiding use of other scripts that respond to OnClick - MyPlaySFX, Animations, etc.</remarks>
 /// </summary>
 public class MyNguiToggleButton : ATextTooltip {
 
@@ -47,13 +53,18 @@ public class MyNguiToggleButton : ATextTooltip {
 
     public bool IsEnabled {
         get { return _button.isEnabled; }
-        set { _button.isEnabled = value; }
+        set {
+            _button.isEnabled = value;  // automatically controls enabled for any collider present
+            //// disabling UIButton auto disables any collider so re-enable to allow tooltips
+            ////_collider.enabled = true;
+        }
     }
 
     public bool IsToggledIn { get { return _toggle.value; } }
 
     protected override string TooltipContent { get { return _tooltipContent; } }
 
+    ////private Collider _collider;
     private UIButton _button;
     private UIToggle _toggle;
     private UISprite _icon;
@@ -75,6 +86,7 @@ public class MyNguiToggleButton : ATextTooltip {
 
     private void InitializeValuesAndReferences() {
         _button = GetComponent<UIButton>();
+        ////_button.isEnabled = false;
         _toggle = GetComponent<UIToggle>();
         if (_toggle.startsActive) {
             D.Warn("{0} startsActive is being reset to false.", DebugName);
@@ -85,6 +97,8 @@ public class MyNguiToggleButton : ATextTooltip {
             _toggle.group = Constants.Zero;
         }
         _icon = gameObject.GetComponentsInImmediateChildren<UISprite>().MaxBy(s => s.depth);
+        ////_collider = gameObject.GetSingleComponentInChildren<Collider>();
+        ////_collider.enabled = true;   // disabling button above will disable the collider
     }
 
     private void Subscribe() {

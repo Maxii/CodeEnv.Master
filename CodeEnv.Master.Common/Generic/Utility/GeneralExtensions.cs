@@ -447,6 +447,16 @@ namespace CodeEnv.Master.Common {
         /// <param name="source">The source.</param>
         /// <param name="value">The value.</param>
         /// <returns></returns>
+        public static bool ApproxEquals(this decimal source, decimal value) {
+            return ApproxEquals((float)source, (float)value);
+        }
+
+        /// <summary>
+        /// Returns true if targetValue is within <c>UnityConstants.FloatEqualityPrecision</c> of the value of source.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
         public static bool ApproxEquals(this float source, float value) {
             return Mathfx.Approx(source, value, UnityConstants.FloatEqualityPrecision);
         }

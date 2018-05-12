@@ -83,8 +83,6 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         _allShips.Add(ship);
         UnityUtility.AttachChildToParent(ship.gameObject, gameObject);
         ship.subordinateDeathOneShot += HangerShipDeathEventHandler;
-        ////ship.IsCollisionAvoidanceOperational = false;
-        ////ship.Data.DeactivateSRSensors();
         ship.PrepareForHangerArrival();
 
         if (isFirstShip) {
@@ -111,7 +109,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     }
 
     /// <summary>
-    /// Forms a fleet from the provided ships from this hanger and orders them to AssumeFormation
+    /// Forms a fleet from the provided ships from this hanger using the default FleetCmdDesign, and orders them to AssumeFormation
     /// at the closest Base LocalAssyStation.
     /// </summary>
     /// <param name="fleetRootname">The fleet root name.</param>
@@ -119,6 +117,21 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     /// <param name="ships">The ships.</param>
     /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, Formation formation, IEnumerable<ShipItem> ships) {
+        PlayerDesigns playerDesigns = GameManager.Instance.GetAIManagerFor(Owner).Designs;
+        FleetCmdModuleDesign defaultCmdModDesign = playerDesigns.GetFleetCmdModDefaultDesign();
+        return FormFleetFrom(fleetRootname, defaultCmdModDesign, formation, ships);
+    }
+
+    /// <summary>
+    /// Forms a fleet from the provided ships from this hanger using the provided cmdModDesign and orders them to AssumeFormation
+    /// at the closest Base LocalAssyStation.
+    /// </summary>
+    /// <param name="fleetRootname">The fleet root name.</param>
+    /// <param name="cmdModDesign">The command mod design.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="ships">The ships.</param>
+    /// <returns></returns>
+    public FleetCmdItem FormFleetFrom(string fleetRootname, FleetCmdModuleDesign cmdModDesign, Formation formation, IEnumerable<ShipItem> ships) {
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
 
         ships.ForAll(ship => {
@@ -128,15 +141,13 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);    // will fail if ships was ref to _allShips
 
         Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
-        var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, formation, fleetRootname);
+        var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, cmdModDesign, ships, formation, fleetRootname);
         D.Log(/*ShowDebugLog,*/ "{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
             DebugName, fleet.DebugName, fleet.Position, fleetCreatorLocation, Vector3.Distance(fleet.Position, fleetCreatorLocation));
 
         ships.ForAll(ship => {
             D.Assert(ship.__HasCommand);
             D.Assert(!ship.IsCollisionAvoidanceOperational);
-            ////ship.IsCollisionAvoidanceOperational = true;
-            ////ship.Data.ActivateSRSensors();
             ship.PrepareForHangerDeparture();
             // 1.6.18 Fleet will clear orders of ships during CommenceOperations
         });

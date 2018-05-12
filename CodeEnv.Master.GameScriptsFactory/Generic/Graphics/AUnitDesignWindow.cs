@@ -341,12 +341,17 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             emptyTemplateHint = _createDesignPopupList.value;
         }
         AUnitMemberDesign emptyTemplateDesign = GetEmptyTemplateDesign(emptyTemplateHint);
+        if (emptyTemplateDesign.ConstructionCost.ApproxEquals(Constants.ZeroF)) {
+            D.Warn("{0} found TemplateDesign {1} with zero cost to construct!", DebugName, emptyTemplateDesign.DebugName);
+        }
 
         // Instantiate a 'control' design with the info along with a new icon and assign it to _selectedDesignIcon.
         // This design will become the 'previousDesign' in UpdateDesign to see if newDesign (aka WorkingDesign) has any changes.
         // The status of this 'previousDesign' needs to be system created so UpdateDesign won't attempt to obsolete it.
         AUnitMemberDesign controlDesign = CopyDesignFrom(emptyTemplateDesign);
-        D.Assert(controlDesign.HasEqualContent(emptyTemplateDesign));   // 4.26.18 Templates should always be fully up to date
+        if (!controlDesign.HasEqualContent(emptyTemplateDesign)) {   // 4.26.18 Templates should always be fully up to date
+            D.Error("{0} expected {1} to have same content as {2}.", DebugName, controlDesign.DebugName, emptyTemplateDesign.DebugName);
+        }
 
         controlDesign.Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template;
         controlDesign.RootDesignName = rootDesignName;
@@ -365,7 +370,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void EditChosenDesign() {
         if (_pickedDesignIcon != null) {
-            if (_pickedDesignIcon.Design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete) {
+            var pickedDesignStatus = _pickedDesignIcon.Design.Status;
+            D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, pickedDesignStatus);
+            if (pickedDesignStatus == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete) {
                 ShowRenameObsoleteDesignPopupWindow();
                 return;
             }
@@ -508,7 +515,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <remarks>Handled this way to make sure any partially created icon and design that has not
     /// yet been applied is properly destroyed.</remarks>
     /// </summary>
-    /// <param name="newPickedDesignIcon">The new picked design icon.</param>
+    /// <param name="newPickedDesignIcon">The new picked design icon. Can be null.</param>
     private void ChangePickedDesignIcon(DesignIconGuiElement newPickedDesignIcon) {
         if (_pickedDesignIcon != null) {
             if (_pickedDesignIcon.gameObject != null) {    // could already be destroyed
@@ -517,7 +524,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
                     Destroy(_pickedDesignIcon.gameObject);
                 }
             }
-            _pickedDesignIcon.IsPicked = false;
+            _pickedDesignIcon.IsPicked = false; // FIXME why change IsPicked when could be destroyed???
         }
         _pickedDesignIcon = newPickedDesignIcon;
         if (_pickedDesignIcon != null) {

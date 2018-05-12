@@ -78,9 +78,16 @@ namespace CodeEnv.Master.GameContent {
 
         Research,
 
-        TextDialog,
         [System.Obsolete]
-        SelectDesignScreenDialog
+        SelectDesignScreenDialog,
+        [System.Obsolete]
+        SelectDesignDialog,
+
+        TextDialog,
+
+        SelectFleetCmdModDesignDialog,
+        SelectStarbaseCmdModDesignDialog,
+        SelectSettlementCmdModDesignDialog,
     }
 }
 

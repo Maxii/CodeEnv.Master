@@ -292,7 +292,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Refits the CmdModule to reflect the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
+        /// Replaces the existing CmdModule with the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
         /// with the new instances provided as these are derived from the cmdModuleDesign.
         /// <remarks>These changes do not interfere with the ongoing operations of this Cmd. They can however create momentary 
         /// changes in AlertStatus and FtlDampening before both are properly resumed.</remarks>
@@ -301,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
         /// <param name="sensors">The replacement CmdSensors.</param>
         /// <param name="ftlDampener">The replacement FtlDampener.</param>
-        public virtual void RefitCmdModule(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+        public virtual void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
             CmdModuleDesign = cmdModuleDesign;
             MaxCmdStaffEffectiveness = cmdModuleDesign.CmdModuleStat.MaxCmdStaffEffectiveness;
             ReplacePassiveCMs(passiveCMs);

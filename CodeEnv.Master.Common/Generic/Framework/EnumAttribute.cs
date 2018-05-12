@@ -16,12 +16,11 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Uses Attribute metadata to capture whatever values we want to associate with enum values.
-    /// </summary>
-    /// 
     /// <remarks>Attribute parameters can only be a) primitive types, b) the Type enum, c) an enum enumType
     /// or delegateWithInvocationList) a one-dimensional array of any of these.
     /// <para>Uses Reflection so performance is slow. TODO - use Dictionary lookup after initial use.</para>
     /// </remarks>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]   // Custom Attributes - see Pro .NET 3.5 Page 548
     public sealed class EnumAttribute : Attribute {
 

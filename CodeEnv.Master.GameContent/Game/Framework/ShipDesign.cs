@@ -66,8 +66,8 @@ namespace CodeEnv.Master.GameContent {
         public override string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(), Status.GetValueName(),
-                    ConstructionCost, DesignLevel);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(),
+                    Status.GetEnumAttributeText(), ConstructionCost, DesignLevel);
             }
         }
 
@@ -89,15 +89,20 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipDesign"/> class.
-        /// <remarks>This version automatically improves any Reqd EquipmentStats (including the HullStat) to the highest Level available,
+        /// <remarks>This version automatically improves any Reqd EquipmentStats (including the HullStat) to the current Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
+        /// <remarks>Warning: Does NOT transfer over Status which will be the default until externally changed.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public ShipDesign(ShipDesign designToImprove)
             : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdSRSensorStat),
               GetImprovedReqdStat(designToImprove.Player, designToImprove.HullStat),
               GetImprovedReqdStat(designToImprove.Player, designToImprove.StlEngineStat), designToImprove.CombatStance) {
+
+            D.Log("{0} is using 'copy' constructor on {1}...", GetType().Name, designToImprove.DebugName);
+
+            D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, designToImprove.Status);
 
             OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
@@ -111,6 +116,7 @@ namespace CodeEnv.Master.GameContent {
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
             DesignLevel = designToImprove.DesignLevel;
+            D.Log("... to generate {0}.", DebugName);
         }
 
         public ShipDesign(Player player, SensorStat reqdSRSensorStat, ShipHullStat hullStat, EngineStat stlEngineStat, ShipCombatStance combatStance)
@@ -164,11 +170,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            if (base.IsNonStatContentEqual(oDesign)) {
+        protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonOptionalStatContentEqual(oDesign)) {
                 var sDesign = oDesign as ShipDesign;
-                return sDesign.HullStat == HullStat && sDesign.StlEngineStat == StlEngineStat /*&& sDesign.FtlEngineStat == FtlEngineStat*/
-                    && sDesign.CombatStance == CombatStance;
+                return sDesign.HullStat == HullStat && sDesign.StlEngineStat == StlEngineStat && sDesign.CombatStance == CombatStance;
             }
             return false;
         }

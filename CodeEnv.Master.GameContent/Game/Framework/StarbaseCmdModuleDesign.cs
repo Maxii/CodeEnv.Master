@@ -38,12 +38,15 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>This version automatically improves any Reqd EquipmentStats to the highest Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
+        /// <remarks>Warning: Does NOT transfer over Status which will be the default until externally changed.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public StarbaseCmdModuleDesign(StarbaseCmdModuleDesign designToImprove)
             : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
             GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
             GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
+
+            D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, designToImprove.Status);
 
             OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
@@ -64,8 +67,8 @@ namespace CodeEnv.Master.GameContent {
             InitializeValuesAndReferences();
         }
 
-        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            return base.IsNonStatContentEqual(oDesign);
+        protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            return base.IsNonOptionalStatContentEqual(oDesign);
         }
 
         #region Value-based Equality Archive

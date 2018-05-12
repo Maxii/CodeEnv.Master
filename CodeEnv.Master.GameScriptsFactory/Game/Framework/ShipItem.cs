@@ -5441,7 +5441,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             // Can be ordered to refit even if already ordered to refit as fleet can change destination before hanger arrival
             // Can be ordered to refit in final stages of getting to hanger
             failCause = "No refit designs";
-            return OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.Design);
+            return OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.Design);
         }
         if (orderDirective == ShipDirective.Disband) {
             // Can be ordered to disband even if already ordered to disband as fleet can change destination before hanger arrival

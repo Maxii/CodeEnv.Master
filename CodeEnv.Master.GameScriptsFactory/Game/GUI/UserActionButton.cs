@@ -182,7 +182,7 @@ public class UserActionButton : AGuiButton {
 
     private void __ShowDialogBoxTest() {
         var dialogWindow = DialogWindow.Instance;
-        var dialogSettings = new DialogWindow.DialogSettings() {
+        var dialogSettings = new APopupDialogForm.DialogSettings {
             Title = "Pause Test",
             Text = "I am paused",
             ShowDoneButton = true,

@@ -133,7 +133,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (enabledEqCatsWithHighestLevelResearched.Any()) {
-                _playerDesigns.UpdateEquipLevelAndReqdDesigns(enabledEqCatsWithHighestLevelResearched);
+                _playerDesigns.UpdateEquipLevelAndTemplateDesigns(enabledEqCatsWithHighestLevelResearched);
             }
         }
 

@@ -72,6 +72,30 @@ public class HeroChangeGuiElement : AIconGuiElement, IComparable<HeroChangeGuiEl
         _heroLevelProgressBar = gameObject.GetSingleComponentInChildren<UIProgressBar>();
         _heroLevelLabel = gameObject.GetComponentsInChildren<UILabel>().Single(label => label != _iconImageNameLabel);
     }
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        AssignHeroValuesToWidgets();
+    }
+
+    private void AssignHeroValuesToWidgets() {
+        Hero hero = HeroDataReference.Value;
+
+        _iconImageSprite.atlas = hero.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = hero.ImageFilename;
+        _iconImageNameLabel.text = hero.Name;
+        _guiElementTooltipContent = hero.Name;
+
+        if (hero != TempGameValues.NoHero) {
+            _heroLevelLabel.text = HeroLevelFormat.Inject(hero.Level);
+            _heroLevelProgressBar.value = hero.NextLevelCompletionPercentage;
+            NGUITools.SetActive(_heroLevelProgressBar.gameObject, true);
+        }
+        else {
+            _heroLevelLabel.text = null;
+            _heroLevelProgressBar.value = Constants.ZeroF;
+            NGUITools.SetActive(_heroLevelProgressBar.gameObject, false);
+        }
+    }
 
     #region Event and Property Change Handlers
 
@@ -103,31 +127,6 @@ public class HeroChangeGuiElement : AIconGuiElement, IComparable<HeroChangeGuiEl
         }
         else {
             HoveredHudWindow.Instance.Hide();
-        }
-    }
-
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        AssignHeroValuesToWidgets();
-    }
-
-    private void AssignHeroValuesToWidgets() {
-        Hero hero = HeroDataReference.Value;
-
-        _iconImageSprite.atlas = hero.ImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = hero.ImageFilename;
-        _iconImageNameLabel.text = hero.Name;
-        _guiElementTooltipContent = hero.Name;
-
-        if (hero != TempGameValues.NoHero) {
-            _heroLevelLabel.text = HeroLevelFormat.Inject(hero.Level);
-            _heroLevelProgressBar.value = hero.NextLevelCompletionPercentage;
-            NGUITools.SetActive(_heroLevelProgressBar.gameObject, true);
-        }
-        else {
-            _heroLevelLabel.text = null;
-            _heroLevelProgressBar.value = Constants.ZeroF;
-            NGUITools.SetActive(_heroLevelProgressBar.gameObject, false);
         }
     }
 

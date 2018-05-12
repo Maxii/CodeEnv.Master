@@ -76,6 +76,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     /// <param name="replacementStat">The replacement stat.</param>
     /// <returns></returns>
     public bool Replace(AEquipmentStat replacementStat) {
+        D.Assert(IsEnabled);
         AEquipmentStat unusedReplacedStat;
         return TryReplace(replacementStat, out unusedReplacedStat);
     }

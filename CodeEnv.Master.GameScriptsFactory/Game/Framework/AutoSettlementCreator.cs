@@ -39,7 +39,7 @@ public class AutoSettlementCreator : AAutoUnitCreator {
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
-            FacilityDesign design = _ownerDesigns.GetFacilityDesign(designName);
+            FacilityDesign design = _ownerDesigns.__GetFacilityDesign(designName);
             string name = _factory.__GetUniqueFacilityName(design.DesignName);
             _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, design, name, gameObject));
         }

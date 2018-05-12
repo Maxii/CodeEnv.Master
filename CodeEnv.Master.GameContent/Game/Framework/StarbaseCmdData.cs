@@ -124,8 +124,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override void RefitCmdModule(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.RefitCmdModule(cmdModDesign, passiveCMs, sensors, ftlDampener);
+        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDampener);
             // CmdModuleDesign does have StarbaseCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
         }
 

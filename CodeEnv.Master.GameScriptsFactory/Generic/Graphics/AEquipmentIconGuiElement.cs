@@ -46,6 +46,7 @@ public abstract class AEquipmentIconGuiElement : AMultiSizeIconGuiElement {
         }
     }
 
+
     #region Debug
 
     #endregion

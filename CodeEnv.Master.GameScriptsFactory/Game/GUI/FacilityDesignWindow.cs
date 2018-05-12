@@ -43,7 +43,7 @@ public class FacilityDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return UserDesigns.GetAllFacilityDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllDeployableFacilityDesigns(includeObsolete, includeDefault: false).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {

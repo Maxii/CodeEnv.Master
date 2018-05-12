@@ -97,17 +97,31 @@ public class NewGameUnitGenerator {
 
             FleetCmdModuleDesign currentFleetCmdTemplateDesign = MakeFleetCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
                 status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-            RegisterDesign(player, currentFleetCmdTemplateDesign, optionalRootDesignName: TempGameValues.FleetCmdTemplateRootDesignName);
+            RegisterDesign(player, currentFleetCmdTemplateDesign, optionalRootDesignName: TempGameValues.FleetCmdModTemplateRootDesignName);
 
             SettlementCmdModuleDesign currentSettlementCmdTemplateDesign = MakeSettlementCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
                 status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-            RegisterDesign(player, currentSettlementCmdTemplateDesign, optionalRootDesignName: TempGameValues.SettlementCmdTemplateRootDesignName);
+            RegisterDesign(player, currentSettlementCmdTemplateDesign, optionalRootDesignName: TempGameValues.SettlementCmdModTemplateRootDesignName);
 
             StarbaseCmdModuleDesign currentStarbaseCmdTemplateDesign;
             if (TryMakeStarbaseCmdModDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template,
                 design: out currentStarbaseCmdTemplateDesign)) {
-                RegisterDesign(player, currentStarbaseCmdTemplateDesign, TempGameValues.StarbaseCmdTemplateRootDesignName);
+                RegisterDesign(player, currentStarbaseCmdTemplateDesign, TempGameValues.StarbaseCmdModTemplateRootDesignName);
             }
+
+            FleetCmdModuleDesign fleetCmdModDefaultDesign = MakeFleetCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
+                status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
+            RegisterDesign(player, fleetCmdModDefaultDesign, optionalRootDesignName: TempGameValues.FleetCmdModDefaultRootDesignName);
+
+            SettlementCmdModuleDesign settlementCmdModDefaultDesign = MakeSettlementCmdModDesign(player, passiveCmQty: 0, sensorQty: 1,
+                status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
+            RegisterDesign(player, settlementCmdModDefaultDesign, optionalRootDesignName: TempGameValues.SettlementCmdModDefaultRootDesignName);
+
+            StarbaseCmdModuleDesign starbaseCmdModDefaultDesign;
+            if (TryMakeStarbaseCmdModDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, design: out starbaseCmdModDefaultDesign)) {
+                RegisterDesign(player, starbaseCmdModDefaultDesign, optionalRootDesignName: TempGameValues.StarbaseCmdModDefaultRootDesignName);
+            }
+
         }
     }
 
@@ -671,7 +685,7 @@ public class NewGameUnitGenerator {
         var ftlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.FtlPropulsion);  // can be null
 
         var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
-        var design = new ShipDesign(owner, elementsReqdSRSensorStat, hullStat, stlEngineStat,/* ftlEngineStat,*/ stance) {
+        var design = new ShipDesign(owner, elementsReqdSRSensorStat, hullStat, stlEngineStat, stance) {
             Status = status
         };
 
@@ -742,7 +756,7 @@ public class NewGameUnitGenerator {
         }
         else {
             D.AssertNotNull(existingDesignName);
-            ShipDesign existingDesign = playerDesigns.GetShipDesign(existingDesignName);
+            ShipDesign existingDesign = playerDesigns.__GetShipDesign(existingDesignName);
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
@@ -781,7 +795,7 @@ public class NewGameUnitGenerator {
         }
         else {
             D.AssertNotNull(existingDesignName);
-            FacilityDesign existingDesign = playerDesigns.GetFacilityDesign(existingDesignName);
+            FacilityDesign existingDesign = playerDesigns.__GetFacilityDesign(existingDesignName);
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
@@ -853,7 +867,8 @@ public class NewGameUnitGenerator {
         return design;
     }
 
-    private bool TryMakeStarbaseCmdModDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status, out StarbaseCmdModuleDesign design) {
+    private bool TryMakeStarbaseCmdModDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status,
+        out StarbaseCmdModuleDesign design) {
         Utility.ValidateForRange(passiveCmQty, Constants.Zero, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, Constants.One, TempGameValues.__MaxCmdSensors);
 
@@ -904,7 +919,7 @@ public class NewGameUnitGenerator {
         }
         else {
             D.AssertNotNull(existingDesignName);
-            FleetCmdModuleDesign existingDesign = playerDesigns.GetFleetCmdModDesign(existingDesignName);
+            FleetCmdModuleDesign existingDesign = playerDesigns.__GetFleetCmdModDesign(existingDesignName);
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
@@ -935,7 +950,7 @@ public class NewGameUnitGenerator {
         }
         else {
             D.AssertNotNull(existingDesignName);
-            SettlementCmdModuleDesign existingDesign = playerDesigns.GetSettlementCmdModDesign(existingDesignName);
+            SettlementCmdModuleDesign existingDesign = playerDesigns.__GetSettlementCmdModDesign(existingDesignName);
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
@@ -966,7 +981,7 @@ public class NewGameUnitGenerator {
         }
         else {
             D.AssertNotNull(existingDesignName);
-            StarbaseCmdModuleDesign existingDesign = playerDesigns.GetStarbaseCmdModDesign(existingDesignName);
+            StarbaseCmdModuleDesign existingDesign = playerDesigns.__GetStarbaseCmdModDesign(existingDesignName);
             if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }

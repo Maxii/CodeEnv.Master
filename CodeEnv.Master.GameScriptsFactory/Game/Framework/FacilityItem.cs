@@ -1764,7 +1764,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         if (orderDirective == FacilityDirective.Refit) {
             failCause = "No refit designs";
-            return OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.Design);
+            return OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.Design);
         }
         if (orderDirective == FacilityDirective.Disband) {
             // Can disband at any time as long as not Constructing, Refitting or already Disbanding

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, Status.GetValueName(), ConstructionCost, DesignLevel);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, Status.GetEnumAttributeText(), ConstructionCost, DesignLevel);
             }
         }
 
@@ -66,9 +66,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _status; }
             set {
                 D.AssertNotDefault((int)value);
-                if (_status == SourceAndStatus.PlayerCreation_Obsolete && value == SourceAndStatus.PlayerCreation_Current) {
-                    D.Warn("{0}.Status being reverted to Current from Obsolete?", DebugName);
-                }
+                D.Assert(_status == SourceAndStatus.None || _status == SourceAndStatus.PlayerCreation_Current);
                 _status = value;
             }
         }
@@ -96,10 +94,13 @@ namespace CodeEnv.Master.GameContent {
         public float HitPoints { get; private set; }
 
         /// <summary>
-        /// A value indicating how current this design is as compared to other designs of the same type.
+        /// A value indicating how current this design is as compared to other designs of the same Type and RootDesignName.
         /// <remarks>The higher the value the more current it is. Values that are not the most current 
-        /// indicate an obsolete design. A design whose value is lower than another design of the same
-        /// type is qualified for an upgrade.</remarks>
+        /// indicate an obsolete design.</remarks>
+        /// <remarks>Primary use is to make a unique DesignName (RootDesignName + DesignLevel, e.g. Frigate3). 
+        /// A unique DesignName is useful for 1) during Debug when Creators need to find a Design designated by this 
+        /// unique DesignName, and 2) during Play to indicate to the user how many versions of a design the
+        /// AI or User has made.</remarks>
         /// </summary>
         public int DesignLevel { get; protected set; }
 
@@ -320,6 +321,9 @@ namespace CodeEnv.Master.GameContent {
             ConstructionCost = CalcConstructionCost();
             HitPoints = CalcHitPoints();
             BuyoutCost = (decimal)(ConstructionCost * TempGameValues.__ProductionCostBuyoutMultiplier * Player.BuyoutCostMultiplier);
+            if (ConstructionCost.ApproxEquals(Constants.ZeroF)) {
+                D.Warn("{0}.AssignPropertyValues() has completed with invalid construction cost.", DebugName);
+            }
         }
 
         protected virtual float CalcConstructionCost() {
@@ -366,22 +370,23 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0}.HasEqualContent should not be used to compare against {1}, a design of a different Type!", DebugName, oDesign.DebugName);
                 return false;
             }
-            return IsNonStatContentEqual(oDesign) && AreStatsEqual(oDesign);
+            return IsNonOptionalStatContentEqual(oDesign) && AreOptionalStatsEqual(oDesign);
         }
 
         /// <summary>
         /// Returns <c>true</c> if the 'fixed' content of this design is equivalent, false otherwise.
-        /// <remarks>Fixed content refers to all non-transient content of the design excluding EquipmentStats that are
-        /// assigned to slots with SlotIDs. The equivalence of EquipmentStats assigned to slots is handled by AreStatsEqual()
+        /// <remarks>Fixed content refers to all non-transient content of the design excluding optional EquipmentStats that are
+        /// assigned to slots with SlotIDs. The equivalence of EquipmentStats assigned to slots is handled by AreOptStatsEqual()
         /// which is expensive and therefore handled after simpler equivalence is already found by this method.
         /// Transient content refers to fields like Name, Status and the iterator.</remarks>
         /// </summary>
         /// <param name="oDesign">The other design.</param>
-        protected virtual bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
-            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.DesignLevel == DesignLevel;
+        protected virtual bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
+            return oDesign.Player == Player && oDesign.ConstructionCost.ApproxEquals(ConstructionCost) && oDesign.BuyoutCost.ApproxEquals(BuyoutCost)
+                && oDesign.HitPoints.ApproxEquals(oDesign.HitPoints) && oDesign.DesignLevel == DesignLevel;
         }
 
-        private bool AreStatsEqual(AUnitMemberDesign oDesign) {
+        private bool AreOptionalStatsEqual(AUnitMemberDesign oDesign) {
             OptionalEquipSlotID slotID;
             AEquipmentStat aStat;
             while (TryGetNextOptEquipStat(out slotID, out aStat)) {
@@ -447,11 +452,13 @@ namespace CodeEnv.Master.GameContent {
             /// <summary>
             /// The Design was created by the player and is not obsolete.
             /// </summary>
+            [EnumAttribute("Current")]
             PlayerCreation_Current,
 
             /// <summary>
             /// The Design was created by the player but is obsolete.
             /// </summary>
+            [EnumAttribute("Obsolete")]
             PlayerCreation_Obsolete,
 
             /// <summary>
@@ -460,7 +467,18 @@ namespace CodeEnv.Master.GameContent {
             /// They are automatically replaced rather than obsoleted when new technology is researched that allows an upgrade.</remarks>
             /// <remarks>No unit member will ever be instantiated using a design with this SourceAndStatus.</remarks>
             /// </summary>
-            SystemCreation_Template
+            [EnumAttribute("Template")]
+            SystemCreation_Template,
+
+            /// <summary>
+            /// The Design was created by the system as a basic default design.
+            /// <remarks>The design is by definition, current, as only one exists for each type of design. 
+            /// They are never replaced or obsoleted when new technology is researched that allows an upgrade.</remarks>
+            /// <remarks>5.12.18 Currently only used with AUnitCmdModuleDesigns.</remarks>
+            /// </summary>
+            [EnumAttribute("Default")]
+            SystemCreation_Default
+
         }
 
         #endregion

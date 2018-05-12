@@ -259,13 +259,12 @@ public class DesignScreensManager : AMonoBase {
         // will always be null. See UnityLearnings - Ngui - EventDelegate
         EventDelegate acceptButtonDelegate = new EventDelegate(this, "HandleScreenChoiceAcceptButtonClicked");
 
-        DialogWindow.DialogSettings dialogSettings = new DialogWindow.DialogSettings {
+        APopupDialogForm.DialogSettings dialogSettings = new APopupDialogForm.DialogSettings {
             ShowAcceptButton = true,
             ShowCancelButton = true,
 
             AcceptButtonDelegate = acceptButtonDelegate,
-            CancelButtonDelegate = new EventDelegate(HandleScreenChoiceCancelButtonClicked)
-
+            CancelButtonDelegate = new EventDelegate(() => DialogWindow.Instance.Hide())
         };
         DialogWindow.Instance.Show(FormID.SelectDesignScreenDialog, dialogSettings);
     }
@@ -276,11 +275,6 @@ public class DesignScreensManager : AMonoBase {
 
         InitializeDesignWindow(screenChoiceCheckboxID);
         _currentDesignWindow.Show();
-    }
-
-    [Obsolete]
-    private void HandleScreenChoiceCancelButtonClicked() {
-        DialogWindow.Instance.Hide();
     }
 
     #endregion

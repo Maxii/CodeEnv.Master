@@ -207,9 +207,13 @@ namespace CodeEnv.Master.GameContent {
                                                                                 ShipHullCategory.Destroyer
                                                                             };
 
-        public const string FleetCmdTemplateRootDesignName = "FleetCmdTemplateDesign";
-        public const string StarbaseCmdTemplateRootDesignName = "StarbaseCmdTemplateDesign";
-        public const string SettlementCmdTemplateRootDesignName = "SettlementCmdTemplateDesign";
+        public const string FleetCmdModTemplateRootDesignName = "FleetCmdModTemplateDesign";
+        public const string StarbaseCmdModTemplateRootDesignName = "StarbaseCmdModTemplateDesign";
+        public const string SettlementCmdModTemplateRootDesignName = "SettlementCmdModTemplateDesign";
+
+        public const string FleetCmdModDefaultRootDesignName = "FleetCmdModDefaultDesign";
+        public const string StarbaseCmdModDefaultRootDesignName = "StarbaseCmdModDefaultDesign";
+        public const string SettlementCmdModDefaultRootDesignName = "SettlementCmdModDefaultDesign";
 
         #region Ship Speed
 
