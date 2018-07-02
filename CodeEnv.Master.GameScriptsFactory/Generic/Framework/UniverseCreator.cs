@@ -41,6 +41,7 @@ public class UniverseCreator {
 
     private IDictionary<DiplomaticRelationship, IList<Player>> _aiPlayerInitialUserRelationsLookup;
     private IDictionary<Player, IntVector3> _playersHomeSectorLookup;
+    private IList<StationaryLocation> _vacantStarbaseStationsUsed;
     private List<AUnitCreator> _unitCreators;
     private List<SystemCreator> _systemCreators;
     //private SectorGrid _sectorGrid;   // ref to SectorGrid complicates things as SectorGrid is not persistent
@@ -56,6 +57,7 @@ public class UniverseCreator {
         _debugCntls = DebugControls.Instance;
         SystemGenerator = new NewGameSystemGenerator();
         UnitGenerator = new NewGameUnitGenerator();
+        _vacantStarbaseStationsUsed = new List<StationaryLocation>();
     }
 
     public void InitializeUniverseCenter() {
@@ -87,7 +89,8 @@ public class UniverseCreator {
         }
 
         var sectorGrid = SectorGrid.Instance;
-        var deployableSectorIDs = sectorGrid.NonPeripheralSectorIDs;
+        var deployableSectorIDs = sectorGrid.CoreSectorIDs;
+        ////var deployableSectorIDs = sectorGrid.SectorIDs;
         int systemQty = CalcUniverseSystemsQty(deployableSectorIDs.Count());
 
         // Deploy intended Home SystemCreators first
@@ -238,7 +241,8 @@ public class UniverseCreator {
         var starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
         starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
 
-        settlementQty = userPlayerStartLevel.SettlementStartQty() - Constants.One;  // Home Settlement already deployed
+        // Minus One as Home Settlement already deployed
+        settlementQty = Mathf.Clamp(userPlayerStartLevel.SettlementStartQty() - Constants.One, Constants.Zero, int.MaxValue);
         var settlementCreatorsDeployed = DeployAndConfigureNonHomeStartLevelSettlementCreators(userPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
         _unitCreators.AddRange(settlementCreatorsDeployed);
         var settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
@@ -288,7 +292,8 @@ public class UniverseCreator {
             starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
             starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
 
-            settlementQty = aiPlayerStartLevel.SettlementStartQty() - Constants.One;  // Home Settlement already deployed
+            // Minus One as Home Settlement already deployed
+            settlementQty = Mathf.Clamp(aiPlayerStartLevel.SettlementStartQty() - Constants.One, Constants.Zero, int.MaxValue);
             settlementCreatorsDeployed = DeployAndConfigureNonHomeStartLevelSettlementCreators(aiPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
             _unitCreators.AddRange(settlementCreatorsDeployed);
             settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
@@ -419,7 +424,9 @@ public class UniverseCreator {
     /// <param name="existingFleetCreators">The existing fleet creators.</param>
     /// <param name="qtyToDeploy">The qty to deploy.</param>
     /// <returns></returns>
-    private IList<AUnitCreator> DeployAndConfigureStartLevelFleetCreators(Player player, IEnumerable<ADebugUnitCreator> existingFleetCreators, int qtyToDeploy) {
+    private IList<AUnitCreator> DeployAndConfigureStartLevelFleetCreators(Player player, IEnumerable<ADebugUnitCreator> existingFleetCreators,
+        int qtyToDeploy) {
+        Utility.ValidateNotNegative(qtyToDeploy);
         IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
         if (qtyToDeploy > Constants.Zero) {
 
@@ -437,7 +444,8 @@ public class UniverseCreator {
             sectorIDsToDeployTo.Push(homeSectorID); // if start with fleet(s), always deploy one in the home sector
             if (qtyToDeploy > Constants.One) {
                 // there are additional fleets to deploy around the home system
-                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+                ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (!gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
                         sectorIDsToDeployTo.Push(neighborSectorID);
@@ -473,7 +481,7 @@ public class UniverseCreator {
             foreach (var debugCreator in existingFleetCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomInsidePoint();
                     UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation, deployDate);
 
                     creatorsDeployed.Add(debugCreator);
@@ -490,7 +498,7 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomInsidePoint();
                     AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitGenerator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
@@ -580,6 +588,7 @@ public class UniverseCreator {
     /// <returns></returns>
     private IList<AUnitCreator> DeployAndConfigureNonHomeStartLevelSettlementCreators(Player player, IEnumerable<ADebugUnitCreator> existingSettlementCreators,
         int qtyToDeploy, ref HashSet<ISystem> usedSystems) {  // OPTIMIZE ref not really necessary as List passed by Reference anyhow
+        Utility.ValidateNotNegative(qtyToDeploy);
 
         IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
         if (qtyToDeploy > Constants.Zero) { // there are additional settlements to deploy around the home system
@@ -590,7 +599,8 @@ public class UniverseCreator {
 
             ISystem system;
             SectorGrid sectorGrid = SectorGrid.Instance;
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
             foreach (var neighborSectorID in homeNeighborSectorIDs) {
                 if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
                     if (!usedSystems.Contains(system)) {
@@ -660,7 +670,9 @@ public class UniverseCreator {
     /// <param name="existingStarbaseCreators">The existing starbase creators.</param>
     /// <param name="qtyToDeploy">The qty to deploy.</param>
     /// <returns></returns>
-    private IList<AUnitCreator> DeployAndConfigureStartLevelStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators, int qtyToDeploy) {
+    private IList<AUnitCreator> DeployAndConfigureStartLevelStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators,
+        int qtyToDeploy) {
+        Utility.ValidateNotNegative(qtyToDeploy);
         if (!UnitGenerator.__IsStarbaseCmdModuleStatAvailable(player)) {
             return Enumerable.Empty<AUnitCreator>().ToList();
         }
@@ -673,7 +685,8 @@ public class UniverseCreator {
             D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
             foreach (var neighborSectorID in homeNeighborSectorIDs) {
                 ISystem unusedSystem;
                 if (!gameKnowledge.TryGetSystem(neighborSectorID, out unusedSystem)) {
@@ -698,8 +711,11 @@ public class UniverseCreator {
             foreach (var debugCreator in existingStarbaseCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    bool isAssigned = UnitGenerator.TryAssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation, deployDate);
+                    StationaryLocation deployedStation = sectorGrid.GetSector(deployedSectorID).GetRandomVacantStarbaseStation(_vacantStarbaseStationsUsed);
+                    _vacantStarbaseStationsUsed.Add(deployedStation);
+                    deployedLocation = deployedStation.Position;
+                    bool isAssigned = UnitGenerator.TryAssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player,
+                        deployedLocation, deployDate);
                     D.Assert(isAssigned);
                     candidateSectorIDs.Remove(deployedSectorID);
 
@@ -716,7 +732,9 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    StationaryLocation deployedStation = sectorGrid.GetSector(deployedSectorID).GetRandomVacantStarbaseStation(_vacantStarbaseStationsUsed);
+                    _vacantStarbaseStationsUsed.Add(deployedStation);
+                    deployedLocation = deployedStation.Position;
                     bool isGenerated;
                     AutoStarbaseCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
@@ -768,7 +786,8 @@ public class UniverseCreator {
             if (qtyToDeploy > Constants.One) {
                 // there are additional settlements to deploy around the home system
                 SectorGrid sectorGrid = SectorGrid.Instance;
-                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+                ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
                         if (!usedSystems.Contains(system)) {
@@ -868,6 +887,7 @@ public class UniverseCreator {
     /// <returns></returns>
     private IList<AUnitCreator> DeployAndConfigureAdditionalStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators,
         int qtyToDeploy) {
+        Utility.ValidateNotNegative(qtyToDeploy);
         if (!UnitGenerator.__IsStarbaseCmdModuleStatAvailable(player)) {
             return Enumerable.Empty<AUnitCreator>().ToList();
         }
@@ -883,7 +903,7 @@ public class UniverseCreator {
             ISystem unused;
             IntVector3 sectorID;
             for (int i = 0; i < qtyToDeploy; i++) {
-                if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: excludedSectorIDs)) {
+                if (sectorGrid.TryGetRandomCoreSectorID(out sectorID, excludedIDs: excludedSectorIDs)) {
                     if (!gameKnowledge.TryGetSystem(sectorID, out unused)) {
                         sectorIDsToDeployTo.Push(sectorID);
                     }
@@ -895,6 +915,19 @@ public class UniverseCreator {
                 }
                 break;
             }
+            ////for (int i = 0; i < qtyToDeploy; i++) {
+            ////    if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: excludedSectorIDs)) {
+            ////        if (!gameKnowledge.TryGetSystem(sectorID, out unused)) {
+            ////            sectorIDsToDeployTo.Push(sectorID);
+            ////        }
+            ////        else {
+            ////            i--;
+            ////        }
+            ////        excludedSectorIDs.Add(sectorID);
+            ////        continue;
+            ////    }
+            ////    break;
+            ////}
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
                 D.Warn("{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
@@ -906,7 +939,9 @@ public class UniverseCreator {
             foreach (var debugCreator in existingStarbaseCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     sectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
+                    StationaryLocation deployedStation = sectorGrid.GetSector(sectorID).GetRandomVacantStarbaseStation(_vacantStarbaseStationsUsed);
+                    _vacantStarbaseStationsUsed.Add(deployedStation);
+                    deployedLocation = deployedStation.Position;
                     bool isAssigned = UnitGenerator.TryAssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation);
                     D.Assert(isAssigned);
                     creatorsDeployed.Add(debugCreator);
@@ -922,7 +957,9 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     sectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
+                    StationaryLocation deployedStation = sectorGrid.GetSector(sectorID).GetRandomVacantStarbaseStation(_vacantStarbaseStationsUsed);
+                    _vacantStarbaseStationsUsed.Add(deployedStation);
+                    deployedLocation = deployedStation.Position;
                     bool isGenerated;
                     AutoStarbaseCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
@@ -951,7 +988,9 @@ public class UniverseCreator {
     /// <param name="existingFleetCreators">The existing fleet creators.</param>
     /// <param name="qtyToDeploy">The qty to deploy.</param>
     /// <returns></returns>
-    private IList<AUnitCreator> DeployAndConfigureAdditionalFleetCreators(Player player, IEnumerable<ADebugUnitCreator> existingFleetCreators, int qtyToDeploy) {
+    private IList<AUnitCreator> DeployAndConfigureAdditionalFleetCreators(Player player, IEnumerable<ADebugUnitCreator> existingFleetCreators,
+        int qtyToDeploy) {
+        Utility.ValidateNotNegative(qtyToDeploy);
         IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
         if (qtyToDeploy > Constants.Zero) {
 
@@ -960,12 +999,19 @@ public class UniverseCreator {
 
             IntVector3 sectorID;
             for (int i = 0; i < qtyToDeploy; i++) {
-                if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: sectorIDsToDeployTo)) {
+                if (sectorGrid.__TryGetRandomSectorID(out sectorID, excludedIDs: sectorIDsToDeployTo)) {
                     sectorIDsToDeployTo.Push(sectorID);
                     continue;
                 }
                 break;
             }
+            ////for (int i = 0; i < qtyToDeploy; i++) {
+            ////    if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: sectorIDsToDeployTo)) {
+            ////        sectorIDsToDeployTo.Push(sectorID);
+            ////        continue;
+            ////    }
+            ////    break;
+            ////}
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
                 D.Warn("{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
@@ -978,7 +1024,7 @@ public class UniverseCreator {
             foreach (var debugCreator in existingFleetCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomInsidePoint();
                     UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation);
 
                     creatorsDeployed.Add(debugCreator);
@@ -995,7 +1041,7 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomInsidePoint();
                     AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitGenerator.GenerateRandomAutoFleetCreator(player, deployedLocation);
@@ -1027,6 +1073,7 @@ public class UniverseCreator {
     /// <returns></returns>
     private IList<AUnitCreator> DeployAndConfigureAdditionalSettlementCreators(Player player, IEnumerable<ADebugUnitCreator> existingSettlementCreators,
         int qtyToDeploy, ref HashSet<ISystem> usedSystems) {  // OPTIMIZE ref not really necessary as List passed by Reference anyhow
+        Utility.ValidateNotNegative(qtyToDeploy);
         IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
         if (qtyToDeploy > Constants.Zero) {
             var gameKnowledge = _gameMgr.GameKnowledge;
@@ -1089,6 +1136,7 @@ public class UniverseCreator {
         if (UniverseCenter != null) {
             UniverseCenter.FinalInitialize();
         }
+        SectorGrid.Instance.Sectors.ForAll(s => s.FinalInitialize());
         _systemCreators.ForAll(sc => sc.CompleteSystemInitialization());
     }
 
@@ -1096,6 +1144,7 @@ public class UniverseCreator {
         if (UniverseCenter != null) {
             UniverseCenter.CommenceOperations();
         }
+        SectorGrid.Instance.Sectors.ForAll(s => s.CommenceOperations());
         _systemCreators.ForAll(sc => sc.CommenceSystemOperations());
     }
 
@@ -1180,6 +1229,7 @@ public class UniverseCreator {
         _unitCreators = null;
         _aiPlayerInitialUserRelationsLookup = null;
         _playersHomeSectorLookup = null;
+        _vacantStarbaseStationsUsed.Clear();
     }
 
     private int CalcUniverseSystemsQty(int nonPeripheralSectorQty) {

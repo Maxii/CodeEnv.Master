@@ -84,8 +84,6 @@ namespace CodeEnv.Master.GameContent {
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
             IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleDesign cmdModDesign)
             : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
-            Population = cmdModDesign.CmdModuleStat.StartingPopulation;
-            Approval = cmdModDesign.CmdModuleStat.StartingApproval;
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {

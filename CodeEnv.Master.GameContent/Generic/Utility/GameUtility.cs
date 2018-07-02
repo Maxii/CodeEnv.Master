@@ -31,10 +31,49 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameUtility {
 
-        public static bool IsLocationContainedInUniverse(Vector3 location, UniverseSize universeSize) {
+        public static IntelCoverage GetLowestCommonCoverage(IEnumerable<IntelCoverage> coverages) {
+            IntelCoverage lowestCommonCoverage = IntelCoverage.Comprehensive;
+            foreach (var coverage in coverages) {
+                if (coverage < lowestCommonCoverage) {
+                    lowestCommonCoverage = coverage;
+                }
+            }
+            return lowestCommonCoverage;
+        }
+
+        public static IntelCoverage GetHighestCoverage(IEnumerable<IntelCoverage> coverages) {
+            IntelCoverage highestCoverage = IntelCoverage.None;
+            foreach (var coverage in coverages) {
+                if (coverage > highestCoverage) {
+                    highestCoverage = coverage;
+                }
+            }
+            return highestCoverage;
+        }
+
+        public static bool IsLocationContainedInUniverse(Vector3 worldLocation, UniverseSize universeSize) {
             float universeRadius = universeSize.Radius();
             float universeRadiusSqrd = universeRadius * universeRadius;
-            return universeRadiusSqrd > Vector3.SqrMagnitude(location - GameConstants.UniverseOrigin);
+            return IsLocationContainedInUniverse(worldLocation, universeRadiusSqrd);
+        }
+
+        public static bool IsLocationContainedInUniverse(Vector3 worldLocation, float universeRadiusSqrd) {
+            return universeRadiusSqrd > Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+        }
+
+        public static bool IsLocationContainedInUniverse(Vector3 worldLocation) {
+            var gameSettings = GameReferences.GameManager.GameSettings;
+            D.AssertNotNull(gameSettings);
+            float universeRadius = gameSettings.UniverseSize.Radius();
+            return IsLocationContainedInUniverse(worldLocation, universeRadius * universeRadius);
+        }
+
+        public static bool IsSphereCompletelyContainedInUniverse(Vector3 containedCenter, float containedRadius, float universeRadiusSqrd) {
+            // isContained = containingRadius >= distanceBetweenCenters + containedRadius ->
+            // isContained = containingRadius - containedRadius >= distanceBetweenCenters
+            float sqrDistanceBetweenCenters = Vector3.SqrMagnitude(GameConstants.UniverseOrigin - containedCenter);
+            float containedRadiusSqrd = containedRadius * containedRadius;
+            return universeRadiusSqrd - containedRadiusSqrd >= sqrDistanceBetweenCenters;
         }
 
         /// <summary>
@@ -154,20 +193,37 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static IFleetNavigableDestination GetClosest(Vector3 myPosition, IEnumerable<IFleetNavigableDestination> navigables) {
-            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+            return navigables.MinBy(nav => Vector3.SqrMagnitude(nav.Position - myPosition));
         }
 
         public static IShipNavigableDestination GetClosest(Vector3 myPosition, IEnumerable<IShipNavigableDestination> navigables) {
-            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+            return navigables.MinBy(nav => Vector3.SqrMagnitude(nav.Position - myPosition));
         }
 
         public static INavigableDestination GetClosest(Vector3 myPosition, IEnumerable<INavigableDestination> navigables) {
-            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+            return navigables.MinBy(nav => Vector3.SqrMagnitude(nav.Position - myPosition));
         }
 
         public static ISystem_Ltd GetClosest(Vector3 myPosition, IEnumerable<ISystem_Ltd> systems) {
-            return systems.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+            return systems.MinBy(sys => Vector3.SqrMagnitude(sys.Position - myPosition));
         }
+
+        public static ISector_Ltd GetClosest(Vector3 myPosition, IEnumerable<ISector_Ltd> sectors) {
+            return sectors.MinBy(sector => Vector3.SqrMagnitude(sector.Position - myPosition));
+        }
+
+        public static IShipExplorable GetClosest(Vector3 myPosition, IEnumerable<IShipExplorable> explorables) {
+            return explorables.MinBy(exp => Vector3.SqrMagnitude(exp.Position - myPosition));
+        }
+
+        public static IFleetExplorable GetClosest(Vector3 myPosition, IEnumerable<IFleetExplorable> explorables) {
+            return explorables.MinBy(exp => Vector3.SqrMagnitude(exp.Position - myPosition));
+        }
+
+        public static IStarbaseCmd_Ltd GetClosest(Vector3 myPosition, IEnumerable<IStarbaseCmd_Ltd> starbases) {
+            return starbases.MinBy(sb => Vector3.SqrMagnitude(sb.Position - myPosition));
+        }
+
 
         #endregion
 
@@ -246,7 +302,16 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
+        public static void __ValidateLocationContainedInUniverse(Vector3 worldLocation, float universeRadiusSqrd) {
+            D.Assert(IsLocationContainedInUniverse(worldLocation, universeRadiusSqrd));
+        }
 
+        public static void __ValidateLocationContainedInUniverse(Vector3 worldLocation) {
+            var gameSettings = GameReferences.GameManager.GameSettings;
+            D.AssertNotNull(gameSettings);
+            float universeRadius = gameSettings.UniverseSize.Radius();
+            __ValidateLocationContainedInUniverse(worldLocation, universeRadius * universeRadius);
+        }
     }
 }
 

@@ -34,7 +34,9 @@ public class SystemCtxControl_AI : ACtxControl {
                                                                                             FleetDirective.Move,
                                                                                             FleetDirective.Guard,
                                                                                             FleetDirective.Explore,
-                                                                                            FleetDirective.Patrol
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.FoundSettlement,
+                                                                                            FleetDirective.FoundStarbase
                                                                                         };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
@@ -46,6 +48,8 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _systemMenuOperator.IsFocus; } }
+
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
 
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;
@@ -87,6 +91,14 @@ public class SystemCtxControl_AI : ACtxControl {
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;
                 return !isOrderAuthorizedByUserRemoteFleet || !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
+            case FleetDirective.FoundSettlement:
+                // 6.14.18 Although Systems owned by the AI are already settled by the AI, that doesn't mean the User knows its AI-owned
+                return !isOrderAuthorizedByUserRemoteFleet || !_systemMenuOperator.IsFoundingSettlementAllowedBy(_user);
+            case FleetDirective.FoundStarbase:
+                // 6.14.18 Although Systems owned by the AI means the Sector is too, that doesn't mean the User knows its AI-owned
+                // Starbases can't be founded inside Systems, but they can be founded in the System's Sector
+                var systemSector = SectorGrid.Instance.GetSector(_systemMenuOperator.SectorID);
+                return !isOrderAuthorizedByUserRemoteFleet || !systemSector.IsFoundingStarbaseAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -103,10 +115,29 @@ public class SystemCtxControl_AI : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigableDestination target = directive == FleetDirective.Attack ? _settlement as IFleetNavigableDestination : _systemMenuOperator;
+        IFleetNavigableDestination target = GetFleetTarget(directive);
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         remoteFleet.CurrentOrder = order;
+    }
+
+    private IFleetNavigableDestination GetFleetTarget(FleetDirective directive) {
+        switch (directive) {
+            case FleetDirective.Attack:
+                return _settlement;
+            case FleetDirective.FoundStarbase:
+                var systemSector = SectorGrid.Instance.GetSector(_systemMenuOperator.SectorID);
+                return systemSector;
+            case FleetDirective.FullSpeedMove:
+            case FleetDirective.Move:
+            case FleetDirective.Guard:
+            case FleetDirective.Explore:
+            case FleetDirective.Patrol:
+            case FleetDirective.FoundSettlement:
+                return _systemMenuOperator;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
     }
 
 }

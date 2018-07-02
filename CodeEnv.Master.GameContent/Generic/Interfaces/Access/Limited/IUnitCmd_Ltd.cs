@@ -33,9 +33,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool __IsActivelyOperating { get; }
 
-        bool IsOwnerChangeUnderway { get; }
-
         string UnitName { get; }
+
+        bool __IsOwnerChgUnderway { get; }
 
     }
 }

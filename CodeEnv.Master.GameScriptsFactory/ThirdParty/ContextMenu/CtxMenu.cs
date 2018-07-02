@@ -26,12 +26,17 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Context Menu. Similar in functionality to NGUI UIPopupList, but better
-/// suited to authoring contextual menus. UIContextMenu has no concept of a current selection.
-/// Rather, its presentation is geared towards displaying a list of selectable commands
-/// and toggle-able options.
-/// </summary>
+/// Context Menu. Similar in functionality to NGUI UIPopupList, but better suited to authoring contextual menus. 
+/// UIContextMenu has no concept of a current selection. Rather, its presentation is geared towards displaying a 
+/// list of selectable commands and toggle-able options.
+/// <remarks>6.20.18 Menu hiding and pause/resume behaviour. A CtxMenu hides itself when something besides a menu item is clicked. 
+/// This is implemented in CtxMenu.LateUpdate where it detects that UICamera.selectedObject is no longer the CtxMenu
+/// and therefore hides the menu. ACtxControl detects the completion of the hide and requests an unpause. InputManager
+/// does not detect the 'unconsumed click' when a CtxMenu is showing as ACtxControl has changed InputManager's InputMode to PartialPopup
+/// which doesn't listen to 3DWorld events. Accordingly, SelectionManager doesn't receive an unconsumedPress event and therefore
+/// doesn't undesirably deselect the SelectedItem and request an additional unpause.</remarks>
 /// <remarks>Derived from Troy Heere's Contextual with permission.</remarks>
+/// </summary>
 [ExecuteInEditMode]
 public class CtxMenu : AMonoBase {
 
@@ -443,7 +448,7 @@ public class CtxMenu : AMonoBase {
             return;
         }
 
-        //D.Log("{0}.{1} is hiding", name, GetType().Name);
+        //D.Log("{0}.Hide() called.", DebugName);
 
         _isHiding = true;
         _isShowing = false;
@@ -1235,7 +1240,7 @@ public class CtxMenu : AMonoBase {
 
             UICamera uiCam = UICamera;
 
-            EventDelegate.Add(_currentSubmenu.onSelection, SubmenuSelectionEventHandler);   //EventDelegate.Add(_currentSubmenu.onSelection, OnSubmenuSelection);
+            EventDelegate.Add(_currentSubmenu.onSelection, SubmenuSelectionEventHandler);
             _currentSubmenu.parentMenu = this;
 
             float dx = 0f, dy = 0f;
@@ -1593,6 +1598,8 @@ public class CtxMenu : AMonoBase {
                     label.bitmapFont = font;
                     label.fontSize = font.defaultSize;
                     label.overflowMethod = UILabel.Overflow.ResizeFreely;
+                    label.supportEncoding = true;   // 6.16.18 Added to allow use of Ngui's Hex color encoding for text
+                    label.symbolStyle = NGUIText.SymbolStyle.Colored;
                     label.color = item.isDisabled ? labelColorDisabled : labelColorNormal;
                     label.pivot = UIWidget.Pivot.TopLeft;
                     label.depth = NGUITools.CalculateNextDepth(_panel.gameObject);
@@ -1690,11 +1697,11 @@ public class CtxMenu : AMonoBase {
                 }
 
                 if (listener != null) {
-                    listener.onHover = SubmenuItemHoverEventHandler;    //listener.onHover = OnItemHover;
-                    listener.onPress = SubmenuItemPressEventHandler;    //listener.onPress = OnItemPress;
-                    listener.onDrag = SubmenuItemDragEventHandler;      //listener.onDrag = OnItemDrag;
-                    listener.onSelect = SubmenuItemSelectEventHandler;  //listener.onSelect = OnItemSelect;
-                    listener.onKey = SubmenuItemKeyEventHandler;        //listener.onKey = OnItemKey;
+                    listener.onHover = SubmenuItemHoverEventHandler;
+                    listener.onPress = SubmenuItemPressEventHandler;
+                    listener.onDrag = SubmenuItemDragEventHandler;
+                    listener.onSelect = SubmenuItemSelectEventHandler;
+                    listener.onKey = SubmenuItemKeyEventHandler;
                     listener.parameter = item;
                 }
             }
@@ -1973,7 +1980,7 @@ public class CtxMenu : AMonoBase {
                         labelPos.y -= (itemHeight - _itemData[i].labelSize.y) * 0.5f;
 
                         _itemData[i].label.cachedTransform.localPosition = labelPos;
-                        //itemData[i].label.MakePixelPerfect();
+                        // _itemData[i].label.MakePixelPerfect();
                     }
 
                     if (_itemData[i].submenuIndicator != null) {
@@ -2110,7 +2117,7 @@ public class CtxMenu : AMonoBase {
                         itemPos.x += _itemData[i].labelSize.x + padding.x;
 
                         _itemData[i].label.cachedTransform.localPosition = labelPos;
-                        //itemData[i].label.MakePixelPerfect();
+                        // _itemData[i].label.MakePixelPerfect();
                     }
 
                     if (_itemData[i].submenuIndicator != null) {

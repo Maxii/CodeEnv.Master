@@ -23,10 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdModuleStat : ACmdModuleStat {
 
-        public int StartingPopulation { get; private set; }
-
-        public float StartingApproval { get; private set; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdModuleStat" /> class.
         /// </summary>
@@ -42,17 +38,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum command staff effectiveness.</param>
-        /// <param name="startingPopulation">The starting population.</param>
-        /// <param name="startingApproval">The starting approval.</param>
-        public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
-            EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense,
-            float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
+        public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense, float maxCmdStaffEffectiveness)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructCost, expense, maxCmdStaffEffectiveness) {
-            StartingPopulation = startingPopulation;
-            Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
-            StartingApproval = startingApproval;
         }
-
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
@@ -86,8 +75,6 @@ namespace CodeEnv.Master.GameContent {
         ////}
 
         #endregion
-
-
 
 
     }

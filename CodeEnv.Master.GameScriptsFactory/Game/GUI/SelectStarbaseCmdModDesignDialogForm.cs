@@ -16,6 +16,7 @@
 
 // default namespace
 
+using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,21 +28,24 @@ public class SelectStarbaseCmdModDesignDialogForm : ASelectDesignDialogForm {
 
     public override FormID FormID { get { return FormID.SelectStarbaseCmdModDesignDialog; } }
 
-    protected override DesignIconGuiElement ChooseInitialIconToBePicked(IEnumerable<DesignIconGuiElement> allDisplayedIcons) {
-        ////AUnitMemberDesign defaultCmdDesign = GameManager.Instance.GetAIManagerFor(Settings.Player).Designs.GetDefaultStarbaseCmdModDesign();
-        ////return allDisplayedIcons.Single(icon => icon.Design == defaultCmdDesign);
-        return allDisplayedIcons.Single(icon => icon.Design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
-    }
-
-    protected override IEnumerable<AUnitMemberDesign> GetDesigns(bool includeObsolete) {
+    protected override IEnumerable<AUnitMemberDesign> GetDesignChoices() {
         var playerDesigns = GameManager.Instance.GetAIManagerFor(Settings.Player).Designs;
+        IEnumerable<StarbaseCmdModuleDesign> designChoices = null;
 
-        var cmdDesigns = playerDesigns.GetAllDeployableStarbaseCmdModDesigns(includeObsolete, includeDefault: true).Cast<AUnitMemberDesign>();
-        ////var cmdDefaultDesign = playerDesigns.GetDefaultStarbaseCmdModDesign();
-        ////if (!cmdDesigns.Contains(cmdDefaultDesign)) {
-        ////    cmdDesigns.Add(cmdDefaultDesign);
-        ////}
-        return cmdDesigns;
+        bool isRefitSelection = Settings.OptionalParameter != null;
+        if (isRefitSelection) {
+            StarbaseCmdModuleDesign existingDesign = Settings.OptionalParameter as StarbaseCmdModuleDesign;
+            D.AssertNotNull(existingDesign);
+            bool areDesignsFound = playerDesigns.TryGetUpgradeDesigns(existingDesign, out designChoices);
+            D.Assert(areDesignsFound);  // existingDesign not included in choices
+
+            // this is a refit so no reason to include the default choice
+        }
+        else {
+            // the Design being selected is for initial deployment of a Unit
+            designChoices = playerDesigns.GetAllDeployableStarbaseCmdModDesigns(includeDefault: true);
+        }
+        return designChoices.Cast<AUnitMemberDesign>();
     }
 
 }

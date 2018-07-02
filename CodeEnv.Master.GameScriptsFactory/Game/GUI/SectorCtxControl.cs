@@ -34,35 +34,44 @@ public class SectorCtxControl : ACtxControl {
                                                                                             FleetDirective.Move,
                                                                                             FleetDirective.FullSpeedMove,
                                                                                             FleetDirective.Explore,
-                                                                                            FleetDirective.Guard
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.FoundSettlement,
+                                                                                            FleetDirective.FoundStarbase
                                                                                         };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected override Vector3 PositionForDistanceMeasurements { get { return _sector.Position; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return Sector.Position; } }
 
-    protected override string OperatorName { get { return _sector != null ? _sector.DebugName : "NotYetAssigned"; } }
+    protected override string OperatorName { get { return _sectorExaminerMenuOperator.DebugName; } }
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return false; } }
 
+    private ASector _sector;
+    private ASector Sector {
+        get {
+            _sector = _sector ?? SectorGrid.Instance.GetSector(_sectorExaminerMenuOperator.CurrentSectorID);
+            return _sector;
+        }
+    }
+
     private SectorExaminer _sectorExaminerMenuOperator;
-    private Sector _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
-        : base(sectorExaminer.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
+        : base(sectorExaminer.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.AtCursor) {
         _sectorExaminerMenuOperator = sectorExaminer;
+    }
+
+    protected override void HandleHideCtxMenu() {
+        base.HandleHideCtxMenu();
+        _sector = null;     // 6.14.18 Added to detect errors - incorrect sector used from prior assignment
     }
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.IsUserOwned;
-    }
-
-    protected override void PopulateMenu_UserRemoteFleetIsSelected() {
-        base.PopulateMenu_UserRemoteFleetIsSelected();
-        _sector = SectorGrid.Instance.GetSector(_sectorExaminerMenuOperator.CurrentSectorID);
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
@@ -74,13 +83,16 @@ public class SectorCtxControl : ACtxControl {
             case FleetDirective.FullSpeedMove:
                 return !isOrderAuthorizedByUserRemoteFleet;
             case FleetDirective.Explore:
-                // FIXME: Knowledge does not yet track sectors as explorable items
-                var explorableSector = _sector as IFleetExplorable;
+                var explorableSector = Sector as IFleetExplorable;
                 return !isOrderAuthorizedByUserRemoteFleet || !explorableSector.IsExploringAllowedBy(_user) || explorableSector.IsFullyExploredBy(_user);
             case FleetDirective.Patrol:
-                return !isOrderAuthorizedByUserRemoteFleet || !(_sector as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(Sector as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !isOrderAuthorizedByUserRemoteFleet || !(_sector as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(Sector as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.FoundSettlement:
+                return !isOrderAuthorizedByUserRemoteFleet || !Sector.IsFoundingSettlementAllowedBy(_user);
+            case FleetDirective.FoundStarbase:
+                return !isOrderAuthorizedByUserRemoteFleet || !Sector.IsFoundingStarbaseAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -97,10 +109,26 @@ public class SectorCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigableDestination target = _sector;
+        IFleetNavigableDestination target = GetFleetTarget(directive);
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         remoteFleet.CurrentOrder = order;
+    }
+
+    private IFleetNavigableDestination GetFleetTarget(FleetDirective directive) {
+        switch (directive) {
+            case FleetDirective.FoundSettlement:
+                return Sector.System;  // if System null, Menu choice would not be active
+            case FleetDirective.FoundStarbase:
+            case FleetDirective.FullSpeedMove:
+            case FleetDirective.Move:
+            case FleetDirective.Guard:
+            case FleetDirective.Explore:
+            case FleetDirective.Patrol:
+                return Sector;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
     }
 
 }

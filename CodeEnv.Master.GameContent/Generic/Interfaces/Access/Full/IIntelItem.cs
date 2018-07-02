@@ -35,17 +35,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newCoverage">The new coverage.</param>
         void SetIntelCoverage(Player player, IntelCoverage newCoverage);
 
-        /// <summary>
-        /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
-        /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
-        /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
-        /// </summary>
-        /// <param name="player">The player.</param>
-        /// <param name="newCoverage">The new coverage.</param>
-        /// <param name="resultingCoverage">The resulting coverage.</param>
-        /// <returns></returns>
-        bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage);
-
         bool __IsPlayerEntitledToComprehensiveRelationship(Player player);
 
     }

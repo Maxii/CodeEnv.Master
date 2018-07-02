@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FsmEventSubscriptionMode.cs
-// The different modes of event subscription used by the UnitItem FSM and the FsmEventSubscriptionManager.
+// The different modes of event subscription used by the Unit Item FSM and the FsmEventSubscriptionManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The different modes of event subscription used by the UnitItem FSM and the FsmEventSubscriptionManager.
+    /// The different modes of event subscription used by the Unit Item FSM and the FsmEventSubscriptionManager.
     /// </summary>
     public enum FsmEventSubscriptionMode {
 
@@ -29,11 +29,13 @@ namespace CodeEnv.Master.GameContent {
 
         OwnerAwareChg_Fleet,
         OwnerAwareChg_Ship,
-
         OwnerAwareChg_Base,
         OwnerAwareChg_Facility,
 
-        OwnerAware_Planet
+        OwnerAware_Planet,
+
+        // 6.12.18 Currently covers vacancy state changes for StationaryLocation Starbase Stations in Sectors. Requires a Sector target.
+        FsmTgtVacancyChg
 
     }
 }

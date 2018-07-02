@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override float CalcConstructionCost() {
+            D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, Status);   // Elements don't have a free default version
             float cumConstructionCost = base.CalcConstructionCost();
             cumConstructionCost += ReqdSRSensorStat.ConstructCost;
             return cumConstructionCost;

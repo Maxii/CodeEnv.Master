@@ -47,6 +47,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     public Player Owner { get { return ParentBaseCmd.Owner; } }
 
     private HangerFormationManager _formationMgr;
+    private GameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -54,6 +55,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     }
 
     private void InitializeValuesAndReferences() {
+        _gameMgr = GameManager.Instance;
         ParentBaseCmd = gameObject.GetSingleComponentInParents<AUnitBaseCmdItem>();
         _allShips = new List<ShipItem>();
     }
@@ -109,20 +111,6 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     }
 
     /// <summary>
-    /// Forms a fleet from the provided ships from this hanger using the default FleetCmdDesign, and orders them to AssumeFormation
-    /// at the closest Base LocalAssyStation.
-    /// </summary>
-    /// <param name="fleetRootname">The fleet root name.</param>
-    /// <param name="formation">The formation.</param>
-    /// <param name="ships">The ships.</param>
-    /// <returns></returns>
-    public FleetCmdItem FormFleetFrom(string fleetRootname, Formation formation, IEnumerable<ShipItem> ships) {
-        PlayerDesigns playerDesigns = GameManager.Instance.GetAIManagerFor(Owner).Designs;
-        FleetCmdModuleDesign defaultCmdModDesign = playerDesigns.GetFleetCmdModDefaultDesign();
-        return FormFleetFrom(fleetRootname, defaultCmdModDesign, formation, ships);
-    }
-
-    /// <summary>
     /// Forms a fleet from the provided ships from this hanger using the provided cmdModDesign and orders them to AssumeFormation
     /// at the closest Base LocalAssyStation.
     /// </summary>
@@ -142,7 +130,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
         Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, cmdModDesign, ships, formation, fleetRootname);
-        D.Log(/*ShowDebugLog,*/ "{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
+        D.Log(ShowDebugLog, "{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
             DebugName, fleet.DebugName, fleet.Position, fleetCreatorLocation, Vector3.Distance(fleet.Position, fleetCreatorLocation));
 
         ships.ForAll(ship => {
@@ -213,31 +201,56 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     public void HandleDeath() {
         // Make a fleet from all remaining ships. Base has already removed all construction from ConstructionMgr 
         // so there won't be any ships that have not yet completed initial construction
-        var shipsForFleetCopy = _allShips.ToList();
-        if (shipsForFleetCopy.Any()) {
-            shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleetCopy);
+        if (_allShips.Any()) {
+            _allShips.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
+            DispatchLostHangerFleet();
         }
     }
 
     public void HandleLosingOwnership() {
         // Make a fleet from all remaining ships. Base has already removed all construction from ConstructionMgr 
         // so there won't be any ships that have not yet completed initial construction
-        var shipsForFleetCopy = _allShips.ToList();
-        if (shipsForFleetCopy.Any()) {
-            shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleetCopy);
+        if (_allShips.Any()) {
+            _allShips.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
+            DispatchLostHangerFleet();
         }
     }
 
+    #region Losing Hanger Fleet Generation
+
+    private void DispatchLostHangerFleet() {
+        if (Owner.IsUser && !DebugControls.Instance.AiChoosesUserCmdModInitialDesigns) {
+            string dialogText = "Pick the CmdModDesign you wish to use to create this HangerEmergencyEscape Fleet. \nCancel to use the default design.";
+            EventDelegate cancelDelegate = new EventDelegate(() => {
+                var cmdModDefaultDesign = _gameMgr.UserAIManager.Designs.GetFleetCmdModDefaultDesign();
+                FormFleetFrom(cmdModDefaultDesign); // canceling dialog results in use of CmdModuleDefaultDesign
+                DialogWindow.Instance.Hide();
+            });
+            DialogWindow.Instance.HaveUserPickCmdModDesign(FormID.SelectFleetCmdModDesignDialog, dialogText, cancelDelegate,
+                (chosenFleetCmdModDesign) => FormFleetFrom(chosenFleetCmdModDesign), useUserActionButton: true);
+        }
+        else {
+            var chosenDesign = _gameMgr.GetAIManagerFor(Owner).ChooseFleetCmdModDesign();
+            FormFleetFrom(chosenDesign);
+        }
+    }
+
+    private void FormFleetFrom(AUnitCmdModuleDesign chosenDesign) {
+        var fleetShipsCopy = _allShips.ToList();
+        D.Assert(fleetShipsCopy.Any());
+        FormFleetFrom("LostHangerFleet", chosenDesign as FleetCmdModuleDesign, Formation.Globe, fleetShipsCopy);
+    }
+
+    #endregion
+
     /// <summary>
-    /// Returns a safe location for the FleetCreator that will be used to deploy the formed fleet.
+    /// Returns a safe location for the RuntimeFleetCreator that will be used to deploy the formed fleet.
     /// <remarks>This is not the location where the new FleetCmd will start. That location depends on where the
     /// chosen HQElement is located, in this case on their hanger berth.</remarks>
     /// </summary>
     /// <returns></returns>
     private Vector3 DetermineFormFleetCreatorLocation() {
-        var universeSize = GameManager.Instance.GameSettings.UniverseSize;
+        var universeSize = _gameMgr.GameSettings.UniverseSize;
         float baseOffsetDistance = ParentBaseCmd.HQElement.Radius + Constants.OneF;
         float randomOffsetDistance = UnityEngine.Random.Range(baseOffsetDistance, baseOffsetDistance * 1.1F);
         Vector3 offset = Vector3.one * randomOffsetDistance;

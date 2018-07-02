@@ -787,12 +787,9 @@ public class FleetNavigator : IDisposable {
     private void HandlePathPlotCompleted(Path path) {
         if (path.error) {
             var sectorGrid = SectorGrid.Instance;
-            IntVector3 fleetSectorID = sectorGrid.GetSectorIDThatContains(Position);
-            string fleetSectorIDMsg = sectorGrid.IsSectorOnPeriphery(fleetSectorID) ? "peripheral" : "non-peripheral";
-            IntVector3 apTgtSectorID = sectorGrid.GetSectorIDThatContains(ApTarget.Position);
-            string apTgtSectorIDMsg = sectorGrid.IsSectorOnPeriphery(apTgtSectorID) ? "peripheral" : "non-peripheral";
-            D.Warn("{0} in {1} Sector {2} encountered error plotting course to {3} in {4} Sector {5}.",
-                DebugName, fleetSectorIDMsg, fleetSectorID, ApTarget.DebugName, apTgtSectorIDMsg, apTgtSectorID);
+            IntVector3 fleetSectorID = sectorGrid.GetSectorIDContaining(Position);
+            IntVector3 apTgtSectorID = sectorGrid.GetSectorIDContaining(ApTarget.Position);
+            D.Warn("{0} in Sector {1} encountered error plotting course to {2} in Sector {3}.", DebugName, fleetSectorID, ApTarget.DebugName, apTgtSectorID);
             HandleApCoursePlotFailure();
             return;
         }
@@ -860,13 +857,13 @@ public class FleetNavigator : IDisposable {
             ISystem_Ltd fleetSystem;
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {
-                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDThatContains(Position));
+                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDContaining(Position));
                 // 8.18.16 Failure of Assert here has been caused in the past by a missed Topography change when leaving a System
                 return; // 11.26.17 Occurred again so since not 'really' in system, simply return
             }
 
             if (ApTarget.Topography == Topography.System) {
-                IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
+                IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDContaining(ApTarget.Position);
                 ISystem_Ltd tgtSystem;
                 bool isTgtSystemFound = ownerKnowledge.TryGetSystem(tgtSectorID, out tgtSystem);
                 if (!isTgtSystemFound) {

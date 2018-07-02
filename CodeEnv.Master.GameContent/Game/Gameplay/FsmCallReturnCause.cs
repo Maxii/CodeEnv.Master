@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     /// Enum representing the cause of a Return() when a Unit member Return()s from an FSM Call()ed state.
     /// <remarks>Used to communicate the cause of a Call()ed state's Return to the
     /// Call()ing state, working in conjunction with FsmReturnHandler.</remarks>
+    /// <remarks>IMPROVE should be broken down further</remarks>
     /// </summary>
     public enum FsmCallReturnCause {
 
@@ -68,6 +69,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// This Unit or Element is no longer qualified to execute the Call()ed state. 
         /// <remarks>e.g. An element that becomes the HQ while Disengaging is no longer qualified to disengage.</remarks>
+        /// <remarks>Can also be used as a catchall cause for a Return when knowing the specific OrderOutcome failure cause is not important.</remarks>
         /// </summary>
         Qualifications
 

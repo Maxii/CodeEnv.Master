@@ -50,7 +50,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_User(ShipItem ship)
-        : base(ship.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.Offset) {
+        : base(ship.gameObject, uniqueSubmenusReqd: 2, menuPosition: MenuPositionMode.Offset) {
         _shipMenuOperator = ship;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -82,13 +82,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
     /// in the submenu?" so don't return targets.Any()!</remarks>
-    /// <remarks>12.13.17 Avoid asserting anything here based off of the assumption that IsUserMenuOperatorMenuItemDisabledFor will 
-    /// have already disabled the selection if the assert would fail. This method is also used to count the number of reqd submenus.</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
+    /// <exception cref="NotImplementedException"></exception>
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableDestination> targets) {
         bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
@@ -131,6 +129,23 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         D.LogBold("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
         _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, submenuTgt as IShipNavigableDestination);
     }
+
+    #region Debug
+
+    protected override bool __IsSubmenuSupportedFor(ShipDirective directive) {
+        switch (directive) {
+            case ShipDirective.JoinFleetShortcut:
+            case ShipDirective.JoinHangerShortcut:
+                return true;
+            case ShipDirective.Disengage:
+            case ShipDirective.Scuttle:
+                return false;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
+    }
+
+    #endregion
 
 }
 

@@ -27,9 +27,11 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
 /// </summary>
-public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd, ISectorViewHighlightable {
+public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd, ISectorViewHighlightable, IShipExplorable {
 
     public const float RadiusMultiplierForApproachWaypointsInscribedSphere = 5F;
+
+    public bool IsEstablished { get { return Data.IsEstablished; } }
 
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
@@ -100,6 +102,10 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         _highOrbitRigidbody.gameObject.SetActive(false);
     }
 
+    protected override void HandleUserIntelCoverageChanged() {
+        base.HandleUserIntelCoverageChanged();
+    }
+
     #region Event and Property Change Handlers
 
     #endregion
@@ -109,7 +115,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     protected override bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility) {
         D.Assert(!candidates.IsNullOrEmpty());
         facility = null;
-        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.CmdModuleDesign);
+        bool toRefitCmdModule = OwnerAiMgr.Designs.AreUpgradeDesignsAvailable(Data.CmdModuleDesign);
         if (toRefitCmdModule) {
             facility = candidates.SingleOrDefault(f => f.IsHQ);
             if (facility == null) {
@@ -141,6 +147,43 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
             return;
         }
         sectorViewHighlightMgr.Show(toShow);
+    }
+
+    #endregion
+
+    #region IShipExplorable Members
+
+    public void RecordExplorationCompletedBy(Player player) {
+        SetIntelCoverage(player, IntelCoverage.Comprehensive);
+        D.Assert(Data.IsFullyExploredBy(player));
+    }
+
+    public bool IsFullyExploredBy(Player player) {
+        return Data.IsFullyExploredBy(player);
+    }
+
+    public bool IsExploringAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
+            return true;
+        }
+        if (Owner.IsAtWarWith(player)) {
+            return false;
+        }
+        if (Owner.IsEnemyOf(player)) {
+            Player starbaseOwner = Owner;
+            D.Assert(starbaseOwner.IsRelationshipWith(player, DiplomaticRelationship.ColdWar));
+            var sector = SectorGrid.Instance.GetSector(SectorID);
+            D.Assert(sector.IsOwnerAccessibleTo(player));
+            Player sectorOwner = sector.Owner;
+            if (sectorOwner == starbaseOwner) {
+                // we are in ColdWar and this is starbase's territory
+                if (OwnerAiMgr.IsPolicyToEngageColdWarEnemies) {
+                    // starbase is authorized to attack player so exploring not allowed
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     #endregion

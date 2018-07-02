@@ -161,10 +161,9 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     #endregion
 
-    public sealed override void PrepareUnitForDeployment() {
+    protected sealed override void PrepareUnitForDeployment_Internal() {
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, UnitName, DeployDate);
-        InitializeRootUnitName();
         MakeUnit();
     }
 
@@ -175,6 +174,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
         AddElementsToCommand();
         AssignHQElement();
         PositionUnit();
+        HandleUnitPositioned();
     }
 
     protected abstract void MakeElements();
@@ -186,6 +186,13 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     protected abstract void AssignHQElement();
 
     protected abstract void PositionUnit();
+
+    /// <summary>
+    /// Hook for derived classes once the Unit is made and positioned but not yet operational.
+    /// </summary>
+    protected virtual void HandleUnitPositioned() {
+        LogEvent();
+    }
 
     /// <summary>
     /// Adjusts the serialized element qty field in the editor to the provided value.

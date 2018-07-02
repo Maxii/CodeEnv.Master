@@ -30,28 +30,7 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
 
     public override FormID FormID { get { return FormID.AiFleet; } }
 
-    protected override void HandleShipCreateFleetButtonClicked() {
-        D.Assert(DebugControls.Instance.AreAiUnitHudButtonsFunctional);
-        // Handled this way to allow user to manually pick AI's CmdModDesign
-
-        var acceptDelegate = new EventDelegate(this, "HandlePlayerPickedCmdModDesign");
-        var cancelDelegate = new EventDelegate(() => {
-            DialogWindow.Instance.Hide();
-            // Button is ignored. Creation of fleet will not occur
-        });
-
-        var dialogSettings = new APopupDialogForm.DialogSettings(SelectedUnit.Owner, acceptDelegate, cancelDelegate);
-        DialogWindow.Instance.Show(FormID.SelectFleetCmdModDesignDialog, dialogSettings);
-    }
-
-    private void HandlePlayerPickedCmdModDesign(AUnitMemberDesign pickedDesign) {
-        FleetCmdModuleDesign pickedCmdModuleDesign = pickedDesign as FleetCmdModuleDesign;
-        D.AssertNotNull(pickedCmdModuleDesign);
-
-        DialogWindow.Instance.Hide();
-
-        ApplyToFleetBeingCreated(pickedCmdModuleDesign);
-    }
+    // 6.5.18 AI HudForm no longer uses SelectCmdModuleDesign DialogWindow
 
     protected override void AssessUnitButtons() {
         if (DebugControls.Instance.AreAiUnitHudButtonsFunctional) {

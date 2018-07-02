@@ -65,8 +65,7 @@ public abstract class AIconGuiElement : AGuiElement {
     /// The widget used for Show/Hide control of all icon-related widgets.
     /// </summary>
     protected UIWidget _iconShowHideControlWidget;
-
-    private Collider _collider;
+    protected Collider _collider;
 
     protected override void InitializeValuesAndReferences() {
         _iconShowHideControlWidget = ShowHideControlWidgetGameObject.GetComponent<UIWidget>();
@@ -84,11 +83,8 @@ public abstract class AIconGuiElement : AGuiElement {
     protected virtual void Show(GameColor color = GameColor.White) {
         D.Assert(IsInitialized);
         IsShowing = true;
-        _iconImageSprite.color = color.ToUnityColor();
-        ////_iconShowHideControlWidget.alpha = Constants.OneF;
-        //_iconShowHideControlWidget.alpha = IsEnabled ? Constants.OneF : DisabledShowHideControlWidgetAlpha;
         AssessShowHideControlWidgetAlpha();
-        _collider.enabled = true;
+        AssignColliderEnabledState();
     }
 
     protected void Hide() {
@@ -96,8 +92,7 @@ public abstract class AIconGuiElement : AGuiElement {
             D.Warn("{0} is hiding when disabled?", DebugName);
         }
         IsShowing = false;
-        //_iconShowHideControlWidget.alpha = Constants.ZeroF;
-        _collider.enabled = false;
+        AssignColliderEnabledState();
         AssessShowHideControlWidgetAlpha();
     }
 
@@ -116,6 +111,10 @@ public abstract class AIconGuiElement : AGuiElement {
     }
 
     #endregion
+
+    protected virtual void AssignColliderEnabledState() {
+        _collider.enabled = IsShowing;
+    }
 
     protected virtual void HandleIsEnabledChanged() {
         if (IsEnabled && !IsShowing) {

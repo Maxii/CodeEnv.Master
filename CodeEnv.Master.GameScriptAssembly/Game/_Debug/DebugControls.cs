@@ -118,16 +118,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #region AI Editor Fields
 
-    [Tooltip("Check if fleets should automatically explore and visit bases without countervailing orders.")]
-    [SerializeField]
-    private bool _fleetsAutoExplore = true;
-    /// <summary>
-    /// Indicates whether fleets should automatically explore and visit bases without countervailing orders.
-    /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
-    /// on DebugFleetCreators.</remarks>
-    /// </summary>
-    public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
-
     [Tooltip("Check if fleets should automatically attack all other players.")]
     [SerializeField]
     private bool _fleetsAutoAttack = false;
@@ -149,22 +139,47 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public int MaxAttackingFleetsPerPlayer { get { return _maxAttackingFleetsPerPlayer; } }
 
-    [Tooltip("Check if all players know everything about all objects, even those that are outside detection range.")]
+    [Tooltip("Check if fleets should automatically explore and visit bases without countervailing orders.")]
+    [SerializeField]
+    private bool _fleetsAutoExplore = true;
+    /// <summary>
+    /// Indicates whether fleets should automatically explore and visit bases without countervailing orders.
+    /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
+    /// on DebugFleetCreators.</remarks>
+    /// </summary>
+    public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
+
+    [Tooltip("Check if fleets should automatically found settlements without countervailing orders.")]
+    [SerializeField]
+    private bool _fleetsAutoFoundSettlements = false;
+    /// <summary>
+    /// Indicates whether fleets should automatically found settlements without countervailing orders.
+    /// <remarks>6.23.18 The only current source of countervailing orders are from editor fields
+    /// on DebugFleetCreators.</remarks>
+    /// </summary>
+    public bool FleetsAutoFoundSettlements { get { return _fleetsAutoFoundSettlements; } }
+
+    [Tooltip("Check if fleets should automatically found starbases without countervailing orders.")]
+    [SerializeField]
+    private bool _fleetsAutoFoundStarbases = false;
+    /// <summary>
+    /// Indicates whether fleets should automatically found starbases without countervailing orders.
+    /// <remarks>6.23.18 The only current source of countervailing orders are from editor fields
+    /// on DebugFleetCreators.</remarks>
+    /// </summary>
+    public bool FleetsAutoFoundStarbases { get { return _fleetsAutoFoundStarbases; } }
+
+
+    [Tooltip("Check if all players start knowing everything about each other and all Items, even those that are outside detection range.")]
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;
     /// <summary>
-    /// If <c>true</c> every player knows everything about every item independent of whether
+    /// If <c>true</c> every player knows everything about every item without regard as to whether
     /// their sensors have detected the item. 
-    /// <remarks>It also means that all players have met as Players meet when they first become
-    /// aware of a Cmd owned by another player.</remarks>
+    /// <remarks>It also means that all players meet each other immediately as they will 'discover' an opponent 
+    /// when each item's IntelCoverage initially and permanently is changed to Comprehensive in FinalInitialize.</remarks>
     /// </summary>
     public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
-
-    [Tooltip("Check if some missiles may be replaced with simulated assault shuttles.")]
-    [SerializeField]
-    private bool _isAssaultEnabled = false;
-    [Obsolete]
-    public bool IsAssaultEnabled { get { return _isAssaultEnabled; } }
 
     [Tooltip("Check if assaults should always be successful.")]
     [SerializeField]
@@ -181,6 +196,26 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     [SerializeField]
     private bool _areAiUnitHudButtonsFunctional = false;
     public bool AreAiUnitHudButtonsFunctional { get { return _areAiUnitHudButtonsFunctional; } }
+
+    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is first formed.")]
+    [SerializeField]
+    private bool _aiChoosesUserCmdModInitialDesigns = false;  // TODO Should become a GameOption that can be changed in game
+    public bool AiChoosesUserCmdModInitialDesigns { get { return _aiChoosesUserCmdModInitialDesigns; } }
+
+    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is being refit.")]
+    [SerializeField]
+    private bool _aiChoosesUserCmdModRefitDesigns = false;  // TODO Should become a GameOption that can be changed in game
+    public bool AiChoosesUserCmdModRefitDesigns { get { return _aiChoosesUserCmdModRefitDesigns; } }
+
+    [Tooltip("Check if the AI should choose CentralHubDesigns for the user when a Base is first formed.")]
+    [SerializeField]
+    private bool _aiChoosesUserCentralHubInitialDesigns = false;  // TODO Should become a GameOption that can be changed in game
+    public bool AiChoosesUserCentralHubInitialDesigns { get { return _aiChoosesUserCentralHubInitialDesigns; } }
+
+    [Tooltip("Check if the AI should choose ElementDesigns for the user when an Element is being refit.")]
+    [SerializeField]
+    private bool _aiChoosesUserElementRefitDesigns = false;  // TODO Should become a GameOption that can be changed in game
+    public bool AiChoosesUserElementRefitDesigns { get { return _aiChoosesUserElementRefitDesigns; } }
 
 
     #region Auto Unit Preset Equipment Controls
@@ -882,6 +917,11 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     }
 
     #region Debug
+
+    public void __EnableAiPicksInitialDesigns() {
+        _aiChoosesUserCentralHubInitialDesigns = true;
+        _aiChoosesUserCmdModInitialDesigns = true;
+    }
 
     public void __DisableUserSelectsTechs() {
         _userSelectsTechs = false;

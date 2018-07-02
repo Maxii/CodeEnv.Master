@@ -38,6 +38,8 @@ namespace CodeEnv.Master.GameContent {
 
         PlanetoidReport[] GetPlanetoidReports(Player player);
 
+        bool IsFoundingSettlementAllowedBy(Player player);
+
     }
 }
 

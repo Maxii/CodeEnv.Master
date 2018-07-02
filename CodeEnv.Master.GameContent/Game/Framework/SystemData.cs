@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public IntVector3 SectorID { get; private set; }
+        public IntVector3 SectorID { get { return _sectorData.SectorID; } }
 
         public new SystemInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SystemInfoAccessController; } }
 
@@ -73,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
         private IList<IDisposable> _starSubscriptions;
         private IList<IDisposable> _settlementSubscriptions;
+        private SectorData _sectorData;
 
         #region Initialization
 
@@ -81,17 +82,19 @@ namespace CodeEnv.Master.GameContent {
         /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="system">The system.</param>
-        public SystemData(ISystem system)
-            : this(system, TempGameValues.NoPlayer) { }
+        /// <param name="sectorData">The sector data.</param>
+        public SystemData(ISystem system, SectorData sectorData)
+            : this(system, sectorData, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
         /// <param name="system">The system.</param>
+        /// <param name="sectorData">The sector data.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(ISystem system, Player owner)
+        public SystemData(ISystem system, SectorData sectorData, Player owner)
             : base(system, owner) {
-            SectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
+            _sectorData = sectorData;
             Topography = Topography.System;
             Subscribe();
         }
@@ -118,9 +121,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void SubscribeToSettlementDataValueChanges() {
-            if (_settlementSubscriptions == null) {
-                _settlementSubscriptions = new List<IDisposable>();
-            }
+            _settlementSubscriptions = _settlementSubscriptions ?? new List<IDisposable>();
             _settlementSubscriptions.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, SettlementOwnerPropChangedHandler));
             SettlementData.intelCoverageChanged += SettlementIntelCoverageChangedEventHandler;
         }
@@ -140,7 +141,7 @@ namespace CodeEnv.Master.GameContent {
         public void AddPlanetoidData(PlanetoidData data) {
             _allPlanetoidData.Add(data);
             SubscribeToPlanetoidDataValueChanges(data);
-            if (IsOperational) {
+            if (IsOperational) {    // 6.18.18 Currently never occurs in runtime. Here in case in future rogue planetoids can 'join' systems
                 RecalcAllProperties();
                 AssessIntelCoverage();
             }
@@ -164,27 +165,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Assess System IntelCoverage
 
-        public bool IsAnyMembersIntelCoverageGreaterThanSystem(Player player) {
-            _allMemberIntelCoverages.Clear();
-            foreach (var pData in _allPlanetoidData) {
-                IntelCoverage pCoverage = pData.GetIntelCoverage(player);
-                _allMemberIntelCoverages.Add(pCoverage);
-            }
-
-            IntelCoverage starCoverage = StarData.GetIntelCoverage(player);
-            _allMemberIntelCoverages.Add(starCoverage);
-
-            if (SettlementData != null) {
-                IntelCoverage settlementCoverage = SettlementData.GetIntelCoverage(player);
-                _allMemberIntelCoverages.Add(settlementCoverage);
-            }
-
-            IntelCoverage sysCoverage = GetIntelCoverage(player);
-            return _allMemberIntelCoverages.Any(memberCoverage => memberCoverage > sysCoverage);
-        }
-
         /// <summary>
-        /// Static list used to collect all planetoid, star and settlement IntelCoverage values when
+        /// Static list used to collect all system member's IntelCoverage values for a player when
         /// re-assessing the IntelCoverage value for the system. Avoids creating a temporary
         /// list for every system and every player every time a re-assessment is done, significantly 
         /// reducing heap memory allocations.
@@ -198,6 +180,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverageFor(Player player) {
+            if (__debugCntls.IsAllIntelCoverageComprehensive) {
+                D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
+                return;
+            }
+
             _allMemberIntelCoverages.Clear();
             foreach (var pData in _allPlanetoidData) {
                 IntelCoverage pCoverage = pData.GetIntelCoverage(player);
@@ -214,29 +201,8 @@ namespace CodeEnv.Master.GameContent {
 
             IntelCoverage currentCoverage = GetIntelCoverage(player);
 
-            IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(_allMemberIntelCoverages);
-            IntelCoverage resultingCoverage;
-            var isCoverageSet = TrySetIntelCoverage(player, lowestCommonCoverage, out resultingCoverage);
-            if (isCoverageSet) {
-                if (resultingCoverage == lowestCommonCoverage) {
-                    D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                        DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
-                }
-            }
-            else {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                    DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
-            }
-        }
-
-        private IntelCoverage GetLowestCommonCoverage(IList<IntelCoverage> intelCoverages) {
-            IntelCoverage lowestCommonCoverage = IntelCoverage.Comprehensive;
-            foreach (var coverage in intelCoverages) {
-                if (coverage < lowestCommonCoverage) {
-                    lowestCommonCoverage = coverage;
-                }
-            }
-            return lowestCommonCoverage;
+            IntelCoverage lowestMemberCoverage = GameUtility.GetLowestCommonCoverage(_allMemberIntelCoverages);
+            SetIntelCoverage(player, lowestMemberCoverage);
         }
 
         #endregion
@@ -253,7 +219,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleSettlementDataChanged() {
-            // Existing settlements will always be destroyed (data = null) before changing to a new settlement
+            // Existing settlements will always be destroyed (data = null) before a new settlement is founded
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
                 //D.Log(ShowDebugLog, "{0} is about to have its owner changed to {1}'s Owner {2}.", DebugName, SettlementData.DebugName, SettlementData.Owner);
@@ -267,11 +233,6 @@ namespace CodeEnv.Master.GameContent {
                 RecalcAllProperties();
                 AssessIntelCoverage();
             }
-        }
-
-        protected override void HandleOwnerChanged() {
-            base.HandleOwnerChanged();
-            PropagateOwnerChange();
         }
 
         private void PlanetoidIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
@@ -329,9 +290,11 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void PropagateOwnerChange() {
+        protected override void PropagateOwnerChange() {
+            base.PropagateOwnerChange();
             _allPlanetoidData.ForAll(pd => pd.Owner = Owner);
             StarData.Owner = Owner;
+            _sectorData.AssessOwnership();
         }
 
         private void RecalcAllProperties() {
@@ -345,8 +308,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateResources() {
             var defaultValueIfEmpty = default(ResourcesYield);
-            var resources = _allPlanetoidData.Select(pd => pd.Resources);
-            ResourcesYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, res) => accumulator + res);
+            IEnumerable<ResourcesYield> allPlanetoidResources = _allPlanetoidData.Select(pd => pd.Resources);
+            ResourcesYield totalResourcesFromPlanets = allPlanetoidResources.Aggregate(defaultValueIfEmpty, (accumulator, res) => accumulator + res);
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 

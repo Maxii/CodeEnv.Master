@@ -96,6 +96,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [SerializeField]
     private bool _zoomOnUser = false;
 
+
     #endregion
 
     public override bool IsPersistentAcrossScenes { get { return true; } }  // GameScene -> GameScene retains values

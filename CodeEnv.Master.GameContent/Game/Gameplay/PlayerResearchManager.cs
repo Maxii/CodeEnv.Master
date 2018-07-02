@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
 
         public PlayerResearchManager(PlayerAIManager aiMgr, PlayerDesigns designs) {
             _playerAiMgr = aiMgr;
-            _player = aiMgr.Player;
+            _player = aiMgr.Owner;
             _playerDesigns = designs;
             InitializeValuesAndReferences();
             InitializeResearchState();
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
                 _uncompletedRschTasks.Add(new ResearchTask(tech));
             }
 
-            __ValidateTechPresence(allPredefinedTechs);
+            __ValidateTechs(allPredefinedTechs);
 
             IEnumerable<string> techNamesThatStartCompleted;
             if (__debugCntls.IsAllTechResearched) {
@@ -115,10 +115,6 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes the equipment levels in PlayerDesigns at startup.
         /// </summary>
         private void InitializeEquipmentLevels() {
-            UpdateCurrentEquipmentLevels();
-        }
-
-        private void UpdateCurrentEquipmentLevels() {
             // ILookup is one to many whereas IDictionary is one to one
             ILookup<EquipmentCategory, AEquipmentStat> allEnabledStatsLookup
                 = _completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats()).ToLookup(eStat => eStat.Category);
@@ -133,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (enabledEqCatsWithHighestLevelResearched.Any()) {
-                _playerDesigns.UpdateEquipLevelAndTemplateDesigns(enabledEqCatsWithHighestLevelResearched);
+                _playerDesigns.UpdateEquipLevel(enabledEqCatsWithHighestLevelResearched);
             }
         }
 
@@ -217,15 +213,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(CurrentResearchTask.IsCompleted);
 
                 var completedRsch = CurrentResearchTask;
-                RecordAsCompleted(completedRsch);
-
-                if (!__debugCntls.IsAllTechResearched) { // Update won't hurt but expensive -> no value if all equip already at highest level
-                    UpdateCurrentEquipmentLevels();
-                }
-
-                OnResearchCompleted(completedRsch);
-                // confirm that OnResearchCompleted didn't change CurrentResearchTask
-                D.AssertEqual(completedRsch, CurrentResearchTask);
+                HandleResearchCompleted(completedRsch);
 
                 if (IsResearchQueued) {
                     CurrentResearchTask = _pendingRschTaskQueue.Dequeue();
@@ -235,6 +223,37 @@ namespace CodeEnv.Master.GameContent {
                         _currentResearchTask = TempGameValues.NoResearch;
                     }
                 }
+            }
+        }
+
+        protected virtual void HandleResearchCompleted(ResearchTask completedRsch) {
+            RecordAsCompleted(completedRsch);
+
+            if (!__debugCntls.IsAllTechResearched) { // Update won't hurt but expensive -> no value if all equip already at highest level
+                UpdateEquipmentLevelsAndTemplateDesigns();
+            }
+
+            OnResearchCompleted(completedRsch);
+            // confirm that OnResearchCompleted didn't change CurrentResearchTask
+            D.AssertEqual(completedRsch, CurrentResearchTask);
+        }
+
+        private void UpdateEquipmentLevelsAndTemplateDesigns() {
+            // ILookup is one to many whereas IDictionary is one to one
+            ILookup<EquipmentCategory, AEquipmentStat> allEnabledStatsLookup
+                = _completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats()).ToLookup(eStat => eStat.Category);
+            var allEnabledEquipCats = allEnabledStatsLookup.Select(group => group.Key).Distinct();
+
+            IList<EquipmentStatID> enabledEqCatsWithHighestLevelResearched = new List<EquipmentStatID>();
+            foreach (var eqCat in allEnabledEquipCats) {
+                // AHA! ILookup auto combines the many stats for this eqCat Key into an IEnumerable
+                IEnumerable<AEquipmentStat> eqCatStats = allEnabledStatsLookup[eqCat];
+                Level highestLevelResearched = eqCatStats.Max(stat => stat.Level);
+                enabledEqCatsWithHighestLevelResearched.Add(new EquipmentStatID(eqCat, highestLevelResearched));
+            }
+
+            if (enabledEqCatsWithHighestLevelResearched.Any()) {
+                _playerDesigns.UpdateEquipLevelAndTemplateDesigns(enabledEqCatsWithHighestLevelResearched);
             }
         }
 
@@ -336,6 +355,20 @@ namespace CodeEnv.Master.GameContent {
             _gameTime.RecurringDateMinder.Remove(_researchUpdateDuration);
         }
 
+        public IEnumerable<ShipHullCategory> GetDiscoveredShipHullCats() {
+            var discoveredEqStats = _completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats());
+            var discoveredEqCats = discoveredEqStats.Select(eStat => eStat.Category);
+            var discoveredShipHullEqCats = discoveredEqCats.Intersect(TempGameValues.ShipHullEquipCats).Distinct();
+            return discoveredShipHullEqCats.Select(eCat => eCat.ShipHullCat());
+        }
+
+        public IEnumerable<FacilityHullCategory> GetDiscoveredFacilityHullCats() {
+            var discoveredEqStats = _completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats());
+            var discoveredEqCats = discoveredEqStats.Select(eStat => eStat.Category);
+            var discoveredFacilityHullEqCats = discoveredEqCats.Intersect(TempGameValues.FacilityHullEquipCats).Distinct();
+            return discoveredFacilityHullEqCats.Select(eCat => eCat.FacilityHullCat());
+        }
+
         private void RefreshTotalScienceYield() {
             var playerTotalScienceYield = _playerAiMgr.Knowledge.TotalScienceYield;
             D.AssertNotEqual(Constants.ZeroF, playerTotalScienceYield);
@@ -407,7 +440,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        private IDebugControls __debugCntls = GameReferences.DebugControls;
+        protected IDebugControls __debugCntls = GameReferences.DebugControls;
 
         public bool __TryGetRandomUncompletedRsch(out ResearchTask uncompletedRsch) {
             if (_uncompletedRschTasks.Any()) {
@@ -436,7 +469,11 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
-        private void __ValidateTechPresence(IEnumerable<Technology> allPredefinedTechs) {
+        /// <summary>
+        /// Validates the provided techs cover all EquipmentStats that need to be enabled with no duplicate levels.
+        /// </summary>
+        /// <param name="allPredefinedTechs">All predefined techs.</param>
+        private void __ValidateTechs(IEnumerable<Technology> allPredefinedTechs) {
             var allPredefinedEqStatsInTechs = allPredefinedTechs.SelectMany(tech => tech.GetEnabledEquipStats());
             var allPredefinedEqCatsInTechs = allPredefinedEqStatsInTechs.Select(stat => stat.Category).Distinct();
             var allEquipCats = Enums<EquipmentCategory>.GetValues(excludeDefault: true);

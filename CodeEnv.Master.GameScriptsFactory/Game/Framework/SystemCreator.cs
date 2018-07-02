@@ -47,7 +47,8 @@ public class SystemCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
+    ////public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDContaining(transform.position); } }
 
     private SystemCreatorConfiguration _configuration;
     public SystemCreatorConfiguration Configuration {
@@ -104,20 +105,21 @@ public class SystemCreator : AMonoBase {
         MakePlanetsAndPlaceInOrbits();
         MakeMoonsAndPlaceInOrbits();
         AddMembersToSystem();
-        AddToGameKnowledge();   // UNCLEAR This could be too early as FinalInitialize has yet to be called.
-                                // It was a problem with Bases as _sectorID didn't get initialized until FinalInitialize
+        AddToGameKnowledge();
     }
 
     protected virtual void MakeSystem() {
         LogEvent();
         FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
-        _system = _systemFactory.MakeSystemInstance(SystemName, gameObject, cameraStat);
+        var aSector = SectorGrid.Instance.GetSector(SectorID);
+        Sector sector = aSector as Sector;
+        D.AssertNotNull(sector);
+        _system = _systemFactory.MakeSystemInstance(SystemName, sector, gameObject, cameraStat);
         if (!_system.gameObject.isStatic) {
             D.Error("{0} should be static after being positioned.", _system.DebugName);
         }
-
         _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
-        SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
+        sector.System = _system;
     }
 
     protected OrbitData InitializeSettlementOrbitSlot() {

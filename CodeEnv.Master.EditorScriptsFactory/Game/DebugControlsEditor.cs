@@ -71,8 +71,8 @@ public class DebugControlsEditor : Editor {
                     bool toDisableAutoExploreGroup = false;
                     GUILayout.BeginHorizontal();
                     {
-                        NGUIEditorTools.SetLabelWidth(100F);
-                        var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(120F));
+                        NGUIEditorTools.SetLabelWidth(80F);
+                        var autoAttackSP = NGUIEditorTools.DrawProperty("Attack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(120F));
                         toDisableAutoExploreGroup = autoAttackSP.boolValue;
                         EditorGUI.BeginDisabledGroup(!autoAttackSP.boolValue);
                         {
@@ -84,21 +84,42 @@ public class DebugControlsEditor : Editor {
                     }
                     GUILayout.EndHorizontal();
 
-                    NGUIEditorTools.SetLabelWidth(100F);
+                    NGUIEditorTools.SetLabelWidth(80F);
                     EditorGUI.BeginDisabledGroup(toDisableAutoExploreGroup);
                     {
-                        NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
+                        NGUIEditorTools.DrawProperty("Explore", serializedObject, "_fleetsAutoExplore");
                     }
                     EditorGUI.EndDisabledGroup();
+
+                    NGUIEditorTools.SetLabelWidth(140F);
+                    var autoFoundSettlementsSP = NGUIEditorTools.DrawProperty("Found Settlements", serializedObject, "_fleetsAutoFoundSettlements");
+                    var autoFoundStarbasesSP = NGUIEditorTools.DrawPaddedProperty("Found Starbases", serializedObject, "_fleetsAutoFoundStarbases");
+                    bool aiPicksInitialDesigns = autoFoundSettlementsSP.boolValue || autoFoundStarbasesSP.boolValue;
+
+                    if (aiPicksInitialDesigns) {
+                        _debugCntlTarget.__EnableAiPicksInitialDesigns();
+                    }
+                    EditorGUI.BeginDisabledGroup(aiPicksInitialDesigns);
+                    {
+                        NGUIEditorTools.SetLabelWidth(240F);
+                        NGUIEditorTools.DrawProperty("User CmdModInitialDesigns by AI", serializedObject, "_aiChoosesUserCmdModInitialDesigns");
+                        NGUIEditorTools.DrawProperty("User CentralHubInitialDesigns by AI", serializedObject, "_aiChoosesUserCentralHubInitialDesigns");
+                    }
+                    EditorGUI.EndDisabledGroup();
+
 
                     NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("Full Intel of Items & Players", serializedObject, "_allIntelCoverageIsComprehensive");
 
 
-                    NGUIEditorTools.SetLabelWidth(160F);
+                    NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("All Assaults Successful", serializedObject, "_areAssaultsAlwaysSuccessful");
                     NGUIEditorTools.DrawProperty("Ordnance Move Tech", serializedObject, "_unityMoveTech");
-                    NGUIEditorTools.DrawProperty("AIUnitHud Buttons work", serializedObject, "_areAiUnitHudButtonsFunctional");
+                    NGUIEditorTools.DrawProperty("AI UnitHud Buttons work", serializedObject, "_areAiUnitHudButtonsFunctional");
+
+                    NGUIEditorTools.SetLabelWidth(220F);
+                    NGUIEditorTools.DrawProperty("User CmdModRefitDesigns by AI", serializedObject, "_aiChoosesUserCmdModRefitDesigns");
+                    NGUIEditorTools.DrawProperty("User ElementRefitDesigns by AI", serializedObject, "_aiChoosesUserElementRefitDesigns");
 
                     var equipmentPlanSP = NGUIEditorTools.DrawProperty("Equipment Plan", serializedObject, "_equipmentPlan");
                     EditorGUI.BeginDisabledGroup(equipmentPlanSP.enumValueIndex == 0);  // disabled if Random selected

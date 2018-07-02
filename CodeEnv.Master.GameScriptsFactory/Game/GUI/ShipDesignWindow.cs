@@ -28,6 +28,14 @@ using UnityEngine;
 /// </summary>
 public class ShipDesignWindow : AUnitDesignWindow {
 
+    private UserResearchManager _userRschMgr;
+    private UserResearchManager UserRschMgr {
+        get {
+            _userRschMgr = _userRschMgr ?? _gameMgr.UserAIManager.ResearchMgr;
+            return _userRschMgr;
+        }
+    }
+
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
         UserDesigns.Add(newDesign as ShipDesign);
     }
@@ -49,7 +57,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = "Hull";
-        popupContent = TempGameValues.ShipHullCategoriesInUse.Select(hullCat => hullCat.GetValueName()).ToList();
+        popupContent = UserRschMgr.GetDiscoveredShipHullCats().Select(hullCat => hullCat.GetValueName()).ToList();
         return true;
     }
 

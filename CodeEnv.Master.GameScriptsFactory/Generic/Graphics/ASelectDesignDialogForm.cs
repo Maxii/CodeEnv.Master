@@ -38,6 +38,9 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     [SerializeField]
     private UIButton _cancelButton = null;
 
+    [SerializeField]
+    private UILabel _textLabel = null;
+
     private PlayerAIManager AiMgr { get { return GameManager.Instance.GetAIManagerFor(Settings.Player); } }
 
     /// <summary>
@@ -51,13 +54,18 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     private IList<DesignIconGuiElement> _displayedIcons;
     private DesignIconGuiElement _pickedIcon;
     private UIToggle _includeObsoleteCheckbox;
+    private string _defaultText;
 
     protected sealed override void InitializeValuesAndReferences() {
+        _defaultText = _textLabel.text;
+
         _includeObsoleteCheckbox = gameObject.GetSingleComponentInChildren<UIToggle>();
-        _includeObsoleteCheckbox.startsActive = true;
+        _includeObsoleteCheckbox.startsActive = false;
         _includeObsoleteCheckbox.Start();   // Avoid Start being called after assigning the handler as it fires onChange
 
         EventDelegate.Set(_includeObsoleteCheckbox.onChange, IncludeObsoleteCheckboxChangedEventHandler);
+        // 5.30.18 Obsolete checkbox not currently used as it doesn't make sense to pick an obsolete design when the default Design is free
+        _includeObsoleteCheckbox.gameObject.SetActive(false);
 
         _displayedDesignIconsGrid = gameObject.GetSingleComponentInChildren<UIGrid>();
         _displayedDesignIconsGrid.sorting = UIGrid.Sorting.Custom;
@@ -67,6 +75,9 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
 
     protected sealed override void AssignValuesToMembers() {
         base.AssignValuesToMembers();
+        if (!Settings.Text.IsNullOrEmpty()) {
+            _textLabel.text = Settings.Text;
+        }
         BuildDesignIcons();
         AssignInitialPickedIcon();
     }
@@ -84,7 +95,7 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     private void BuildDesignIcons() {
         RemoveDesignIcons();
 
-        IEnumerable<AUnitMemberDesign> designs = GetDesigns(_includeObsoleteCheckbox.value);
+        IEnumerable<AUnitMemberDesign> designs = GetDesignChoices();
         int desiredDesignsToAccommodateInGrid = designs.Count();
 
         Vector2 gridContainerViewSize = _displayedDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -108,11 +119,20 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     }
 
     private void AssignInitialPickedIcon() {
-        DesignIconGuiElement initialIconToBePicked = ChooseInitialIconToBePicked(_displayedIcons);
-        ChangePickedDesignIcon(initialIconToBePicked);
+        DesignIconGuiElement initialPickedIcon = ChooseInitialPickedDesignIcon(_displayedIcons);
+        ChangePickedDesignIcon(initialPickedIcon);
     }
 
-    protected abstract DesignIconGuiElement ChooseInitialIconToBePicked(IEnumerable<DesignIconGuiElement> allDisplayedIcons);
+    private DesignIconGuiElement ChooseInitialPickedDesignIcon(IEnumerable<DesignIconGuiElement> choices) {
+        bool isRefitDialog = Settings.OptionalParameter != null;
+        if (!isRefitDialog) {
+            var defaultChoice = choices.SingleOrDefault(icon => icon.Design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
+            if (defaultChoice != null) {
+                return defaultChoice;
+            }
+        }
+        return choices.First();
+    }
 
     private void RemoveDesignIcons() {
         if (!_displayedIcons.Any()) {
@@ -135,14 +155,13 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     }
 
     /// <summary>
-    /// Returns all the designs to be displayed. The designs returned are determined by
-    /// which player is using the form and whether the player wants to include Obsolete designs.
-    /// <remarks>CmdDesigns returned will always include the default design, the lowest level, cheapest
-    /// design available as it will be usable for free.</remarks>
+    /// Returns all the designs to be displayed as choices from which to pick. The designs returned are determined by
+    /// which player is using the form and whether the dialog is for a refit or an initial choice.
+    /// <remarks>Choices will include the default design if an initial choice as it will be usable for free.</remarks>
+    /// <remarks>6.1.18 Removed includeObsolete as no longer offered to user as an option.</remarks>
     /// </summary>
-    /// <param name="includeObsolete">if set to <c>true</c> [include obsolete].</param>
     /// <returns></returns>
-    protected abstract IEnumerable<AUnitMemberDesign> GetDesigns(bool includeObsolete);
+    protected abstract IEnumerable<AUnitMemberDesign> GetDesignChoices();
 
     /// <summary>
     /// Creates a DesignIconGuiElement from the provided design and parents it to parent.
@@ -158,8 +177,7 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
         designIcon.Size = iconSize;
         designIcon.Design = design;
 
-        // TODO designIcon.IsEnabled = design.BuyoutCost <= AiMgr.Knowledge.__BankBalance; + free default
-
+        designIcon.IsEnabled = design.BuyoutCost <= AiMgr.Knowledge.__BankBalance;
         return designIcon;
     }
 
@@ -190,15 +208,16 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     }
 
     /// <summary>
-    /// Changes _pickedIcon to newPickedDesignIcon and manages the IsPicked status of the icons.
+    /// Changes _pickedIcon to newPickedIcon and manages the IsPicked status of the icons.
     /// <remarks>Handled this way to properly deal with _pickedIcon when it is null or already destroyed.</remarks>
     /// </summary>
     /// <param name="newPickedIcon">The new picked design icon.</param>
     private void ChangePickedDesignIcon(DesignIconGuiElement newPickedIcon) {
         D.AssertNotNull(newPickedIcon);
+        D.Assert(newPickedIcon.IsEnabled);
         if (_pickedIcon != null) {  // will start out null
             if (_pickedIcon.gameObject != null) {    // could already be destroyed if includeObsolete changed
-                // if not destroyed, then displayedDesignIcons aren't new instances so must be there
+                // not destroyed so displayedIcons aren't new instances so must be there
                 D.Assert(_displayedIcons.Contains(_pickedIcon));
                 _pickedIcon.IsPicked = false;
             }
@@ -233,12 +252,12 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
     }
 
     /// <summary>
-    /// Handles when a design icon showing in available designs is clicked. Clicking 'selects' a designIcon.
+    /// Handles when a design icon showing in available designs is clicked. Clicking 'picks' a designIcon.
     /// </summary>
     /// <param name="designIcon">The designIcon that was clicked.</param>
     private void HandleDesignIconClicked(DesignIconGuiElement designIcon) {
-        if (designIcon == _pickedIcon) {
-            // current icon re-picked by user without another choice
+        if (designIcon == _pickedIcon || !designIcon.IsEnabled) {
+            // current icon re-clicked by user without another choice, or designIcon clicked is grayed out (not enabled)
             return;
         }
         // a new designIcon has been picked
@@ -277,6 +296,7 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
         base.ResetForReuse_Internal();
         RemoveDesignIcons();
         D.AssertEqual(Constants.Zero, _displayedIcons.Count);
+        _textLabel.text = _defaultText;
     }
 
     protected sealed override void Cleanup() {
@@ -292,6 +312,7 @@ public abstract class ASelectDesignDialogForm : APopupDialogForm {
         D.AssertNotNull(_acceptButton);
         D.AssertNotNull(_cancelButton);
         D.AssertNotNull(_designIconPrefab);
+        D.AssertNotNull(_textLabel);
     }
 
     protected sealed override void __Validate(DialogSettings settings) {

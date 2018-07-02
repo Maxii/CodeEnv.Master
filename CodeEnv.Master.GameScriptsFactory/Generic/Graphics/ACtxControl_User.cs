@@ -125,8 +125,9 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                     int subMenuItemId = i + _nextAvailableItemId; // submenu item IDs can't interfere with IDs already assigned
 
                     string textFormat = i == 0 ? SubmenuItemTextFormat_ClosestTarget : SubmenuItemTextFormat_Target;
+                    string tgtNameText = GetTargetNameTextForSubmenuItem(directive, target);
                     subMenu.items[i] = new CtxMenu.Item() {
-                        text = textFormat.Inject(target.DebugName, GetDistanceTo(target)),
+                        text = textFormat.Inject(tgtNameText, GetDistanceTo(target)),
                         id = subMenuItemId
                     };
                     _unitSubmenuTgtLookup.Add(subMenuItemId, target);
@@ -143,6 +144,17 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
             return true;    // targets are NOT present to populate the submenu so disable the top-level item
         }
         return false;   // directive doesn't support a submenu so don't disable the top-level item
+    }
+
+    /// <summary>
+    /// Gets the target name text for this directive and target to be used in a submenu item.
+    /// <remarks>Allows derived classes to incorporate color or other characteristics into the name displayed as a target in the submenu.</remarks>
+    /// </summary>
+    /// <param name="directive">The directive.</param>
+    /// <param name="target">The target.</param>
+    /// <returns></returns>
+    protected virtual string GetTargetNameTextForSubmenuItem(T directive, INavigableDestination target) {
+        return target.Name;
     }
 
     /// <summary>
@@ -170,18 +182,25 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <summary>
     /// Validates that the unique submenus Qty reqd value submitted equals the number of subMenus actually required
     /// as determined by TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected().
+    /// <remarks>6.20.18 Replaced use of TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive) with 
+    /// __IsSubmenuSupportedFor(directive) to allow TryGet... to fully implement Asserts and Knowledge checks.
+    /// This was mandated when I realized that this control is initialized when an AI version of the control is swapped
+    /// out for this User version just before the Item owner is changed to the User. When TryGet... was used, it
+    /// went to PlayerKnowledge to acquire targets, but as the menuOperatorItem's owner had not yet changed, it was
+    /// the wrong PlayerKnowledge.</remarks>
     /// </summary>
     [System.Diagnostics.Conditional("DEBUG")]
     protected void __ValidateUniqueSubmenuQtyReqd() {
-        IEnumerable<INavigableDestination> unusedTgts;
         int submenusReqd = Constants.Zero;
         foreach (var directive in UserMenuOperatorDirectives) {
-            if (TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out unusedTgts)) {
+            if (__IsSubmenuSupportedFor(directive)) {
                 submenusReqd++;
             }
         }
         D.AssertEqual(submenusReqd, _uniqueSubmenuQtyReqd, "{0}: Erroneous number of Reqd Submenus specified {1}.".Inject(DebugName, _uniqueSubmenuQtyReqd));
     }
+
+    protected abstract bool __IsSubmenuSupportedFor(T directive);
 
     #endregion
 

@@ -50,14 +50,10 @@ namespace CodeEnv.Master.GameContent {
 
         public Vector3 HullDimensions { get { return HullEquipment.HullDimensions; } }
 
-        public string UnitName { get; set; }
-
         public override string DebugName {
             get {
-                if (Owner != null) {
-                    return DebugNameFormat.Inject(Owner.DebugName, UnitName, Name);
-                }
-                return DebugNameFormat.Inject(Constants.Empty, UnitName, Name);
+                string ownerName = Owner != null ? Owner.DebugName : Constants.Empty;   // can be null during initialization
+                return DebugNameFormat.Inject(ownerName, UnitName, Name);
             }
         }
 
@@ -103,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
         private OutputsYield _outputs;
         public OutputsYield Outputs {
             get { return _outputs; }
-            set { SetProperty<OutputsYield>(ref _outputs, value, "Outputs"); }
+            protected set { SetProperty<OutputsYield>(ref _outputs, value, "Outputs"); }
         }
 
         /// <summary>
@@ -117,6 +113,14 @@ namespace CodeEnv.Master.GameContent {
         /// Rigidbody which is set one time in the UnitFactory using this value.</remarks>
         /// </summary>
         public float Mass { get; protected set; }
+
+        public string UnitName { get { return CmdData != null ? CmdData.UnitName : "No Unit"; } }
+
+        public int UnitElementCount { get { return CmdData != null ? CmdData.ElementCount : Constants.Zero; } }
+
+        internal AUnitCmdData CmdData { private get; set; }
+
+        protected sealed override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
 
         protected AHullEquipment HullEquipment { get; private set; }
 
@@ -552,6 +556,31 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcOffensiveStrength() {
             OffensiveStrength = new CombatStrength(Weapons);
+        }
+
+        protected override void HandleOwnerChanging(Player incomingOwner) {
+            base.HandleOwnerChanging(incomingOwner);
+            AssessChangeToCmdOwner(incomingOwner);
+        }
+
+        private void AssessChangeToCmdOwner(Player incomingOwner) {
+            if (CmdData.ElementCount == Constants.One) {
+                D.AssertEqual(CmdData.ElementsData.First(), this);
+                // 6.22.18 This owner change must be propagated to Command in this changing phase as AUnitElementItem will 
+                // follow with changes during the same changing phase. These changes will be to old owner's and allies
+                // IntelCoverage of the element. The changing phase must be used so that the right PlayerKnowledge and allies are used
+                // since once Owner changes they will be different. 
+                // If Cmd's Owner is not changed now, AUnitElementItem's changes will generate errors in PlayerKnowledge. 
+                // Cmd's PlayerKnowledge will still be that of the 'about to be changed' owner and it 
+                // will throw an error when it finds that its owned element doesn't have IntelCoverage.Comprehensive. 
+                // The same thing will happen when it finds ally coverage of the element isn't Comprehensive.
+                D.LogBold("{0} is about to change {1}'s Owner to {2}.", DebugName, CmdData.DebugName, incomingOwner.DebugName);
+                CmdData.Owner = incomingOwner;
+            }
+        }
+
+        protected sealed override void PropagateOwnerChange() { // 6.22.18 see AssessChangeToCmdOwner above
+            base.PropagateOwnerChange();    // base does nothing
         }
 
         /// <summary>

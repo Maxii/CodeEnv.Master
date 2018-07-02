@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -60,12 +61,14 @@ namespace CodeEnv.Master.GameContent {
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, Sector IntelCoverage is Basic, but a member could be allowing access.
+                    // 6.16.18 Cntlr has multiple clients so can't consolidate logic in Item.AssessWhetherToFireOwnerInfoAccessChgdEventFor
                     SectorData sectorData = _data as SectorData;
                     bool systemHasAccess = sectorData.SystemData != null ? sectorData.SystemData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID) : false;
                     if (systemHasAccess) {
                         return true;
                     }
-                    return false;
+                    bool aStarbaseHasAccess = sectorData.AllStarbasesData.Where(sbData => sbData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID)).Any();
+                    return aStarbaseHasAccess;
                 default:
                     return false;
             }

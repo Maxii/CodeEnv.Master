@@ -124,7 +124,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public override IList<StationaryLocation> LocalAssemblyStations { get { return ParentPlanet.LocalAssemblyStations; } }
+    public override IEnumerable<StationaryLocation> LocalAssemblyStations { get { return ParentPlanet.LocalAssemblyStations; } }
 
     #endregion
 

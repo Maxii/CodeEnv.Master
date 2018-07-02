@@ -121,8 +121,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public bool IsHeroPresent { get { return Data.Hero != TempGameValues.NoHero; } }
 
-    public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
-
     public override float Radius { get { return Data.Radius; } }
 
     public new AUnitCmdData Data {
@@ -132,7 +130,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public float CmdModuleHealth { get { return Data.CmdModuleHealth; } }
 
-    public int ElementCount { get { return Elements.Count; } }
+    public int ElementCount { get { return Data.ElementCount; } }
 
     protected AUnitElementItem _hqElement;
     /// <summary>
@@ -264,6 +262,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void AttachEquipment() {
         Data.Sensors.ForAll(s => Attach(s));
+        // Remove any Monitors from SensorMonitors that no longer have a Sensor, but keep the Monitor(s) as children.
+        // They will be found and re-added by UnitFactory if/when sensors are replaced and/or added.
+        var sMonitorsWithoutSensors = SensorMonitors.Where(sMon => sMon.RangeCategory == RangeCategory.None).ToList();
+        if (sMonitorsWithoutSensors.Any()) {
+            sMonitorsWithoutSensors.ForAll(sMon => SensorMonitors.Remove(sMon));
+        }
         Attach(Data.FtlDampener);
     }
 
@@ -339,7 +343,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         element.AttachAsChildOf(UnitContainer);
 
         element.subordinateDeathOneShot += SubordinateDeathEventHandler;
-        element.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
         element.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
         element.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
         element.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
@@ -368,7 +371,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Data.RemoveElement(element.Data);
 
         element.subordinateDeathOneShot -= SubordinateDeathEventHandler;
-        element.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
         element.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
         element.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
         element.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
@@ -440,7 +442,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
     /// <param name="sensors">The replacement CmdSensors.</param>
     /// <param name="ftlDampener">The replacement FtlDampener.</param>
-    public void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+    public void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs,
+        IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
         UnsubscribeFromSensorEvents();  // prepare for the changes in Data
         Data.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
         // after the changes have been made in Data, reattach and continue operations
@@ -449,6 +452,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         SubscribeToSensorEvents();
     }
 
+    [Obsolete]
     private void HandleSubordinateOwnerChanging(AUnitElementItem subordinateElement, Player incomingOwner) {
         if (ElementCount == Constants.One) {
             D.AssertEqual(subordinateElement, Elements.First());
@@ -640,6 +644,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         HandleSubordinateDeath(sender as AUnitElementItem);
     }
 
+    [Obsolete]
     protected void SubordinateOwnerChangingEventHandler(object sender, AUnitElementItem.SubordinateOwnerChangingEventArgs e) {
         HandleSubordinateOwnerChanging(sender as AUnitElementItem, e.IncomingOwner);
     }
@@ -824,16 +829,21 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    protected override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
+    protected override void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
         DeregisterForOrders();
         ReturnFromCalledStates();
         UponLosingOwnership();  // 4.20.17 Do any reqd Callback before exiting current non-Call()ed state
         ResetOrderAndState();
     }
 
-    protected sealed override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementNonUiChangesFollowingOwnerChange() {
+        base.ImplementNonUiChangesFollowingOwnerChange();
+        RegisterForOrders();
+    }
+
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
         }
@@ -841,8 +851,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             DisplayMgr.MeshColor = Owner.Color;
         }
         AssessIcon();
-
-        RegisterForOrders();
     }
 
     protected override void HandleIsDiscernibleToUserChanged() {
@@ -892,7 +900,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (IsPaused) {
             D.Log("{0}.ResetOrderAndState called while paused.", DebugName);
         }
-        // UponResetOrderAndState();
+        // UponResetOrderAndState();    // 6.21.18 Not currently used by Cmds
         ResetOrdersReceivedWhilePausedSystem();
     }
 
@@ -905,12 +913,18 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <summary>
     /// Clears any element orders issued by the state(s) executing the order with the ID executingOrderID.
     /// <remarks>Will throw an error if executingOrderID doesn't represent an order, aka is default(Guid).</remarks>
+    ///<remarks>6.23.18 Warning: Not intended to be used by Call()ed state_ExitState.</remarks>
     /// </summary>
     /// <param name="executingOrderID">The ID of the executing order.</param>
     protected void ClearAnyRemainingElementOrdersIssuedBy(Guid executingOrderID) {
-        if (IsDead || IsOwnerChangeUnderway) {
-            // _executingOrderID already set to default by ResetOrderAndState
+        // 6.23.18 Can't Assert !_isWaitingToProcessReturn as ExitState can be called while waiting to process Return() - e.g. New Order
+        // Also can't Assert !Call()ed state as ExitState methods execute after the state is changed
+        if (IsDead) {
             return;
+        }
+        if (Data.__IsOwnerChgUnderway) {
+            // 6.21.18 This 'warning' has yet to occur
+            D.Warn("FYI. {0} has an owner change underway. Assess whether a problem based on subsequent warnings and errors.", DebugName);
         }
         D.AssertNotDefault(executingOrderID);
         ClearElementsOrders(executingOrderID);
@@ -921,18 +935,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// If cmdOrderID is the default, each Element's CurrentOrder will be cleared no matter what its cmdOrderID.
     /// </summary>
     private void ClearElementsOrders(Guid cmdOrderID) {
-        IList<string> clearedOrderElementNames = new List<string>(Elements.Count);
-        var elementsCopy = new List<AUnitElementItem>(Elements);    // e.ClearOrder() can result in death -> list modified while iterating exception
+        IList<string> clearedElementNames = new List<string>(Elements.Count);
+        // e.ClearOrder() can result in death -> list modified while iterating exception
+        var elementsCopy = new List<AUnitElementItem>(Elements);
         foreach (var e in elementsCopy) {
-            bool isCleared = e.ClearOrder(cmdOrderID);
+            bool isCleared = e.ClearOrderAndResetState(cmdOrderID);
             if (isCleared) {
-                clearedOrderElementNames.Add(e.DebugName);
+                clearedElementNames.Add(e.DebugName);
             }
         }
 
-        if (clearedOrderElementNames.Any()) {
-            D.Log("{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {2}.",
-                DebugName, clearedOrderElementNames.Count, clearedOrderElementNames.Concatenate());
+        if (clearedElementNames.Any()) {
+            D.Log(ShowDebugLog, "{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {2}.",
+                DebugName, clearedElementNames.Count, clearedElementNames.Concatenate());
         }
     }
 
@@ -947,6 +962,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #endregion
 
     #region StateMachine Support Members
+
+    #region Pick Design Support
+
+    protected AUnitElementDesign _chosenElementRefitDesign;
+
+    protected void HandleElementRefitDesignChosen(AUnitElementDesign chosenDesign) {
+        D.AssertNull(_chosenElementRefitDesign);
+        _chosenElementRefitDesign = chosenDesign;
+    }
+
+    #endregion
 
     protected abstract bool IsCurrentStateCalled { get; }
 
@@ -1010,29 +1036,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
-    /// <summary>
-    /// Validates the common starting values of a State that is Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
-        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
-        D.Assert(!IsDead);
+    protected virtual void ResetAndValidateCommonCallableExitStateValues() {
+        D.Assert(_isWaitingToProcessReturn);
     }
 
-    /// <summary>
-    /// Validates the common starting values of a State that is not Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonNonCallableStateValues() {
-        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        D.AssertDefault(_executingOrderID);
-        D.Assert(!IsDead);
-    }
-
-    protected virtual void ResetCommonCallableStateValues() { }
-
-    protected virtual void ResetCommonNonCallableStateValues() {
+    protected virtual void ResetAndValidateCommonNonCallableExitStateValues() {
         _activeFsmReturnHandlers.Clear();
         _executingOrderID = default(Guid);
+        // 6.23.18 Can't Assert !_isWaitingToProcessReturn as ExitState can be called while waiting to process Return() - e.g. New Order
+        _isWaitingToProcessReturn = false;
     }
 
     protected void ReturnFromCalledStates() {
@@ -1174,6 +1186,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void UponAwarenessChgd(IOwnerItem_Ltd item) { RelayToCurrentState(item); }
 
+    private void UponSectorStationVacancyChanged(StationaryLocation station, bool isVacant) {
+        RelayToCurrentState(station, isVacant);
+    }
+
     private void UponHQElementChanged() { RelayToCurrentState(); }  // Called after Elements have been notified of HQChangeCompletion
 
     private void UponAlertStatusChanged() { RelayToCurrentState(); }
@@ -1278,8 +1294,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Show Tracking Label
 
     private void InitializeTrackingLabel() {
-        _debugCntls.showUnitTrackingLabels += ShowUnitTrackingLabelsChangedEventHandler;
-        if (_debugCntls.ShowUnitTrackingLabels) {
+        __debugCntls.showUnitTrackingLabels += ShowUnitTrackingLabelsChangedEventHandler;
+        if (__debugCntls.ShowUnitTrackingLabels) {
             EnableTrackingLabel(true);
         }
     }
@@ -1309,12 +1325,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void ShowUnitTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
-        EnableTrackingLabel(_debugCntls.ShowUnitTrackingLabels);
+        EnableTrackingLabel(__debugCntls.ShowUnitTrackingLabels);
     }
 
     private void CleanupTrackingLabel() {
-        if (_debugCntls != null) {
-            _debugCntls.showUnitTrackingLabels -= ShowUnitTrackingLabelsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showUnitTrackingLabels -= ShowUnitTrackingLabelsChangedEventHandler;
         }
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
@@ -1379,11 +1395,38 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Debug
 
+    public bool __IsOwnerChgUnderway { get { return Data.__IsOwnerChgUnderway; } }
+
     /// <summary>
     /// Indicates whether this operational Cmd has commenced operations.
     /// <remarks> 1.12.18 OPTIMIZE Can be removed as Element's test for error during assault has never occurred.</remarks>
     /// </summary>
     public bool __IsActivelyOperating { get; protected set; }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is Call()able.
+    /// </summary>
+    /// <param name="calledStateName">Name of the called state.</param>
+    /// <param name="includeFsmTgt">if set to <c>true</c> [include FSM TGT].</param>
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+        D.Assert(!IsDead);
+        D.Assert(!_isWaitingToProcessReturn);
+    }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is not Call()able.
+    /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateCommonNonCallableEnterStateValues() {
+        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        D.AssertDefault(_executingOrderID);
+        D.Assert(!IsDead);
+        D.Assert(!_isWaitingToProcessReturn);
+        FsmEventSubscriptionMgr.__ValidateNoRemainingSubscriptions();
+    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateCurrentStateNotACalledState() {
@@ -1396,7 +1439,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
-
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateHQElementChanging(AUnitElementItem incomingHQElement) {
@@ -1420,27 +1462,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (element.IsHQ) {
             D.Error("{0} adding element {1} already designated as the HQ Element.", DebugName, element.DebugName);
         }
+
         if (IsOperational) {
             // 5.8.17 FormationMgr not yet initialized when adding during construction
             D.Assert(IsJoinable, DebugName);
         }
+        // Owner validation handled in Data
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateStateForSensorEventSubscription();
-
-    public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
-        if (_debugCntls.IsAllIntelCoverageComprehensive) {
-            return true;
-        }
-        if (IsOwnerChangeUnderway) {
-            D.Error("NOT AN ERROR.");   // 5.20.17 OPTIMIZE Should no longer be needed now that 1) Cmds change owners before the last 
-            return true;                // element Owner property actually changes, and 2) FleetCmds don't track the HQElement's
-                                        // IntelCoverage change if the HQElement is about to create LoneFleetCmd and leave
-        }
-        bool isEntitled = Owner.IsRelationshipWith(player, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
-        return isEntitled;
-    }
 
     public override void __SimulateAttacked() {
         Elements.ForAll(e => e.__SimulateAttacked());
@@ -1517,6 +1548,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         // 11.16.17 Can be owned by our owner when a new Cmd is created or Element Constructed or Refit
         UponAwarenessChgd(item);
     }
+
+    void IFsmEventSubscriptionMgrClient.HandleSectorStationVacancyChgd(StationaryLocation station, bool isVacant) {
+        UponSectorStationVacancyChanged(station, isVacant);
+    }
+
 
     #endregion
 

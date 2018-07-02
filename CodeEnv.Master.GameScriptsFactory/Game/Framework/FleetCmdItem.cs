@@ -72,8 +72,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region Initialization
 
-    protected override bool InitializeDebugLog() {
-        return _debugCntls.ShowFleetCmdDebugLogs;
+    protected override bool __InitializeDebugLog() {
+        return __debugCntls.ShowFleetCmdDebugLogs;
     }
 
     protected override AFormationManager InitializeFormationMgr() {
@@ -176,7 +176,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         UnifiedSRSensorMonitor.Add(refittedElement.SRSensorMonitor);
 
         refittedElement.subordinateDeathOneShot += SubordinateDeathEventHandler;
-        refittedElement.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
         refittedElement.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
         refittedElement.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
         refittedElement.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
@@ -189,7 +188,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         UnifiedSRSensorMonitor.Remove(elementToReplace.SRSensorMonitor);
 
         elementToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
-        elementToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
         elementToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
         elementToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
         elementToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
@@ -256,6 +254,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return isJoinable;
     }
 
+    public FleetCmdItem FormNewOwnerFleetFrom(ShipItem ship) {
+        D.AssertNotEqual(Owner, ship.Owner);
+        FleetCmdModuleDesign defaultCmdModDesign = _gameMgr.GetAIManagerFor(ship.Owner).Designs.GetFleetCmdModDefaultDesign();
+        return FormFleetFrom("NewOwnerSingleShipFleet", defaultCmdModDesign, new ShipItem[] { ship }, validateOwners: false);
+    }
+
     /// <summary>
     /// Forms a fleet from the provided ship using the default FleetCmdModuleDesign.
     /// </summary>
@@ -268,6 +272,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     /// <summary>
     /// Forms a fleet from the provided ships using the default FleetCmdModuleDesign.
+    /// <remarks>Primary use is when making temporary throw away fleets.</remarks>
     /// </summary>
     /// <param name="fleetRootname">The fleet root name.</param>
     /// <param name="ships">The ships.</param>
@@ -276,24 +281,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         PlayerDesigns ownerDesigns = OwnerAiMgr.Designs;
         FleetCmdModuleDesign defaultCmdModDesign = ownerDesigns.GetFleetCmdModDefaultDesign();
         return FormFleetFrom(fleetRootname, defaultCmdModDesign, ships);
-
-        ////Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
-        ////ships.ForAll(ship => {
-        ////    D.Assert(ship.IsOperational);
-        ////    D.Assert(Contains(ship));
-        ////});
-
-        ////if (ships.Count() == ElementCount) {
-        ////    D.Log("{0} did not need to form a new fleet as it already is the desired fleet.", DebugName);
-        ////    return this;
-        ////}
-
-        ////ships.ForAll(ship => RemoveElement(ship));
-
-        ////// canceling any existing ship orders (like repair) will be handled by the AutoFleetCreator
-        ////Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
-        ////var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, Formation, fleetRootname);
-        ////return fleet;
     }
 
     /// <summary>
@@ -302,12 +289,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <param name="fleetRootname">The fleet root name.</param>
     /// <param name="cmdModDesign">The command mod design.</param>
     /// <param name="ships">The ships.</param>
+    /// <param name="validateOwners">if set to <c>true</c> [validate owners].</param>
     /// <returns></returns>
-    public FleetCmdItem FormFleetFrom(string fleetRootname, FleetCmdModuleDesign cmdModDesign, IEnumerable<ShipItem> ships) {
+    private FleetCmdItem FormFleetFrom(string fleetRootname, FleetCmdModuleDesign cmdModDesign, IEnumerable<ShipItem> ships, bool validateOwners = true) {
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
         ships.ForAll(ship => {
             D.Assert(ship.IsOperational);
             D.Assert(Contains(ship));
+            if (validateOwners) {
+                D.AssertEqual(Owner, ship.Owner);
+            }
         });
 
         if (ships.Count() == ElementCount) {
@@ -322,8 +313,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, cmdModDesign, ships, Formation, fleetRootname);
         return fleet;
     }
-
-
 
     /// <summary>
     /// Returns <c>true</c> if this fleet is in orbit, <c>false</c> otherwise. If in high orbit,
@@ -509,7 +498,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     /// <summary>
-    /// Returns a safe location for the FleetCreator that will be used to deploy the formed fleet.
+    /// Returns a safe location for the RuntimeFleetCreator that will be used to deploy the formed fleet.
     /// <remarks>This is not the location where the new FleetCmd will start. That location depends on where the
     /// chosen HQElement is located.</remarks>
     /// </summary>
@@ -760,6 +749,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 case FleetDirective.ChangeHQ:
                     HQElement = CurrentOrder.Target as ShipItem;
                     break;
+                case FleetDirective.FoundSettlement:
+                    CurrentState = FleetState.ExecuteFoundSettlementOrder;
+                    break;
+                case FleetDirective.FoundStarbase:
+                    CurrentState = FleetState.ExecuteFoundStarbaseOrder;
+                    break;
                 case FleetDirective.Retreat:
                 case FleetDirective.Withdraw:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, directive.GetValueName());
@@ -809,7 +804,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return state == FleetState.Patrolling || state == FleetState.AssumingFormation
             || state == FleetState.Guarding || state == FleetState.Repairing || state == FleetState.Refitting
             || state == FleetState.Disbanding || state == FleetState.JoiningHanger || state == FleetState.Attacking
-            || state == FleetState.Exploring;
+            || state == FleetState.Exploring || state == FleetState.FoundingSettlement || state == FleetState.FoundingStarbase;
     }
 
     private bool IsCurrentStateAnyOf(FleetState state) {
@@ -844,7 +839,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void FinalInitialize_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
     }
 
     void FinalInitialize_EnterState() {
@@ -865,7 +860,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void FinalInitialize_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -874,11 +869,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
-        if (Availability == NewOrderAvailability.Unavailable) {  // 1.13.18 follow-on or repair order likely to be unauthorized if Unavailable
-            ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
-        }
-
+        __ValidateCommonNonCallableEnterStateValues();
         Data.Target = null;
         // 12.4.17 Can't ChangeAvailabilityTo(Available) here as can atomically cause a new order to be received 
         // which would violate FSM rule: no state change in void EnterStates
@@ -890,6 +881,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (CurrentOrder != null) {
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+                if (Availability == NewOrderAvailability.Unavailable) {
+                    // Resulting state may throw an error if it doesn't expect Unavailable
+                    D.Warn("FYI. {0} is about to execute FollowonOrder {1} while still {2}. Fixing.", DebugName, CurrentOrder.FollowonOrder.DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                    ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+                }
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
                 D.AssertEqual(OrderSource.CmdStaff, followonOrderSource, CurrentOrder.ToString());
@@ -903,6 +899,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         if (AssessNeedForRepair()) {
+            if (Availability == NewOrderAvailability.Unavailable) {
+                // ExecuteRepairOrder state may throw an error if it doesn't expect Unavailable
+                D.Warn("FYI. {0} is about to execute a Repair Order while still {1}. Fixing.", DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+            }
+
             IssueCmdStaffsRepairOrder();
             yield return null;
             D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
@@ -991,7 +993,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Idling_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -1103,7 +1105,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteMoveOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.AssertNotNull(CurrentOrder.Target);
 
         _executingOrderID = CurrentOrder.OrderID;
@@ -1142,7 +1144,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             Call(FleetState.AssumingFormation);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.DidCallSuccessfullyComplete) {
+            if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
                 yield return null;
                 D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
             }
@@ -1164,6 +1166,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteMoveOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteMoveOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
 
@@ -1302,9 +1305,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
-        var moveOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(moveOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -1327,7 +1329,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteAssumeFormationOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target as IFleetNavigableDestination;
@@ -1361,7 +1363,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.AssumingFormation);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -1377,6 +1379,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteAssumeFormationOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteAssumeFormationOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -1478,15 +1481,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteAssumeFormationOrder_ExitState() {
         LogEvent();
         _moveHelper.DisengagePilot();
-        ResetCommonNonCallableStateValues();
-        // 1.11.18 No reason to clear Ship AssumeStation Orders if exiting without completing
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
 
     #region AssumingFormation
 
-    // 7.2.16 Call()ed State with no _fsmTgt
+    // 7.2.16 Call()ed State with no need for _fsmTgt
     // 3.23.17 Existence of this state allows it to be Call()ed by other states without needing to issue
     // an AssumeFormation order. It also means Return() goes back to the state that Call()ed it.
 
@@ -1507,9 +1510,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
         // 3.21.17 AssumingFormation doesn't care whether _fsmTgt is set or not. Eliminating this rqmt allows other
         // states to Call() it directly without issuing a AssumeFormation order
-        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        _activeFsmReturnHandlers.Peek().__Validate(CurrentState.GetValueName());
-        D.Assert(!_fsmShipsExpectedToCallbackWithOrderOutcome.Any());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName(), includeFsmTgt: false);
         D.AssertNotNull(CurrentOrder);  // 11.24.17 Call()ed but there must be some order being executed
 
         DetermineShipsToReceiveAssumeStationOrder();
@@ -1637,7 +1638,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void AssumingFormation_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -1650,7 +1651,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             // No longer allowed to explore target or fully explored
-            {FsmCallReturnCause.TgtRelationship, () =>    { IssueCmdStaffsAssumeFormationOrder(); }             },
+            {FsmCallReturnCause.TgtRelationship, () =>      {
+                IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+                var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+                IssueCmdStaffsAssumeFormationOrder(closestLocalAssyStation);
+            }                                                                                                           },
+            // Fleet no longer has available, qualified ships to finish the exploration
+            {FsmCallReturnCause.Qualifications, () =>       {
+                IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+                var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+                IssueCmdStaffsAssumeFormationOrder(closestLocalAssyStation);
+            }                                                                                                           },
             // NeedsRepair: 2.5.18 Cmd no longer assesses need for unit repair
             // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
         };
@@ -1662,7 +1673,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteExploreOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable; // Fleet explorable targets are sectors, systems and UCenter
         D.AssertNotNull(fleetExploreTgt);
@@ -1678,12 +1689,28 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isSubscribed);
         // IFleetExplorables cannot die
 
-        if (fleetExploreTgt is ISystem_Ltd || fleetExploreTgt is ISector_Ltd) {
-            // If instructed to explore a Sector it must have a System as without a system the sector is by definition already fully explored
+        bool toSubscribeToPlanetDiscovery = false;
+        bool toSubscribeToStarbaseDiscovery = false;
+        if (fleetExploreTgt is ISystem_Ltd) {
+            toSubscribeToPlanetDiscovery = true;
+        }
+        else {
+            var sectorExploreTgt = fleetExploreTgt as ISector_Ltd;
+            if (sectorExploreTgt != null) {
+                toSubscribeToStarbaseDiscovery = true;
+                toSubscribeToPlanetDiscovery = sectorExploreTgt.System != null;
+            }
+        }
+
+        if (toSubscribeToPlanetDiscovery) {
             isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAware_Planet);
             D.Assert(isSubscribed);
         }
+        if (toSubscribeToStarbaseDiscovery) {
+            isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Base);
+            D.Assert(isSubscribed);
 
+        }
         ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
     }
 
@@ -1713,7 +1740,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Exploring);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -1729,8 +1756,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteExploreOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        if (_isWaitingToProcessReturn) {
+            D.Warn("FYI. {0}: Ignoring leaked callback to ExecuteExploreOrder from Exploring.", DebugName);
+            return;
+        }
         D.Log(ShowDebugLog, "{0}.ExecuteExploreOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        if (!_moveHelper.IsPilotEngaged) {
+            // 6.23.18 This should no longer occur now that I use _isWaitingToProcessReturn to filter out callbacks occurring in time gap
+            D.Error("{0}: Leaked callback to ExecuteExploreOrder from Exploring.", DebugName);
+        }
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
@@ -1828,7 +1863,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Log(/*ShowDebugLog,*/ "{0} {1} order to {2} discovered no longer valid when Relations with {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, player.DebugName, Owner.GetCurrentRelations(player).GetValueName());
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-            IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
+            IssueCmdStaffsAssumeFormationOrder(closestLocalAssyStation);
         }
     }
 
@@ -1845,7 +1880,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Log(/*ShowDebugLog,*/ "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, fsmTgtOwner, Owner.GetCurrentRelations(fsmTgtOwner).GetValueName());
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-            IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
+            IssueCmdStaffsAssumeFormationOrder(closestLocalAssyStation);
         }
     }
 
@@ -1862,7 +1897,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Log(/*ShowDebugLog,*/ "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, fsmTgtOwner, Owner.GetCurrentRelations(fsmTgtOwner).GetValueName());
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-            IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
+            IssueCmdStaffsAssumeFormationOrder(closestLocalAssyStation);
         }
     }
 
@@ -1903,16 +1938,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
-        // IFleetExplorables cannot die
 
-        if (_fsmTgt is ISystem_Ltd) {
-            isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAware_Planet);
-            D.Assert(isUnsubscribed);
-        }
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAware_Planet);
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Base);
 
-        var exploreOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(exploreOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -1925,23 +1956,47 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     private IDictionary<IShipExplorable, ShipItem> _fsmSystemExploreTgtAssignments;
 
+    private IDictionary<IShipExplorable, ShipItem> _fsmSectorStarbaseExploreTgtAssignments;
+
     private bool IsShipExploreTargetPartOfSystem(IShipExplorable shipExploreTgt) {
         return (shipExploreTgt is IPlanet_Ltd || shipExploreTgt is IStar_Ltd);
     }
 
-    private void HandleDiscoveredPlanetWhileExploringSystem(IShipExplorable planetDiscovered) {
+    private bool IsShipExploreTargetASectorStarbase(IShipExplorable shipExploreTgt) {
+        return shipExploreTgt is IStarbaseCmd_Ltd;
+    }
+
+    private void HandleDiscoveredPlanetWhileExploring(IShipExplorable planetDiscovered) {
         ISystem_Ltd systemTgt = _fsmTgt as ISystem_Ltd;
+        if (systemTgt == null) {
+            ISector_Ltd sectorTgt = _fsmTgt as ISector_Ltd;
+            D.AssertNotNull(sectorTgt);
+            systemTgt = sectorTgt.System;
+        }
         D.AssertNotNull(systemTgt);
         D.Assert(!planetDiscovered.IsFullyExploredBy(Owner));
         D.Assert(!_fsmSystemExploreTgtAssignments.ContainsKey(planetDiscovered));
 
         ShipItem noAssignedShip = null;
         _fsmSystemExploreTgtAssignments.Add(planetDiscovered, noAssignedShip);
-        //D.Log(ShowDebugLog, "{0} has added {1}'s newly discovered planet {2} to explore.", DebugName, systemTgt.DebugName, planetDiscovered.DebugName);
+        D.Log(ShowDebugLog, "{0} has added {1}'s newly discovered planet {2} to explore.", DebugName, systemTgt.DebugName, planetDiscovered.DebugName);
 
         // 12.10.17 Removed assignment of ship to discovered planet as this can occur before fleet even starts moving to the system.
         // If it occurs that early, the system explore setup process discovers the already assigned ship and throws an error.
         // My analysis of the assignment processes below leads me to conclude that a ship will get assigned even if planet is added late.
+    }
+
+    private void HandleDiscoveredStarbaseWhileExploring(IShipExplorable starbaseDiscovered) {
+        ISector_Ltd sectorTgt = _fsmTgt as ISector_Ltd;
+        D.AssertNotNull(sectorTgt);
+        D.Assert(!starbaseDiscovered.IsFullyExploredBy(Owner)); // can only discover a starbase 1 time as it never regresses below Basic coverage
+        D.Assert(!_fsmSectorStarbaseExploreTgtAssignments.ContainsKey(starbaseDiscovered));
+
+        if (starbaseDiscovered.IsExploringAllowedBy(Owner) && !starbaseDiscovered.IsFullyExploredBy(Owner)) {
+            ShipItem noAssignedShip = null;
+            _fsmSectorStarbaseExploreTgtAssignments.Add(starbaseDiscovered, noAssignedShip);
+            D.LogBold("{0} has added {1}'s newly discovered starbase {2} to explore.", DebugName, sectorTgt.DebugName, starbaseDiscovered.DebugName);
+        }
     }
 
     /// <summary>
@@ -1965,6 +2020,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
         }
 
+        bool isExploringSector = false;
+        if (_fsmSectorStarbaseExploreTgtAssignments.ContainsKey(shipExploreTgt)) {
+            isExploringSector = true;
+            D.Assert(_fsmTgt is ISector_Ltd);
+            if (_fsmSectorStarbaseExploreTgtAssignments.Values.Contains(unavailableShip)) {
+                // ship had explore assignment in sector so remove it
+                var unavailableShipTgt = _fsmSectorStarbaseExploreTgtAssignments.Single(kvp => kvp.Value == unavailableShip).Key;
+                _fsmSectorStarbaseExploreTgtAssignments[unavailableShipTgt] = null;
+            }
+        }
+
+        if (isExploringSystem || isExploringSector) {
+            D.AssertNotEqual(isExploringSector, isExploringSystem); // only 1 can be true
+        }
+
         bool isNewShipAssigned;
         IList<ShipItem> ships;
         if (TryGetShips(out ships, minAvailability: NewOrderAvailability.Available, avoidHQ: true, desiredQty: 1,
@@ -1972,6 +2042,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             ShipItem newExploreShip = ships.First();
             if (isExploringSystem) {
                 AssignShipToExploreSystemTgt(newExploreShip);
+            }
+            else if (isExploringSector) {
+                AssignShipToExploreSectorStarbase(newExploreShip);
             }
             else {
                 AssignShipToExploreItem(newExploreShip, shipExploreTgt);
@@ -1984,6 +2057,52 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 shipExploreTgt.DebugName, unavailableShip.DebugName);
         }
         return isNewShipAssigned;
+    }
+
+    private void ExploreSector(ISector_Ltd sector) {
+        if (sector.System != null) {
+            ISystem sectorSystem = sector.System as ISystem;
+            D.AssertEqual(IntelCoverage.Comprehensive, sectorSystem.GetIntelCoverage(Owner));
+        }
+
+        IList<IShipExplorable> sectorStarbaseTgtsToExplore =
+            (from starbase in sector.AllStarbases
+             where OwnerAiMgr.HasKnowledgeOf(starbase)
+             let eStarbase = starbase as IShipExplorable
+             where eStarbase.IsExploringAllowedBy(Owner) && !eStarbase.IsFullyExploredBy(Owner)
+             select eStarbase).ToList();
+
+        if (sectorStarbaseTgtsToExplore.Any()) {
+            // Note: Knowledge of each starbase explore target in sector will be checked as soon as Ship gets explore order
+            foreach (var exploreTgt in sectorStarbaseTgtsToExplore) {
+                if (!_fsmSectorStarbaseExploreTgtAssignments.ContainsKey(exploreTgt)) {
+                    if (exploreTgt.IsExploringAllowedBy(Owner) && exploreTgt.IsFullyExploredBy(Owner)) {
+                        ShipItem noAssignedShip = null;
+                        _fsmSectorStarbaseExploreTgtAssignments.Add(exploreTgt, noAssignedShip);
+                    }
+                }
+                else {
+                    D.Log(@"{0} found SectorExploreStarbaseKey {1} already present during explore setup for {2}. 
+                        This is because it was discovered just prior to setup.", DebugName, exploreTgt.DebugName, sector.DebugName);
+                }
+            }
+
+            int desiredExplorationShipQty = sectorStarbaseTgtsToExplore.Count;
+            IList<ShipItem> ships = GetShips(desiredMinAvailability: NewOrderAvailability.Available, avoidHQ: true,
+                desiredQty: desiredExplorationShipQty, priorityCats: TempGameValues.DesiredExplorationShipCategories);
+
+            Stack<ShipItem> explorationShips = new Stack<ShipItem>(ships);
+            while (explorationShips.Count > Constants.Zero) {
+                bool wasAssigned = AssignShipToExploreSystemTgt(explorationShips.Pop());
+                if (!wasAssigned) {
+                    break; // all remaining unexplored targets in the system, if any, have assigned ships
+                }
+            }
+        }
+        else {
+            // no starbases or no starbases we are allowed to explore, so we've done our job and 'fully explored'
+            (sector as ISector).SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+        }
     }
 
     private void ExploreSystem(ISystem_Ltd system) {
@@ -2027,18 +2146,25 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     /// <summary>
-    /// Handles the situation where the provided ship has either successfully explored the
-    /// provided target in the system, or the exploration of the target failed because the
-    /// target is dead. Returns <c>true</c> if a new exploration target was assigned to the
-    /// ship, <c>false</c> otherwise. If the ship received no new assignment, it has been
-    /// instructed to gather at a nearby assembly station.
+    /// Handles the situation where the provided ship has either successfully explored the provided target, 
+    /// or the exploration of the target failed because the target is dead. Returns <c>true</c> if a new 
+    /// exploration target was assigned to the ship, <c>false</c> otherwise. If the ship received no new 
+    /// assignment, it has been instructed to gather at a nearby assembly station.
     /// </summary>
     /// <param name="ship">The ship.</param>
-    /// <param name="exploreTgt">The explore TGT.</param>
+    /// <param name="exploreTgt">The explore target.</param>
     /// <returns></returns>
-    private bool HandleSystemTargetExploredOrDead(ShipItem ship, IShipExplorable exploreTgt) {
-        _fsmSystemExploreTgtAssignments.Remove(exploreTgt);
-        bool isNowAssigned = AssignShipToExploreSystemTgt(ship);
+    private bool HandleTargetExploredOrDead(ShipItem ship, IShipExplorable exploreTgt) {
+        bool isNowAssigned;
+        if (IsShipExploreTargetASectorStarbase(exploreTgt)) {
+            _fsmSectorStarbaseExploreTgtAssignments.Remove(exploreTgt);
+            isNowAssigned = AssignShipToExploreSectorStarbase(ship);
+        }
+        else {
+            D.Assert(IsShipExploreTargetPartOfSystem(exploreTgt));
+            _fsmSystemExploreTgtAssignments.Remove(exploreTgt);
+            isNowAssigned = AssignShipToExploreSystemTgt(ship);
+        }
         if (!isNowAssigned) {
             // 11.24.17 Ship is done exploring, so no callback is desired on following orders. May throw errors if callback is stipulated
             // 12.17.17 No need to send Flagship to local assy station here as ship.ExecuteAssumeStationOrder 
@@ -2060,19 +2186,40 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private bool AssignShipToExploreSystemTgt(ShipItem ship) {
         //D.Log(ShowDebugLog, "{0} is attempting to assign {1} to explore a system target.", DebugName, ship.DebugName);
         if (_fsmSystemExploreTgtAssignments.Values.Contains(ship)) {
-            // 12.10.17 Added for debugging which was solved.
-            D.Error("{0} found {1} already assigned to explore {2}.", DebugName, ship.DebugName,
-                _fsmSystemExploreTgtAssignments.Keys.Single(key => _fsmSystemExploreTgtAssignments[key] == ship).DebugName);
+            // 12.10.17 Added for debugging which was solved
+            D.Error("{0} found {1} already assigned. \nExplore assignments: {2}.", DebugName, ship.DebugName,
+                _fsmSystemExploreTgtAssignments.ToDebugString());
         }
         var tgtsWithoutAssignedShip = _fsmSystemExploreTgtAssignments.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
         if (tgtsWithoutAssignedShip.Any()) {
-            var closestExploreTgt = tgtsWithoutAssignedShip.MinBy(tgt => Vector3.SqrMagnitude(tgt.Position - ship.Position));
+            var closestExploreTgt = GameUtility.GetClosest(ship.Position, tgtsWithoutAssignedShip);
             if (closestExploreTgt.IsFullyExploredBy(Owner)) {
                 // in interim, target could have been fully explored by another fleet's ship of ours
-                return HandleSystemTargetExploredOrDead(ship, closestExploreTgt);
+                return HandleTargetExploredOrDead(ship, closestExploreTgt);
             }
             AssignShipToExploreItem(ship, closestExploreTgt);
             _fsmSystemExploreTgtAssignments[closestExploreTgt] = ship;
+            return true;
+        }
+        return false;
+    }
+
+    private bool AssignShipToExploreSectorStarbase(ShipItem ship) {
+        D.Log("{0} is attempting to assign {1} to explore a sector starbase.", DebugName, ship.DebugName);
+        if (_fsmSectorStarbaseExploreTgtAssignments.Values.Contains(ship)) {
+            // 6.26.18 Occurred shortly after adding sector exploring
+            D.Error("{0} found {1} already assigned. \nExplore assignments: {2}.", DebugName, ship.DebugName,
+                _fsmSectorStarbaseExploreTgtAssignments.ToDebugString());
+        }
+        var tgtsWithoutAssignedShip = _fsmSectorStarbaseExploreTgtAssignments.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
+        if (tgtsWithoutAssignedShip.Any()) {
+            var closestExploreTgt = GameUtility.GetClosest(ship.Position, tgtsWithoutAssignedShip);
+            if (closestExploreTgt.IsFullyExploredBy(Owner)) {
+                // in interim, target could have been fully explored by another fleet's ship of ours
+                return HandleTargetExploredOrDead(ship, closestExploreTgt);
+            }
+            AssignShipToExploreItem(ship, closestExploreTgt);
+            _fsmSectorStarbaseExploreTgtAssignments[closestExploreTgt] = ship;
             return true;
         }
         return false;
@@ -2094,19 +2241,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Exploring_UponPreconfigureState() {
         LogEvent();
-
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
         D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
 
         _fsmSystemExploreTgtAssignments = _fsmSystemExploreTgtAssignments ?? new Dictionary<IShipExplorable, ShipItem>();
+        _fsmSectorStarbaseExploreTgtAssignments = _fsmSectorStarbaseExploreTgtAssignments ?? new Dictionary<IShipExplorable, ShipItem>();
+        D.Assert(!_fsmSystemExploreTgtAssignments.Any());
+        D.Assert(!_fsmSectorStarbaseExploreTgtAssignments.Any());
     }
 
     IEnumerator Exploring_EnterState() {
         LogEvent();
 
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
-        D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
+        D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));  // should not fail using _fsmTgt event subscriptions
 
         ISystem_Ltd systemExploreTgt = fleetExploreTgt as ISystem_Ltd;
         if (systemExploreTgt != null) {
@@ -2117,9 +2266,22 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         else {
             ISector_Ltd sectorExploreTgt = fleetExploreTgt as ISector_Ltd;
             if (sectorExploreTgt != null) {
-                D.AssertNotNull(sectorExploreTgt.System);  // Sector without a System is by definition fully explored so can't get here
-                if (!fleetExploreTgt.IsFullyExploredBy(Owner)) { // could have become 'fully explored' while moving to fleetExploreTgt
-                    ExploreSystem(sectorExploreTgt.System);
+                if (sectorExploreTgt.System != null) {
+                    IFleetExplorable sectorSystem = sectorExploreTgt.System as IFleetExplorable;
+                    // Since allowed to explore sector, sectorOwner is either unknown or known and not at war with fleet owner.
+                    // If System is owned, it must be the same as sectorOwner, so can't be at war with system owner either.
+                    D.Assert(sectorSystem.IsExploringAllowedBy(Owner));
+                    if (!sectorSystem.IsFullyExploredBy(Owner)) {
+                        ExploreSystem(sectorExploreTgt.System);
+
+                        while (!sectorSystem.IsFullyExploredBy(Owner)) {
+                            yield return null;
+                        }
+                    }
+                }
+                // fleetExploreTgt, aka Sector could have become fully explored while moving to Sector or after fully exploring sector's system
+                if (!fleetExploreTgt.IsFullyExploredBy(Owner)) {
+                    ExploreSector(sectorExploreTgt);
                 }
             }
             else {
@@ -2154,7 +2316,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IShipExplorable shipExploreTgt = target as IShipExplorable;
         D.AssertNotNull(shipExploreTgt);
 
-        bool issueFleetRecall = false;
         if (IsShipExploreTargetPartOfSystem(shipExploreTgt)) {
             // exploreTgt is a planet or star
             if (!_fsmSystemExploreTgtAssignments.ContainsKey(shipExploreTgt)) {
@@ -2165,7 +2326,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     _fsmSystemExploreTgtAssignments.Values.Select(shp => shp.DebugName).Concatenate());
             }
             if (outcome == OrderOutcome.Success) {
-                HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
+                HandleTargetExploredOrDead(ship, shipExploreTgt);
             }
             else {
                 // unsuccessful
@@ -2173,11 +2334,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 bool testForAdditionalExploringShips = false;
                 switch (outcome) {
                     case OrderOutcome.TgtRelationship:
-                        // exploration failed so recall all ships
-                        issueFleetRecall = true;
+                        var returnHandler = GetCurrentCalledStateReturnHandler();
+                        returnHandler.ReturnCause = FsmCallReturnCause.TgtRelationship;
+                        Return();
                         break;
                     case OrderOutcome.TgtDeath:
-                        HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
+                        HandleTargetExploredOrDead(ship, shipExploreTgt);
                         // This is effectively counted as a success and will show up during the _EnterState's
                         // continuous test System.IsFullyExplored. As not really a failure, no reason to issue a fleet recall.
                         break;
@@ -2193,8 +2355,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                             else {
                                 D.AssertEqual(Constants.One, ElementCount);
-                                // Damaged ship is only one left in fleet and it can't explore so exploration failed
-                                issueFleetRecall = true;
+                                // Unavailable ship is only one left in fleet so exploration failed
+                                returnHandler = GetCurrentCalledStateReturnHandler();
+                                returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                                Return();
                             }
                         }
                         break;
@@ -2230,8 +2394,95 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         // Do nothing as there are other ships currently exploring so exploreTarget will eventually be assigned a ship
                     }
                     else {
-                        // There are no remaining ships out exploring -> the exploration attempt has failed so issue recall
-                        issueFleetRecall = true;
+                        // No remaining ships out exploring so no ships will become available in the future to explore
+                        var returnHandler = GetCurrentCalledStateReturnHandler();
+                        returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                        Return();
+                    }
+                }
+            }
+        }
+        else if (IsShipExploreTargetASectorStarbase(shipExploreTgt)) {
+            if (!_fsmSectorStarbaseExploreTgtAssignments.ContainsKey(shipExploreTgt)) {
+                string successMsg = outcome == OrderOutcome.Success ? "successfully" : "unsuccessfully";
+                D.Log("{0}: FailureCause = {1}.", DebugName, outcome.GetValueName());
+                D.Error("{0}: {1} {2} completed its exploration of {3} with no record of it being assigned. AssignedTgts: {4}, AssignedShips: {5}.",
+                    DebugName, ship.DebugName, successMsg, shipExploreTgt.DebugName, _fsmSectorStarbaseExploreTgtAssignments.Keys.Select(tgt => tgt.DebugName).Concatenate(),
+                    _fsmSectorStarbaseExploreTgtAssignments.Values.Select(shp => shp.DebugName).Concatenate());
+            }
+            if (outcome == OrderOutcome.Success) {
+                HandleTargetExploredOrDead(ship, shipExploreTgt);
+            }
+            else {
+                // unsuccessful
+                bool isNewShipAssigned;
+                bool testForAdditionalExploringShips = false;
+                switch (outcome) {
+                    case OrderOutcome.TgtRelationship:
+                        var returnHandler = GetCurrentCalledStateReturnHandler();
+                        returnHandler.ReturnCause = FsmCallReturnCause.TgtRelationship;
+                        Return();
+                        break;
+                    case OrderOutcome.TgtDeath:
+                        HandleTargetExploredOrDead(ship, shipExploreTgt);
+                        // This is effectively counted as a success and will show up during the _EnterState's
+                        // continuous test Sector.IsFullyExplored. As not really a failure, no reason to issue a fleet recall.
+                        break;
+                    case OrderOutcome.NeedsRepair:
+                    case OrderOutcome.NewOrderReceived:
+                    case OrderOutcome.Ownership:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            if (ElementCount > Constants.One) {
+                                // This is not the last ship in the fleet, but the others aren't available. Since it usually takes 
+                                // more than one ship to explore a Sector, the other ships might currently be exploring
+                                testForAdditionalExploringShips = true;
+                            }
+                            else {
+                                D.AssertEqual(Constants.One, ElementCount);
+                                // Unavailable ship is only one left in fleet so exploration failed
+                                returnHandler = GetCurrentCalledStateReturnHandler();
+                                returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                                Return();
+                            }
+                        }
+                        break;
+                    case OrderOutcome.Death:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            if (ElementCount > Constants.One) {    // >1 as dead ship has not yet been removed from fleet
+                                                                   // This is not the last ship in the fleet, but the others aren't available. Since it usually takes 
+                                                                   // more than one ship to explore a Sector, the other ships might currently be exploring
+                                testForAdditionalExploringShips = true;
+                            }
+                            else {
+                                D.AssertEqual(Constants.One, ElementCount);  // dead ship has not yet been removed from fleet
+                                // Do nothing as Unit is about to die
+                            }
+                        }
+                        break;
+                    case OrderOutcome.TgtUnreachable:
+                        D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                            OrderOutcome.TgtUnreachable.GetValueName());
+                        break;
+                    case OrderOutcome.TgtUnjoinable:
+                    case OrderOutcome.TgtUncatchable:
+                    // 4.15.17 Only ships pursued by ships can have a Ship.TgtUncatchable fail cause
+                    case OrderOutcome.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
+                }
+
+                if (testForAdditionalExploringShips) {
+                    var otherShipsCurrentlyExploring = Elements.Cast<ShipItem>().Except(ship).Where(s => s.IsCurrentOrderDirectiveAnyOf(ShipDirective.Explore));
+                    if (otherShipsCurrentlyExploring.Any()) {
+                        // Do nothing as there are other ships currently exploring so exploreTarget will eventually be assigned a ship
+                    }
+                    else {
+                        // No remaining ships out exploring so no ships will become available in the future to explore
+                        var returnHandler = GetCurrentCalledStateReturnHandler();
+                        returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                        Return();
                     }
                 }
             }
@@ -2240,8 +2491,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // exploreTgt is UCenter
             D.Assert(shipExploreTgt is UniverseCenterItem);
             if (outcome == OrderOutcome.Success) {
-                // exploration of UCenter has successfully completed so issue fleet recall
-                issueFleetRecall = true;
+                Return();
             }
             else {
                 bool isNewShipAssigned;
@@ -2253,18 +2503,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         if (!isNewShipAssigned) {
                             // No more ships are available to finish UCenter explore. Since it only takes one ship
                             // to explore UCenter, the other ships, if any, can't currently be exploring, so no reason to wait for them
-                            // to complete their exploration. -> the exploration attempt has failed so issue recall
-                            issueFleetRecall = true;
+                            // to complete their exploration. -> the exploration attempt has failed 
+                            var returnHandler = GetCurrentCalledStateReturnHandler();
+                            returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                            Return();
                         }
                         break;
                     case OrderOutcome.Death:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
-                            if (ElementCount > Constants.One) {    // >1 as dead ship has not yet been removed from fleet
-                                                                   // This is not the last ship in the fleet, but the others aren't available. Since it only takes one ship
-                                                                   // to explore UCenter, the other ships can't currently be exploring, so no reason to wait for them
-                                                                   // to complete their exploration. -> the exploration attempt has failed so issue recall
-                                issueFleetRecall = true;
+                            if (ElementCount > Constants.One) {
+                                // > 1 as dead ship has not yet been removed from fleet.
+                                // This is not the last ship in the fleet, but the others aren't available. Since it only takes one ship
+                                // to explore UCenter, the other ships can't currently be exploring, so no reason to wait for them
+                                // to complete their exploration. -> the exploration attempt has failed
+                                var returnHandler = GetCurrentCalledStateReturnHandler();
+                                returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                                Return();
                             }
                             else {
                                 D.AssertEqual(Constants.One, ElementCount);  // dead ship has not yet been removed from fleet
@@ -2285,13 +2540,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
                 }
             }
-        }
-        if (issueFleetRecall) {
-            IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-            string recallMsg = outcome == OrderOutcome.Success ? "succeeded" : "failed (Cause: {0})".Inject(outcome.GetValueName());
-            D.LogBold("{0} is recalling all ships as exploration of {1} has {2}.", DebugName, fleetExploreTgt.DebugName, recallMsg);
-            var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-            IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
     }
 
@@ -2404,20 +2652,33 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Exploring_UponAwarenessChgd(IOwnerItem_Ltd item) {
         LogEvent();
-        ISystem_Ltd systemTgt = _fsmTgt as ISystem_Ltd;
-        if (systemTgt == null) {
-            ISector_Ltd sectorTgt = _fsmTgt as ISector_Ltd;
-            D.AssertNotNull(sectorTgt);
-            systemTgt = sectorTgt.System;
+
+        IPlanet_Ltd discoveredPlanet = item as IPlanet_Ltd;
+        if (discoveredPlanet != null) {
+            ISystem_Ltd systemTgt = _fsmTgt as ISystem_Ltd;
+            if (systemTgt == null) {
+                ISector_Ltd sectorTgt = _fsmTgt as ISector_Ltd;
+                D.AssertNotNull(sectorTgt);
+                systemTgt = sectorTgt.System;
+            }
+            D.AssertNotNull(systemTgt);
+
+            if (systemTgt.Planets.Contains(discoveredPlanet)) {
+                IShipExplorable ePlanet = discoveredPlanet as IShipExplorable;
+                HandleDiscoveredPlanetWhileExploring(ePlanet);
+            }
         }
-        D.AssertNotNull(systemTgt);
+        else {
+            IStarbaseCmd_Ltd discoveredStarbase = item as IStarbaseCmd_Ltd;
+            if (discoveredStarbase != null) {    // could be a Settlement
+                ISector_Ltd sectorTgt = _fsmTgt as ISector_Ltd;
+                D.AssertNotNull(sectorTgt);
 
-        IPlanet_Ltd planet = item as IPlanet_Ltd;
-        D.AssertNotNull(planet);
-
-        if (systemTgt.Planets.Contains(planet)) {
-            IShipExplorable ePlanet = planet as IShipExplorable;
-            HandleDiscoveredPlanetWhileExploringSystem(ePlanet);
+                if (sectorTgt.AllStarbases.Contains(discoveredStarbase)) {
+                    IShipExplorable eStarbase = discoveredStarbase as IShipExplorable;
+                    HandleDiscoveredStarbaseWhileExploring(eStarbase);
+                }
+            }
         }
     }
 
@@ -2433,7 +2694,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Exploring_ExitState() {
         LogEvent();
         _fsmSystemExploreTgtAssignments.Clear();
-        ResetCommonCallableStateValues();
+        _fsmSectorStarbaseExploreTgtAssignments.Clear();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -2459,7 +2721,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecutePatrolOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         var patrollableTgt = CurrentOrder.Target as IPatrollable;  // Patrollable targets are non-enemy owned sectors, systems, bases and UCenter
         D.AssertNotNull(patrollableTgt, CurrentOrder.Target.DebugName);
         D.Assert(patrollableTgt.IsPatrollingAllowedBy(Owner));
@@ -2496,7 +2758,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Patrolling);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -2509,6 +2771,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecutePatrolOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecutePatrolOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -2659,9 +2922,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var patrolOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(patrolOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -2673,7 +2935,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Patrolling_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
 
         IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
         D.AssertNotNull(patrolledTgt);    // the _fsmTgt starts out as IPatrollable
@@ -2690,7 +2952,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
 
-        var patrolStations = patrolledTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
+        var patrolStations = patrolledTgt.PatrolStations.ToList();
         StationaryLocation nextPatrolStation = GameUtility.GetClosest(Position, patrolStations);
         bool isRemoved = patrolStations.Remove(nextPatrolStation);
         D.Assert(isRemoved);
@@ -2840,7 +3102,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Patrolling_ExitState() {
         LogEvent();
         _moveHelper.DisengagePilot();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -2865,7 +3127,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteGuardOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         IGuardable guardableTgt = CurrentOrder.Target as IGuardable;
         D.AssertNotNull(guardableTgt); // Guardable targets are non-enemy owned Sectors, Systems, Planets, Bases and UCenter
         D.Assert(guardableTgt.IsGuardingAllowedBy(Owner));
@@ -2903,7 +3165,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Guarding);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -2916,6 +3178,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteGuardOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteGuardOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -3064,9 +3327,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var guardOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(guardOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -3091,7 +3353,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Guarding_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
         IGuardable guardedTgt = _fsmTgt as IGuardable;
         D.AssertNotNull(guardedTgt);    // the _fsmTgt starts out as IGuardable
         D.Assert(guardedTgt.IsGuardingAllowedBy(Owner));
@@ -3122,14 +3384,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.AssumingFormation); // avoids permanently leaving Guarding state
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
-            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
 
         // 4.12.17 Desired when a Call()ed state Call()s another state - avoids warning in GetCurrentReturnHandler
         RemoveReturnHandlerFromTopOfStack(returnHandler);
-
         // Fleet stays in Guarding state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
     }
 
@@ -3259,7 +3520,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Guarding_ExitState() {
         LogEvent();
         _moveHelper.DisengagePilot();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -3286,7 +3547,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.AssertNotNull(unitAttackTgt);
 
@@ -3346,7 +3607,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Attacking);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -3367,6 +3628,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteAttackOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        if (_isWaitingToProcessReturn) {
+            D.Warn("FYI. {0}: Ignoring leaked callback to ExecuteAttackOrder from Attacking.", DebugName);
+            return;
+        }
         if (outcome != OrderOutcome.Success) {
             D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
                 DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
@@ -3540,9 +3805,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
-        var attackOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(attackOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -3566,7 +3830,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Attacking_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
 
         DetermineShipsToReceiveAttackOrder();
     }
@@ -3755,9 +4019,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // 1.26.18 Death of target when attacking it is a success, but before Return(), must clear element orders so 
-        // no callbacks during 1 frame gap following Return to ExecuteAttackOrder_EnterState
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        // 1.26.18 Death of target when attacking it is a success
         //D.Log("{0} is Return()ing to ExecuteAttackOrder in Frame {1}.", DebugName, Time.frameCount);
         Return();
     }
@@ -3768,7 +4030,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Attacking_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -3857,12 +4119,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (regroupDest == null) {
             // if all else fails, pick the most desirable clear point in a neighboring sector 
             var sectorGrid = SectorGrid.Instance;
-            var currentSectorID = sectorGrid.GetSectorIDThatContains(Position);
+            ////var currentSectorID = sectorGrid.GetSectorIDThatContains(Position);
+            var currentSectorID = sectorGrid.GetSectorIDContaining(Position);
             var neighboringSectors = sectorGrid.GetNeighboringSectors(currentSectorID);
             float bestDestDesirability = Mathf.NegativeInfinity;
             Vector3 bestDestInSector = Vector3.zero;    // can be in opposite direction of preferredDirection if that is only available
             foreach (var sector in neighboringSectors) {
-                Vector3 destInSector = sector.GetClearRandomPointInsideSector();
+                Vector3 destInSector = sector.GetClearRandomInsidePoint();
                 Vector3 vectorToDest = destInSector - Position;
                 float distanceToDest = vectorToDest.magnitude;
                 float destDirectionDesirability = Vector3.Dot(vectorToDest.normalized, preferredDirection);
@@ -3883,7 +4146,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteRegroupOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target as IFleetNavigableDestination;
@@ -3927,7 +4190,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.AssumingFormation);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -3943,6 +4206,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteRegroupOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteRegroupOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -4052,9 +4316,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
         FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
 
-        var regroupOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(regroupOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -4068,7 +4331,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteJoinFleetOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         D.AssertNotNull(fleetToJoin);
         D.AssertNotEqual(this, fleetToJoin, DebugName);    // 4.6.17 Added as possibly joining same fleet?
@@ -4124,6 +4387,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteJoinFleetOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteJoinFleetOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -4248,9 +4512,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var joinOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(joinOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -4275,7 +4538,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteJoinHangerOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         var baseToJoin = CurrentOrder.Target as AUnitBaseCmdItem;
         D.AssertNotNull(baseToJoin);
         D.Assert(baseToJoin.Hanger.IsJoinableBy(ElementCount), baseToJoin.Hanger.DebugName);
@@ -4313,7 +4576,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.JoiningHanger);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -4332,6 +4595,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteJoinHangerOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteJoinHangerOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -4456,9 +4720,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var joinOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(joinOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -4483,7 +4746,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void JoiningHanger_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
 
         DetermineShipsToReceiveEnterHangerOrder();
         ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
@@ -4504,7 +4767,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         D.Assert(!IsDead);   // won't get here if all ships were transferred as this fleetCmd will already be dead
-        D.LogBold("{0} has transferred all ships capable of entering {1}'s hanger. {1} remain.", DebugName, _fsmTgt.DebugName, ElementCount);
+        D.LogBold("{0} has transferred all ships capable of entering {1}'s hanger. {2} remain with fleet.", DebugName, _fsmTgt.DebugName, ElementCount);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -4633,7 +4896,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void JoiningHanger_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -4674,7 +4937,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         // 1.2.18 Can't Assert UnitHealth < 100% as RestartState can occur and ship(s) may have independently completed repairing
         D.AssertNotNull(CurrentOrder.Target);    // Target can be a Planet, Base or this FleetCmd (will repair in place)
 
@@ -4726,7 +4989,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Repairing);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -4749,6 +5012,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteRepairOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -4924,9 +5188,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Assert(isUnsubscribed);
         }
 
-        var repairOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(repairOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -4952,7 +5215,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
         bool toRepairInPlace = _fsmTgt == this as IFleetNavigableDestination;
         if (!toRepairInPlace) {
             IRepairCapable repairDest = _fsmTgt as IRepairCapable;
@@ -5134,7 +5397,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Repairing_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -5159,7 +5422,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         IUnitBaseCmd refitDest = CurrentOrder.Target as IUnitBaseCmd;
         D.AssertNotNull(refitDest);
@@ -5197,7 +5460,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Refitting);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -5215,6 +5478,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteRefitOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -5338,10 +5602,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var refitOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        // 1.11.18 This won't stop the ships from refitting as those refitting have already left this Cmd
-        ClearAnyRemainingElementOrdersIssuedBy(refitOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -5375,7 +5637,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private bool TryPickShipToRefitCmdModule(IEnumerable<ShipItem> candidates, out ShipItem ship) {
         D.Assert(!candidates.IsNullOrEmpty());
         ship = null;
-        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.CmdModuleDesign);
+        bool toRefitCmdModule = OwnerAiMgr.Designs.AreUpgradeDesignsAvailable(Data.CmdModuleDesign);
         if (toRefitCmdModule) {
             ship = candidates.SingleOrDefault(s => s.IsHQ);
             if (ship == null) {
@@ -5385,12 +5647,26 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return toRefitCmdModule;
     }
 
+    private void HaveUserPickRefitDesign(ShipItem ship) {
+        string dialogText = "Pick the Design you wish to use to refit {0}. \nCancel to not refit.".Inject(ship.Name);
+        var cancelDelegate = new EventDelegate(() => {
+            var existingDesignIndicatingRefitCanceled = ship.Data.Design;
+            HandleElementRefitDesignChosen(existingDesignIndicatingRefitCanceled);  // canceling dialog means don't refit ship
+            DialogWindow.Instance.Hide();
+        });
+
+        var existingDesign = ship.Data.Design;
+        DialogWindow.Instance.HaveUserPickElementRefitDesign(FormID.SelectShipDesignDialog, dialogText, cancelDelegate, existingDesign,
+            (chosenRefitDesign) => HandleElementRefitDesignChosen(chosenRefitDesign), useUserActionButton: false);
+    }
+
     #endregion
 
     void Refitting_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
+        D.AssertNull(_chosenElementRefitDesign);
 
         DetermineShipsToReceiveRefitOrder();
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
@@ -5399,40 +5675,85 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     IEnumerator Refitting_EnterState() {
         LogEvent();
 
-        ShipItem shipToRefitCmdModule;
-        bool toRefitCmdModule = TryPickShipToRefitCmdModule(_fsmShipsExpectedToCallbackWithOrderOutcome, out shipToRefitCmdModule);
-
-        int refitQty = _fsmShipsExpectedToCallbackWithOrderOutcome.Count;
-        D.Log(ShowDebugLog, "{0} is issuing a RefitOrder to {1} Ships orbiting {2}: {3}.", DebugName, refitQty, _fsmTgt.DebugName,
+        int plannedRefitQty = _fsmShipsExpectedToCallbackWithOrderOutcome.Count;
+        D.Log(ShowDebugLog, "{0} is issuing a RefitOrder to {1} Ships orbiting {2}: {3}.", DebugName, plannedRefitQty, _fsmTgt.DebugName,
             _fsmShipsExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
         // Fleet ships should be in high orbit around Base
-        foreach (var ship in _fsmShipsExpectedToCallbackWithOrderOutcome) {
+
+        // First choose the refit designs and record them allowing the User to cancel 
+        // OPTIMIZE if User isn't going to manually choose and potentially cancel, no need for copy or lookup
+        IDictionary<ShipItem, ShipDesign> shipDesignLookup = new Dictionary<ShipItem, ShipDesign>(plannedRefitQty);
+        var shipsToRefitCopy = _fsmShipsExpectedToCallbackWithOrderOutcome.ToArray();
+        //D.Log("{0} has planned refit of {1} ships: {2}.", DebugName, plannedRefitQty, shipsToRefitCopy.Select(s => s.DebugName).Concatenate());
+        foreach (var ship in shipsToRefitCopy) {
+            D.AssertNull(_chosenElementRefitDesign);
+            var existingDesign = ship.Data.Design;
+
+            if (Owner.IsUser && !__debugCntls.AiChoosesUserElementRefitDesigns) {
+                HaveUserPickRefitDesign(ship);
+
+                while (_chosenElementRefitDesign == null) {
+                    // Wait until User makes refit design choice
+                    yield return null;
+                }
+
+                if (_chosenElementRefitDesign == existingDesign) {
+                    // User has canceled refit of this ship
+                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                    D.Assert(isRemoved);
+                    D.Log("{0}: {1} removed from refit plan as User canceled dialog.", DebugName, ship.DebugName);
+                    _chosenElementRefitDesign = null;
+                    continue;
+                }
+            }
+            else {
+                ShipDesign chosenDesign = OwnerAiMgr.ChooseRefitDesign(existingDesign);
+                HandleElementRefitDesignChosen(chosenDesign);
+            }
+            D.AssertNotNull(_chosenElementRefitDesign);
+
+            shipDesignLookup.Add(ship, _chosenElementRefitDesign as ShipDesign);
+            _chosenElementRefitDesign = null;
+        }
+
+        if (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
+            int actualRefitQty = _fsmShipsExpectedToCallbackWithOrderOutcome.Count;
+            ShipItem shipToRefitCmdModule;
+            bool toRefitCmdModule = TryPickShipToRefitCmdModule(_fsmShipsExpectedToCallbackWithOrderOutcome, out shipToRefitCmdModule);
+
             // order the ships that can refit to do so in orbit
-            ShipDesign refitDesign;
-            bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(ship.Data.Design, out refitDesign);
-            D.Assert(isDesignAvailable);
+            foreach (var ship in _fsmShipsExpectedToCallbackWithOrderOutcome) {
+                var refitDesign = shipDesignLookup[ship];
 
-            bool toIncludeCmdModuleInThisShipsRefit = ship == shipToRefitCmdModule;
+                bool toIncludeCmdModuleInThisShipsRefit = ship == shipToRefitCmdModule;
+                if (toIncludeCmdModuleInThisShipsRefit) {
+                    D.Assert(toRefitCmdModule);
+                }
 
-            var refitOrder = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IShipNavigableDestination, toIncludeCmdModuleInThisShipsRefit);
-            ship.CurrentOrder = refitOrder;
+                var refitOrder = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IShipNavigableDestination,
+                    toIncludeCmdModuleInThisShipsRefit);
+                ship.CurrentOrder = refitOrder;
+            }
+
+            if (toRefitCmdModule) {
+                StartEffectSequence(EffectSequenceID.Refitting);
+            }
+
+            while (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
+                // Wait here until all refitable ships have completed their orbital refit
+                yield return null;
+            }
+
+            string cmdModuleMsg = string.Empty;
+            if (toRefitCmdModule) {
+                StopEffectSequence(EffectSequenceID.Refitting);
+                cmdModuleMsg = ", including the CmdModule";
+            }
+            D.LogBold("{0} has completed refit of {1} ships orbiting {2}{3}.", DebugName, actualRefitQty, _fsmTgt.DebugName, cmdModuleMsg);
         }
-
-        if (toRefitCmdModule) {
-            StartEffectSequence(EffectSequenceID.Refitting);
+        else {
+            D.Warn("FYI. {0} had all ship refits canceled resulting in cancellation of the fleet refit.", DebugName);
         }
-
-        while (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
-            // Wait here until all refitable ships have completed their orbital refit
-            yield return null;
-        }
-
-        string cmdModuleMsg = string.Empty;
-        if (toRefitCmdModule) {
-            StopEffectSequence(EffectSequenceID.Refitting);
-            cmdModuleMsg = ", including the CmdModule";
-        }
-        D.LogBold("{0} has completed refit of {1} ships orbiting {2}{3}.", DebugName, refitQty, _fsmTgt.DebugName, cmdModuleMsg);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -5494,23 +5815,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Refitting_UponSubordinateJoined(ShipItem subordinateShip) {
         LogEvent();
-        if (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
-            // ships are still in the process of getting to hanger for refit
-            if (subordinateShip.IsAuthorizedForNewOrder(ShipDirective.Refit)) {
-                _fsmShipsExpectedToCallbackWithOrderOutcome.Add(subordinateShip);
-
-                ShipDesign refitDesign;
-                bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(subordinateShip.Data.Design, out refitDesign);
-                D.Assert(isDesignAvailable);
-                bool includeCmdModuleInRefit = false;
-
-                ShipRefitOrder order = new ShipRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign,
-                    _fsmTgt as IShipNavigableDestination, includeCmdModuleInRefit);
-                D.LogBold("{0} is issuing {1} to {2} after being joined during State {3}.", DebugName, order.DebugName, subordinateShip.DebugName,
-                    CurrentState.GetValueName());
-                subordinateShip.CurrentOrder = order;
-            }
-        }
+        // 6.8.18 Eliminated issuing refit order to subordinateShip. New User select design system 
+        // makes this difficult and of little value add
     }
 
     void Refitting_UponAlertStatusChanged() {
@@ -5566,8 +5872,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Refitting_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Refitting);
+        ResetAndValidateCommonCallableExitStateValues();
+        _chosenElementRefitDesign = null;
     }
 
     #endregion
@@ -5592,7 +5899,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         IUnitBaseCmd disbandDest = CurrentOrder.Target as IUnitBaseCmd;
         D.AssertNotNull(disbandDest);
@@ -5630,7 +5937,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Call(FleetState.Disbanding);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -5649,6 +5956,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteDisbandOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
             DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
@@ -5770,10 +6078,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        var disbandOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
         // 1.11.18 This won't stop the ships from disbanding as those disbanding have already left this Cmd
-        ClearAnyRemainingElementOrdersIssuedBy(disbandOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -5799,7 +6106,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Disbanding_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
 
         DetermineShipsToReceiveDisbandOrder();
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
@@ -5949,10 +6256,985 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Disbanding_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
+
+    #region ExecuteFoundSettlementOrder
+
+    #region ExecuteFoundSettlementOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_FoundingToFoundSettlement() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            {FsmCallReturnCause.TgtRelationship, () =>      { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.Qualifications, () =>       { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.NeedsRepair, () =>          { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.ConstructionCanceled, () => { IssueCmdStaffsAssumeFormationOrder(); }   },
+            // TgtUncatchable:  4.15.17 Only Fleet targets are uncatchable to Cmds
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.FoundingSettlement.GetValueName());
+    }
+
+    #endregion
+
+    void ExecuteFoundSettlementOrder_UponPreconfigureState() {
+        LogEvent();
+
+        __ValidateCommonNonCallableEnterStateValues();
+
+        SystemItem destinationSystem = CurrentOrder.Target as SystemItem;
+        D.AssertNotNull(destinationSystem);
+        D.Assert(destinationSystem.IsFoundingSettlementAllowedBy(Owner));
+
+        var colonyShips = Elements.Where(e => (e as ShipItem).HullCategory == ShipHullCategory.Colonizer);
+        D.Assert(colonyShips.Any());
+
+        _executingOrderID = CurrentOrder.OrderID;
+        _fsmTgt = destinationSystem;
+
+        // no need for subscription to FsmTgtDeath for a system
+        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isSubscribed);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
+        D.Assert(isSubscribed);
+        var systemSector = SectorGrid.Instance.GetSector(destinationSystem.SectorID);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, systemSector);
+        D.Assert(isSubscribed);
+
+        ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
+    }
+
+    IEnumerator ExecuteFoundSettlementOrder_EnterState() {
+        LogEvent();
+
+        SystemItem destinationSystem = _fsmTgt as SystemItem;
+
+        // move to the system we are to colonize
+        float standoffDistance = Constants.ZeroF;
+        _moveHelper.PlotPilotCourse(destinationSystem, Speed.Standard, standoffDistance);
+
+        while (!_moveHelper.IsPilotEngaged) {
+            // wait until course is plotted and pilot engaged
+            yield return null;
+        }
+
+        while (_moveHelper.IsPilotEngaged) {
+            // wait for pilot to arrive at system
+            yield return null;
+        }
+        // Should be in or just outside of destinationSystem
+
+        // now move just outside the SettlementStation
+        StationaryLocation settlementStation = destinationSystem.GetClosestSettlementStationTo(Position);
+        standoffDistance = Radius; // keep ships away from where Settlement will be founded
+        _moveHelper.PlotPilotCourse(settlementStation, Speed.Standard, standoffDistance);
+
+        while (!_moveHelper.IsPilotEngaged) {
+            // wait until course is plotted and pilot engaged
+            yield return null;
+        }
+
+        while (_moveHelper.IsPilotEngaged) {
+            // wait for pilot to arrive outside of settlement station
+            yield return null;
+        }
+
+        FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FleetState.FoundingSettlement, CurrentState);
+        Call(FleetState.FoundingSettlement);
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
+            yield return null;
+            D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
+        }
+
+        var newSettlement = destinationSystem.Settlement;
+        D.AssertNotNull(newSettlement);
+
+        if (!IsDead) {
+            IFleetNavigableDestination settlementAssyStation = GameUtility.GetClosest(Position, newSettlement.LocalAssemblyStations);
+            IssueCmdStaffsAssumeFormationOrder(settlementAssyStation);
+        }
+    }
+
+    void ExecuteFoundSettlementOrder_UponApCoursePlotSuccess() {
+        LogEvent();
+        _moveHelper.EngagePilot(shipsToMove: Elements);
+    }
+
+    void ExecuteFoundSettlementOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
+        D.Log(ShowDebugLog, "{0}.ExecuteFoundSettlementOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
+    }
+
+    void ExecuteFoundSettlementOrder_UponApTargetReached() {
+        LogEvent();
+        _moveHelper.DisengagePilot();
+    }
+
+    void ExecuteFoundSettlementOrder_UponApTgtUncatchable() {
+        LogEvent();
+        D.Error("{0}: How can target {1} be uncatchable?", DebugName, _moveHelper.ApTarget.DebugName);
+    }
+
+    void ExecuteFoundSettlementOrder_UponNewOrderReceived() {
+        LogEvent();
+        // do nothing as state will change
+    }
+
+    void ExecuteFoundSettlementOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundSettlementOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundSettlementOrder_UponSubordinateJoined(ShipItem subordinateShip) {
+        LogEvent();
+        // IMPROVE Could also just order ship to AssumeStation without including it in expected arrivals. It will be included along with 
+        // rest of fleet when next leg of move order is issued. If no more legs??
+        if (_moveHelper.IsPilotEngaged) {
+            // in this state, if pilot is engaged, the fleet is still trying to get to its disband target
+            if (_moveHelper.AreAnyShipsStillExpectedToArrive) {
+                // one or more ships are still expected to arrive at the next waypoint or final target
+                if (subordinateShip.IsAuthorizedForNewOrder(ShipDirective.Move)) {
+                    var currentDestination = _moveHelper.CurrentDestination;
+                    bool isFleetwideMove = false;
+                    Speed speed = _moveHelper.ApSpeedSetting;
+                    float standoffDistance = _moveHelper.ApTargetStandoffDistance;
+                    _moveHelper.AddShipToExpectedArrivals(subordinateShip);
+                    ShipMoveOrder moveOrder = new ShipMoveOrder(CurrentOrder.Source, _executingOrderID,
+                        currentDestination as IShipNavigableDestination, speed, isFleetwideMove, standoffDistance);
+                    subordinateShip.CurrentOrder = moveOrder;
+                }
+            }
+        }
+    }
+
+    void ExecuteFoundSettlementOrder_UponAlertStatusChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteFoundSettlementOrder_UponHQElementChanged() {
+        LogEvent();
+        // 4.15.17 Affected ships already RestartState to force proxy offset update if Moving.
+        // AssumeFormation order at end of EnterState will fix formation if not.
+    }
+
+    void ExecuteFoundSettlementOrder_UponEnemyDetected() {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteFoundSettlementOrder_UponUnitDamageIncurred() {
+        LogEvent();
+        // do nothing
+    }
+
+    void ExecuteFoundSettlementOrder_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // nothing to do
+    }
+
+    void ExecuteFoundSettlementOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        if (!(fsmTgt as ISystem_Ltd).IsFoundingSettlementAllowedBy(Owner)) {
+            D.Log("{0} just became aware that {1} is no longer settleable. Canceling.", DebugName, fsmTgt.DebugName);
+            // Whether settled by us via another fleet or someone else, System is no longer settleable
+            IssueCmdStaffsAssumeFormationOrder();
+        }
+    }
+
+    void ExecuteFoundSettlementOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        // Can't Assert fsmTgt.Owner != NoPlayer based on "we wouldn't be trying to settle it if someone else
+        // owned it then lost it" because can try to settle without knowing owner
+
+        if (fsmTgt == _fsmTgt) {
+            // System Owner changed so a Sector Owner changed event could follow - no problem as state immediately changed
+            var previouslySettleableSystem = fsmTgt as ISystem_Ltd;
+            D.Assert(!previouslySettleableSystem.IsFoundingSettlementAllowedBy(Owner));
+            // Whether settled by us via another fleet or someone else, System is no longer settleable
+        }
+        else {
+            // Sector Owner changed without System owner changing
+            var previouslySettleableSector = fsmTgt as ISector_Ltd;
+            if (previouslySettleableSector.IsFoundingSettlementAllowedBy(Owner)) {
+                // Still allowed to settle but owner may or may not be us as may not have access to owner yet
+                Player sectorOwner;
+                if (previouslySettleableSector.TryGetOwner(Owner, out sectorOwner)) {
+                    if (sectorOwner == Owner) {
+                        // Owner is us so continue Settlement attempt
+                        var previouslySettleableSystem = _fsmTgt as ISystem_Ltd;
+                        D.Assert(previouslySettleableSystem.IsFoundingSettlementAllowedBy(Owner));
+                        return;
+                    }
+                }
+                // no access to sectorOwner or have access but not us. Either way it isn't us so end settle attempt
+            }
+            else {
+                var previouslySettleableSystem = _fsmTgt as ISystem_Ltd;
+                D.Assert(!previouslySettleableSystem.IsFoundingSettlementAllowedBy(Owner));
+                // System is no longer settleable since an opponent's starbase(s) grew enough to become established
+            }
+        }
+        IssueCmdStaffsAssumeFormationOrder();
+    }
+
+    [Obsolete("Not currently used")]
+    void ExecuteFoundSettlementOrder_UponSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundSettlementOrder_UponLosingOwnership() {
+        LogEvent();
+        // nothing to do
+    }
+
+    [Obsolete("Not currently used")]
+    void ExecuteFoundSettlementOrder_UponResetOrderAndState() {
+        LogEvent();
+    }
+
+    void ExecuteFoundSettlementOrder_UponDeath() {
+        LogEvent();
+    }
+
+    void ExecuteFoundSettlementOrder_ExitState() {
+        LogEvent();
+
+        _moveHelper.DisengagePilot();
+
+        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+
+        SystemItem destinationSystem = _fsmTgt as SystemItem;
+        var systemSector = SectorGrid.Instance.GetSector(destinationSystem.SectorID);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, systemSector);
+        D.Assert(isUnsubscribed);
+
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
+    }
+
+    #endregion
+
+    #region FoundingSettlement
+
+    // 12.13.17 Currently a Call()ed state by ExecuteFoundSettlementOrder only with no additional fleet movement
+
+    #region FoundingSettlement Support Members
+
+    /// <summary>
+    /// Handles the condition where a ColonyShip is no longer available to settle. Returns <c>true</c>
+    /// if another ColonyShip was assigned to replace this one, <c>false</c> if no more ColonyShips are currently available.
+    /// <remarks>Typically this occurs when a ship fails to complete its assigned settle mission
+    /// either because it dies or is so wounded that it needs to repair.</remarks>
+    /// </summary>
+    /// <param name="system">The target system.</param>
+    /// <param name="unavailableShip">The unavailable ship.</param>
+    /// <returns></returns>
+    private bool HandleShipNoLongerAvailableToFoundSettlement(SystemItem system, ShipItem unavailableShip) {
+        var otherColonyShips = Elements.Cast<ShipItem>().Except(unavailableShip).Where(s => s.IsAuthorizedForNewOrder(ShipDirective.FoundSettlement));
+        if (otherColonyShips.Any()) {
+            var colonyShip = otherColonyShips.First();
+            AssignColonyShipToFoundSettlement(system, colonyShip);
+            return true;
+        }
+        return false;
+    }
+
+    private void AssignColonyShipToFoundSettlement(SystemItem system, ShipItem colonyShip) {
+        ShipOrder settleOrder = new ShipOrder(ShipDirective.FoundSettlement, CurrentOrder.Source, _executingOrderID, system);
+        colonyShip.CurrentOrder = settleOrder;
+    }
+
+    #endregion
+
+    void FoundingSettlement_UponPreconfigureState() {
+        LogEvent();
+
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
+
+        var colonyShips = Elements.Cast<ShipItem>().Where(s => s.HullCategory == ShipHullCategory.Colonizer);
+        D.Assert(colonyShips.Any());
+        ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
+    }
+
+    IEnumerator FoundingSettlement_EnterState() {
+        LogEvent();
+        // Fleet ships should be just outside of the intended SettlementStation
+        var availableColonyShips = Elements.Cast<ShipItem>().Where(s => s.IsAuthorizedForNewOrder(ShipDirective.FoundSettlement));
+        if (!availableColonyShips.Any()) {
+            // this occurs if the colony ship we know is present happens to be Unavailable
+            D.Warn("{0} found no available ColonyShips to attempt settling {1}.", DebugName, _fsmTgt.DebugName);
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+            Return();
+        }
+        var colonyShip = availableColonyShips.First();
+        AssignColonyShipToFoundSettlement(_fsmTgt as SystemItem, colonyShip);
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
+        // With assigning one ship at a time, no reason to wait on _fsmShipsExpectedToCallbackWithOrderOutcome and then Return().
+        // Return() handled in UponOrderOutcomeCallback
+    }
+
+    void FoundingSettlement_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        LogEvent();
+        D.AssertEqual(ShipHullCategory.Colonizer, ship.HullCategory);
+
+        D.Log(ShowDebugLog, "{0}.FoundingSettlement_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
+            DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
+
+        FsmReturnHandler returnHandler;
+        switch (outcome) {
+            case OrderOutcome.Success:
+                Return();
+                break;
+            case OrderOutcome.NeedsRepair:
+                bool isAnotherColonyShipAssigned = HandleShipNoLongerAvailableToFoundSettlement(_fsmTgt as SystemItem, ship);
+                if (!isAnotherColonyShipAssigned) {
+                    returnHandler = GetCurrentCalledStateReturnHandler();
+                    returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
+                    Return();
+                }
+                break;
+            case OrderOutcome.Ownership:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Death:
+                isAnotherColonyShipAssigned = HandleShipNoLongerAvailableToFoundSettlement(_fsmTgt as SystemItem, ship);
+                if (!isAnotherColonyShipAssigned) {
+                    returnHandler = GetCurrentCalledStateReturnHandler();
+                    returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                    Return();
+                }
+                break;
+            case OrderOutcome.ConstructionCanceled:
+                // Occurs when User cancels SelectDesigns dialog
+                returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = FsmCallReturnCause.ConstructionCanceled;
+                Return();
+                break;
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
+        }
+    }
+
+    void FoundingSettlement_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void FoundingSettlement_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void FoundingSettlement_UponSubordinateJoined(ShipItem subordinateShip) {
+        LogEvent();
+        // do nothing
+    }
+
+    void FoundingSettlement_UponAlertStatusChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void FoundingSettlement_UponHQElementChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void FoundingSettlement_UponEnemyDetected() {
+        LogEvent();
+    }
+
+    void FoundingSettlement_UponUnitDamageIncurred() {
+        LogEvent();
+        // do nothing
+    }
+
+    void FoundingSettlement_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // do nothing as no effect
+    }
+
+    void FoundingSettlement_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        var settleableSystem = fsmTgt as ISystem_Ltd;
+        if (!settleableSystem.IsFoundingSettlementAllowedBy(Owner)) {
+            bool isSettledByUs = false;
+            Player sysOwner;
+            if (fsmTgt.TryGetOwner(Owner, out sysOwner)) {
+                if (sysOwner == Owner) {
+                    isSettledByUs = true;
+                }
+            }
+
+            if (!isSettledByUs) {
+                D.LogBold("{0} just became aware that {1} is not settleable. Canceling attempt.", DebugName, fsmTgt.DebugName);
+                var returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = FsmCallReturnCause.TgtRelationship;
+            }
+            Return();   // If no ReturnCause assigned we have success but by a ColonyShip from another of our fleets!
+                        // Can't be our ship as it would have already returned success in its order outcome so wouldn't still be in this state
+        }
+    }
+
+    void FoundingSettlement_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+
+        // Can't Assert fsmTgt.Owner != NoPlayer based on "we wouldn't be trying to settle it if someone else
+        // owned it then lost it" because can try to settle without knowing owner
+
+        FsmCallReturnCause returnCause = FsmCallReturnCause.None;
+
+        if (fsmTgt == _fsmTgt) {
+            // System Owner changed so a Sector Owner changed event could follow - no problem as state immediately changed
+            var previouslySettleableSystem = fsmTgt as ISystem_Ltd;
+            D.Assert(!previouslySettleableSystem.IsFoundingSettlementAllowedBy(Owner));
+            // Whether settled by us via another fleet or someone else, System is no longer settleable
+            Player sysOwner;
+            if (fsmTgt.TryGetOwner(Owner, out sysOwner)) {
+                if (sysOwner != Owner) {
+                    returnCause = FsmCallReturnCause.TgtRelationship;
+                }
+            }
+        }
+        else {
+            var previouslySettleableSector = fsmTgt as ISector_Ltd;
+            if (previouslySettleableSector.IsFoundingSettlementAllowedBy(Owner)) {
+                // Sector changed owner to us because one of our starbase(s) grew enough to become established...
+                D.Assert(previouslySettleableSector.IsOwnerAccessibleTo(Owner));
+                D.AssertEqual(previouslySettleableSector.Owner_Debug, Owner);
+                // ...so do nothing and continue Settlement attempt
+                return;
+            }
+            else {
+                var previouslySettleableSystem = _fsmTgt as ISystem_Ltd;
+                D.Assert(!previouslySettleableSystem.IsFoundingSettlementAllowedBy(Owner));
+                // Sector is no longer settleable since an opponent's starbase(s) grew enough to become established
+                returnCause = FsmCallReturnCause.Qualifications;
+            }
+        }
+
+        if (returnCause != FsmCallReturnCause.None) {
+            // If no ReturnCause assigned we have success but by a ColonyShip from another of our fleets!
+            // Can't be our ship as it would have already returned success in its order outcome so wouldn't still be in this state
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = returnCause;
+        }
+        Return();
+    }
+
+    [Obsolete("Not currently used")]
+    void FoundingSettlement_UponSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
+    // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
+    // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
+
+    void FoundingSettlement_ExitState() {
+        LogEvent();
+        ResetAndValidateCommonCallableExitStateValues();
+    }
+
+    #endregion
+
+    #region ExecuteFoundStarbaseOrder
+
+    #region ExecuteFoundStarbaseOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_FoundingToFoundStarbase() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            {FsmCallReturnCause.TgtRelationship, () =>      { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.Qualifications, () =>       { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.NeedsRepair, () =>          { IssueCmdStaffsAssumeFormationOrder(); }   },
+            {FsmCallReturnCause.ConstructionCanceled, () => { IssueCmdStaffsAssumeFormationOrder(); }   },
+            // TgtUncatchable:  4.15.17 Only Fleet targets are uncatchable to Cmds
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.FoundingStarbase.GetValueName());
+    }
+
+    #endregion
+
+    void ExecuteFoundStarbaseOrder_UponPreconfigureState() {
+        LogEvent();
+
+        __ValidateCommonNonCallableEnterStateValues();
+
+        Sector destinationSector = CurrentOrder.Target as Sector;
+        D.AssertNotNull(destinationSector);
+        D.Assert(destinationSector.IsFoundingStarbaseAllowedBy(Owner));
+
+        var colonyShips = Elements.Where(e => (e as ShipItem).HullCategory == ShipHullCategory.Colonizer);
+        D.Assert(colonyShips.Any());
+
+        _executingOrderID = CurrentOrder.OrderID;
+        _fsmTgt = destinationSector;
+        // no need for subscription to FsmTgtDeath for a sector
+        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isSubscribed);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
+        D.Assert(isSubscribed);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtVacancyChg, _fsmTgt);
+        D.Assert(isSubscribed);
+
+        ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
+    }
+
+    IEnumerator ExecuteFoundStarbaseOrder_EnterState() {
+        LogEvent();
+
+        Sector destinationSector = _fsmTgt as Sector;
+
+        // move to the sector we are to colonize
+        float standoffDistance = Constants.ZeroF;
+        _moveHelper.PlotPilotCourse(destinationSector, Speed.Standard, standoffDistance);
+
+        while (!_moveHelper.IsPilotEngaged) {
+            // wait until course is plotted and pilot engaged
+            yield return null;
+        }
+
+        while (_moveHelper.IsPilotEngaged) {
+            // wait for pilot to arrive at sector
+            yield return null;
+        }
+        // Should be in or just outside of destinationSector
+
+        // now move just outside a vacant Station
+        StationaryLocation vacantStation;
+        bool isVacantStationFound = destinationSector.TryGetRandomVacantStarbaseStation(out vacantStation);
+        D.Assert(isVacantStationFound); // Vacancy change event should already have changed state if no more vacant stations
+
+        standoffDistance = Radius; // keep ships away from where Starbase will be founded
+        _moveHelper.PlotPilotCourse(vacantStation, Speed.Standard, standoffDistance);
+
+        while (!_moveHelper.IsPilotEngaged) {
+            // wait until course is plotted and pilot engaged
+            yield return null;
+        }
+
+        while (_moveHelper.IsPilotEngaged) {
+            // wait for pilot to arrive outside of settlement station
+            yield return null;
+        }
+
+        if (!destinationSector.IsStationVacant(vacantStation)) {
+            // station occupied while we were moving to it
+            if (destinationSector.IsFoundingStarbaseAllowedBy(Owner)) {
+                // other vacant stations still exist so...
+                RestartState();
+            }
+            else {
+                IssueCmdStaffsAssumeFormationOrder();
+            }
+            yield return null;
+            D.Error("Shouldn't get here");
+        }
+
+        FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FleetState.FoundingStarbase, CurrentState);
+        Call(FleetState.FoundingStarbase);
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
+            yield return null;
+            D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
+        }
+
+        var newStarbase = destinationSector.GetStarbaseLocatedAt(vacantStation);
+        D.AssertEqual(Owner, newStarbase.Owner);
+
+        if (!IsDead) {
+            IFleetNavigableDestination starbaseAssyStation = GameUtility.GetClosest(Position, newStarbase.LocalAssemblyStations);
+            IssueCmdStaffsAssumeFormationOrder(starbaseAssyStation);
+        }
+    }
+
+    void ExecuteFoundStarbaseOrder_UponApCoursePlotSuccess() {
+        LogEvent();
+        _moveHelper.EngagePilot(shipsToMove: Elements);
+    }
+
+    void ExecuteFoundStarbaseOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
+        D.Log(ShowDebugLog, "{0}.ExecuteFoundStarbaseOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
+    }
+
+    void ExecuteFoundStarbaseOrder_UponApTargetReached() {
+        LogEvent();
+        _moveHelper.DisengagePilot();
+    }
+
+    void ExecuteFoundStarbaseOrder_UponApTgtUncatchable() {
+        LogEvent();
+        D.Error("{0}: How can target {1} be uncatchable?", DebugName, _moveHelper.ApTarget.DebugName);
+    }
+
+    void ExecuteFoundStarbaseOrder_UponNewOrderReceived() {
+        LogEvent();
+        // do nothing as state will change
+    }
+
+    void ExecuteFoundStarbaseOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundStarbaseOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundStarbaseOrder_UponSubordinateJoined(ShipItem subordinateShip) {
+        LogEvent();
+        // IMPROVE Could also just order ship to AssumeStation without including it in expected arrivals. It will be included along with 
+        // rest of fleet when next leg of move order is issued. If no more legs??
+        if (_moveHelper.IsPilotEngaged) {
+            // in this state, if pilot is engaged, the fleet is still trying to get to its disband target
+            if (_moveHelper.AreAnyShipsStillExpectedToArrive) {
+                // one or more ships are still expected to arrive at the next waypoint or final target
+                if (subordinateShip.IsAuthorizedForNewOrder(ShipDirective.Move)) {
+                    var currentDestination = _moveHelper.CurrentDestination;
+                    bool isFleetwideMove = false;
+                    Speed speed = _moveHelper.ApSpeedSetting;
+                    float standoffDistance = _moveHelper.ApTargetStandoffDistance;
+                    _moveHelper.AddShipToExpectedArrivals(subordinateShip);
+                    ShipMoveOrder moveOrder = new ShipMoveOrder(CurrentOrder.Source, _executingOrderID,
+                        currentDestination as IShipNavigableDestination, speed, isFleetwideMove, standoffDistance);
+                    subordinateShip.CurrentOrder = moveOrder;
+                }
+            }
+        }
+    }
+
+    void ExecuteFoundStarbaseOrder_UponAlertStatusChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteFoundStarbaseOrder_UponHQElementChanged() {
+        LogEvent();
+        // 4.15.17 Affected ships already RestartState to force proxy offset update if Moving.
+        // AssumeFormation order at end of EnterState will fix formation if not.
+    }
+
+    void ExecuteFoundStarbaseOrder_UponEnemyDetected() {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteFoundStarbaseOrder_UponUnitDamageIncurred() {
+        LogEvent();
+        // do nothing
+    }
+
+    void ExecuteFoundStarbaseOrder_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // nothing to do
+    }
+
+    void ExecuteFoundStarbaseOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        if (!(fsmTgt as Sector).IsFoundingStarbaseAllowedBy(Owner)) {
+            D.Log("{0} just became aware that {1} no longer allows us to found a starbase. Canceling.", DebugName, fsmTgt.DebugName);
+            // Whether caused by us via another fleet or someone else, Sector no longer allows us to found a starbase
+            IssueCmdStaffsAssumeFormationOrder();
+        }
+    }
+
+    void ExecuteFoundStarbaseOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        var targetedSector = fsmTgt as Sector;
+        if (!targetedSector.IsFoundingStarbaseAllowedBy(Owner)) {
+            IssueCmdStaffsAssumeFormationOrder();
+        }
+    }
+
+    void ExecuteFoundStarbaseOrder_UponSectorStationVacancyChanged(StationaryLocation station, bool isVacant) {
+        LogEvent();
+
+        Sector tgtSector = _fsmTgt as Sector;
+        if (!tgtSector.AreAnyStationsVacant) {
+            D.Log("{0} just became aware that {1} has no more vacant stations to found a Starbase. Canceling.", DebugName, tgtSector.DebugName);
+            IssueCmdStaffsAssumeFormationOrder();
+        }
+    }
+
+    [Obsolete("Not currently used")]
+    void ExecuteFoundStarbaseOrder_UponSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteFoundStarbaseOrder_UponLosingOwnership() {
+        LogEvent();
+        // nothing to do
+    }
+
+    [Obsolete("Not currently used")]
+    void ExecuteFoundStarbaseOrder_UponResetOrderAndState() {
+        LogEvent();
+    }
+
+    void ExecuteFoundStarbaseOrder_UponDeath() {
+        LogEvent();
+    }
+
+    void ExecuteFoundStarbaseOrder_ExitState() {
+        LogEvent();
+
+        _moveHelper.DisengagePilot();
+
+        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtVacancyChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
+    }
+
+    #endregion
+
+    #region FoundingStarbase
+
+    // 12.13.17 Currently a Call()ed state by ExecuteFoundStarbaseOrder only with no additional fleet movement
+
+    #region FoundingStarbase Support Members
+
+    /// <summary>
+    /// Handles the condition where a ColonyShip is no longer available to found a starbase. Returns <c>true</c>
+    /// if another ColonyShip was assigned to replace this one, <c>false</c> if no more ColonyShips are currently available.
+    /// <remarks>Typically this occurs when a ship fails to complete its assigned founding mission
+    /// either because it dies or is so wounded that it needs to repair.</remarks>
+    /// </summary>
+    /// <param name="sector">The target system.</param>
+    /// <param name="unavailableShip">The unavailable ship.</param>
+    /// <returns></returns>
+    private bool HandleShipNoLongerAvailableToFoundStarbase(Sector sector, ShipItem unavailableShip) {
+        var otherColonyShips = Elements.Cast<ShipItem>().Except(unavailableShip).Where(s => s.IsAuthorizedForNewOrder(ShipDirective.FoundStarbase));
+        if (otherColonyShips.Any()) {
+            var colonyShip = otherColonyShips.First();
+            AssignColonyShipToFoundStarbase(sector, colonyShip);
+            return true;
+        }
+        return false;
+    }
+
+    private void AssignColonyShipToFoundStarbase(Sector sector, ShipItem colonyShip) {
+        ShipOrder foundStarbaseOrder = new ShipOrder(ShipDirective.FoundStarbase, CurrentOrder.Source, _executingOrderID, sector);
+        colonyShip.CurrentOrder = foundStarbaseOrder;
+    }
+
+    #endregion
+
+    void FoundingStarbase_UponPreconfigureState() {
+        LogEvent();
+
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
+        Sector currentSector = _fsmTgt as Sector;
+        D.AssertNotNull(currentSector);
+        D.Assert(currentSector.IsFoundingStarbaseAllowedBy(Owner));
+
+        var colonyShips = Elements.Cast<ShipItem>().Where(s => s.HullCategory == ShipHullCategory.Colonizer);
+        D.Assert(colonyShips.Any());
+        ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
+    }
+
+    IEnumerator FoundingStarbase_EnterState() {
+        LogEvent();
+        // Fleet ships should be just outside of the intended and vacant Station
+        var availableColonyShips = Elements.Cast<ShipItem>().Where(s => s.IsAuthorizedForNewOrder(ShipDirective.FoundStarbase));
+        if (!availableColonyShips.Any()) {
+            // this occurs if the colony ship we know is present happens to be Unavailable
+            D.Warn("{0} found no available ColonyShips to attempt founding starbase in {1}.", DebugName, _fsmTgt.DebugName);
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+            Return();
+        }
+        var colonyShip = availableColonyShips.First();
+        AssignColonyShipToFoundStarbase(_fsmTgt as Sector, colonyShip);
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
+        // With assigning one ship at a time, no reason to wait on _fsmShipsExpectedToCallbackWithOrderOutcome and then Return().
+        // Return() handled in UponOrderOutcomeCallback
+    }
+
+    void FoundingStarbase_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        LogEvent();
+        D.AssertEqual(ShipHullCategory.Colonizer, ship.HullCategory);
+
+        D.Log(ShowDebugLog, "{0}.FoundingStarbase_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
+            DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
+
+        FsmReturnHandler returnHandler;
+        switch (outcome) {
+            case OrderOutcome.Success:
+                Return();
+                break;
+            case OrderOutcome.NeedsRepair:
+                bool isAnotherColonyShipAssigned = HandleShipNoLongerAvailableToFoundStarbase(_fsmTgt as Sector, ship);
+                if (!isAnotherColonyShipAssigned) {
+                    returnHandler = GetCurrentCalledStateReturnHandler();
+                    returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
+                    Return();
+                }
+                break;
+            case OrderOutcome.Ownership:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Death:
+                isAnotherColonyShipAssigned = HandleShipNoLongerAvailableToFoundStarbase(_fsmTgt as Sector, ship);
+                if (!isAnotherColonyShipAssigned) {
+                    returnHandler = GetCurrentCalledStateReturnHandler();
+                    returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+                    Return();
+                }
+                break;
+            case OrderOutcome.ConstructionCanceled:
+                // Occurs when User cancels SelectDesigns dialog
+                returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = FsmCallReturnCause.ConstructionCanceled;
+                Return();
+                break;
+            case OrderOutcome.TgtUnjoinable:    // Fleet determines out of vacant stations, not ship
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
+        }
+    }
+
+    void FoundingStarbase_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void FoundingStarbase_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void FoundingStarbase_UponSubordinateJoined(ShipItem subordinateShip) {
+        LogEvent();
+        // do nothing
+    }
+
+    void FoundingStarbase_UponAlertStatusChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void FoundingStarbase_UponHQElementChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    void FoundingStarbase_UponEnemyDetected() {
+        LogEvent();
+    }
+
+    void FoundingStarbase_UponUnitDamageIncurred() {
+        LogEvent();
+        // do nothing
+    }
+
+    void FoundingStarbase_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // do nothing as no effect
+    }
+
+    void FoundingStarbase_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        var sector = fsmTgt as Sector;
+        if (!sector.IsFoundingStarbaseAllowedBy(Owner)) {
+            D.LogBold("{0} just became aware that can no longer found Starbase in {1}. Canceling attempt.", DebugName, fsmTgt.DebugName);
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmCallReturnCause.TgtRelationship;
+            Return();
+        }
+    }
+
+    void FoundingStarbase_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        LogEvent();
+        D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigableDestination);
+
+        var sector = fsmTgt as Sector;
+        if (!sector.IsFoundingStarbaseAllowedBy(Owner)) {
+            D.LogBold("{0} just became aware that can no longer found Starbase in {1}. Canceling attempt.", DebugName, fsmTgt.DebugName);
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmCallReturnCause.TgtRelationship;
+            Return();
+        }
+    }
+
+    void FoundingStarbase_UponSectorStationVacancyChanged(StationaryLocation station, bool isVacant) {
+        LogEvent();
+
+        var tgtSector = _fsmTgt as Sector;
+        if (!tgtSector.AreAnyStationsVacant) {
+            D.Log("{0} just became aware that {1} has no more vacant stations available to found a Starbase. Canceling.", DebugName, tgtSector.DebugName);
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmCallReturnCause.Qualifications;
+            Return();
+        }
+    }
+
+    [Obsolete("Not currently used")]
+    void FoundingStarbase_UponSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
+    // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
+    // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
+
+    void FoundingStarbase_ExitState() {
+        LogEvent();
+        ResetAndValidateCommonCallableExitStateValues();
+    }
+
+    #endregion
+
 
     #region Withdraw
 
@@ -7229,6 +8511,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (calledState == FleetState.Disbanding && returnedState == FleetState.ExecuteDisbandOrder) {
             return CreateFsmReturnHandler_DisbandingToDisband();
         }
+        if (calledState == FleetState.FoundingSettlement && returnedState == FleetState.ExecuteFoundSettlementOrder) {
+            return CreateFsmReturnHandler_FoundingToFoundSettlement();
+        }
+        if (calledState == FleetState.FoundingStarbase && returnedState == FleetState.ExecuteFoundStarbaseOrder) {
+            return CreateFsmReturnHandler_FoundingToFoundStarbase();
+        }
 
         D.Error("{0}: No {1} found for CalledState {2} and ReturnedState {3}.",
             DebugName, typeof(FsmReturnHandler).Name, calledState.GetValueName(), returnedState.GetValueName());
@@ -7255,33 +8543,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #endregion
 
-    protected override void ValidateCommonCallableStateValues(string calledStateName) {
-        base.ValidateCommonCallableStateValues(calledStateName);
-        D.AssertNotNull(_fsmTgt);
-        var mortalFsmTgt = _fsmTgt as IMortalItem_Ltd;
-        if (mortalFsmTgt != null) {
-            D.Assert(!mortalFsmTgt.IsDead, mortalFsmTgt.DebugName);
-        }
-        D.Assert(!_fsmShipsExpectedToCallbackWithOrderOutcome.Any());
-    }
-
-    protected override void ValidateCommonNonCallableStateValues() {
-        base.ValidateCommonNonCallableStateValues();
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.Assert(!_fsmShipsExpectedToCallbackWithOrderOutcome.Any());
-    }
-
-    protected override void ResetCommonCallableStateValues() {
-        base.ResetCommonCallableStateValues();
+    protected override void ResetAndValidateCommonCallableExitStateValues() {
+        base.ResetAndValidateCommonCallableExitStateValues();
         _fsmShipsExpectedToCallbackWithOrderOutcome.Clear();
+        __ValidateMoveHelperState(errorMsg: "exiting State {0}".Inject(LastState.GetValueName()));
     }
 
-    protected override void ResetCommonNonCallableStateValues() {
-        base.ResetCommonNonCallableStateValues();
+    protected override void ResetAndValidateCommonNonCallableExitStateValues() {
+        base.ResetAndValidateCommonNonCallableExitStateValues();
         _fsmTgt = null;
         _fsmShipsExpectedToCallbackWithOrderOutcome.Clear();
+        __ValidateMoveHelperState(errorMsg: "exiting State {0}".Inject(LastState.GetValueName()));
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
@@ -7455,7 +8727,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         List<ShipItem> priorityCandidates = new List<ShipItem>(desiredQty);
         int priorityCatIndex = 0;
         while (priorityCatIndex < priorityCats.Count()) {
-            var priorityCatCandidates = candidates.Cast<ShipItem>().Where(ship => ship.Data.HullCategory == priorityCats[priorityCatIndex]);
+            var priorityCatCandidates = candidates.Cast<ShipItem>().Where(ship => ship.HullCategory == priorityCats[priorityCatIndex]);
             priorityCandidates.AddRange(priorityCatCandidates);
             if (priorityCandidates.Count >= desiredQty) {
                 ships = priorityCandidates.Take(desiredQty).ToList();
@@ -7569,6 +8841,35 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region Debug
 
+    protected override void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
+        base.__ValidateCommonCallableEnterStateValues(calledStateName, includeFsmTgt);
+        if (includeFsmTgt) {
+            D.AssertNotNull(_fsmTgt);
+            var mortalFsmTgt = _fsmTgt as IMortalItem_Ltd;
+            if (mortalFsmTgt != null) {
+                D.Assert(!mortalFsmTgt.IsDead, mortalFsmTgt.DebugName);
+            }
+        }
+        D.Assert(!_fsmShipsExpectedToCallbackWithOrderOutcome.Any());
+        __ValidateMoveHelperState(errorMsg: "entering State {0}".Inject(CurrentState.GetValueName()));
+    }
+
+    protected override void __ValidateCommonNonCallableEnterStateValues() {
+        base.__ValidateCommonNonCallableEnterStateValues();
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
+        }
+        D.Assert(!_fsmShipsExpectedToCallbackWithOrderOutcome.Any());
+        __ValidateMoveHelperState(errorMsg: "entering State {0}".Inject(CurrentState.GetValueName()));
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateMoveHelperState(string errorMsg) {
+        if (_moveHelper.IsPilotEngaged) {   // 6.4.18 Added to track down Pilot not engaged when ship replies with explore success 
+            D.Error("{0} has its pilot engaged {1}!", _moveHelper.DebugName, errorMsg);
+        }
+    }
+
     protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(FleetState.None, CurrentState);
         D.AssertNotEqual(FleetState.FinalInitialize, CurrentState);
@@ -7610,7 +8911,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private void __ValidateKnowledgeOfOrderTarget(FleetOrder order) {
         var target = order.Target;
         if (target != null && !(target is StationaryLocation) && !(target is MobileLocation)) {
-            if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
+            if (target is StarItem || target is SystemItem || target is UniverseCenterItem || target is Sector) {
                 return; // unnecessary knowledge check as all players have knowledge of these targets
             }
             if (!OwnerAiMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
@@ -7650,6 +8951,32 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (orderDirective == FleetDirective.Cancel) {
             D.Assert(IsPaused);
             return true;
+        }
+        if (orderDirective == FleetDirective.FoundSettlement) {
+            var colonyShips = Elements.Cast<ShipItem>().Where(s => s.HullCategory == ShipHullCategory.Colonizer);
+            if (colonyShips.Any()) {
+                string failureCause = null;
+                bool isAuthorized = colonyShips.Any(cShip => cShip.__TryAuthorizeNewOrder(ShipDirective.FoundSettlement, out failureCause));
+                failCause = failureCause;
+                return isAuthorized;
+            }
+            else {
+                failCause = "No ColonyShips";
+                return false;
+            }
+        }
+        if (orderDirective == FleetDirective.FoundStarbase) {
+            var colonyShips = Elements.Cast<ShipItem>().Where(s => s.HullCategory == ShipHullCategory.Colonizer);
+            if (colonyShips.Any()) {
+                string failureCause = null;
+                bool isAuthorized = colonyShips.Any(cShip => cShip.__TryAuthorizeNewOrder(ShipDirective.FoundStarbase, out failureCause));
+                failCause = failureCause;
+                return isAuthorized;
+            }
+            else {
+                failCause = "No ColonyShips";
+                return false;
+            }
         }
         if (orderDirective == FleetDirective.Attack) {
             // Can be ordered to attack even if already ordered to attack as can change target
@@ -7831,8 +9158,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private CoursePlotLine __coursePlot;
 
     private void InitializeDebugShowCoursePlot() {
-        _debugCntls.showFleetCoursePlots += ShowDebugFleetCoursePlotsChangedEventHandler;
-        if (_debugCntls.ShowFleetCoursePlots) {
+        __debugCntls.showFleetCoursePlots += ShowDebugFleetCoursePlotsChangedEventHandler;
+        if (__debugCntls.ShowFleetCoursePlots) {
             EnableDebugShowCoursePlot(true);
         }
     }
@@ -7871,12 +9198,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     private void ShowDebugFleetCoursePlotsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowCoursePlot(_debugCntls.ShowFleetCoursePlots);
+        EnableDebugShowCoursePlot(__debugCntls.ShowFleetCoursePlots);
     }
 
     private void CleanupDebugShowCoursePlot() {
-        if (_debugCntls != null) {
-            _debugCntls.showFleetCoursePlots -= ShowDebugFleetCoursePlotsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showFleetCoursePlots -= ShowDebugFleetCoursePlotsChangedEventHandler;
         }
         if (__coursePlot != null) {
             __coursePlot.Dispose();
@@ -7891,8 +9218,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private VelocityRay __velocityRay;
 
     private void InitializeDebugShowVelocityRay() {
-        _debugCntls.showFleetVelocityRays += ShowDebugFleetVelocityRaysChangedEventHandler;
-        if (_debugCntls.ShowFleetVelocityRays) {
+        __debugCntls.showFleetVelocityRays += ShowDebugFleetVelocityRaysChangedEventHandler;
+        if (__debugCntls.ShowFleetVelocityRays) {
             EnableDebugShowVelocityRay(true);
         }
     }
@@ -7922,12 +9249,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     private void ShowDebugFleetVelocityRaysChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowVelocityRay(_debugCntls.ShowFleetVelocityRays);
+        EnableDebugShowVelocityRay(__debugCntls.ShowFleetVelocityRays);
     }
 
     private void CleanupDebugShowVelocityRay() {
-        if (_debugCntls != null) {
-            _debugCntls.showFleetVelocityRays -= ShowDebugFleetVelocityRaysChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showFleetVelocityRays -= ShowDebugFleetVelocityRaysChangedEventHandler;
         }
         if (__velocityRay != null) {
             __velocityRay.Dispose();
@@ -8042,6 +9369,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         /// <remarks>12.30.17 Currently, this state does not monitor/wait for ship disbanding to complete.</remarks>
         /// </summary>
         Disbanding,
+
+        ExecuteFoundSettlementOrder,
+        FoundingSettlement,
+
+        ExecuteFoundStarbaseOrder,
+        FoundingStarbase,
 
         Dead
 

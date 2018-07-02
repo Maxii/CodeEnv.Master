@@ -41,11 +41,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
     }
 
-    public override void FinalInitialize() {
-        base.FinalInitialize();
-        AssessAssigningComprehensiveIntelCoverage();
-    }
-
     #endregion
 
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
@@ -60,17 +55,17 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         Data.SetIntelCoverage(player, newCoverage);
     }
 
+
     /// <summary>
-    /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
-    /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
-    /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
+    /// Attempts to change the IntelCoverage of this Item to newCoverage. Returns <c>true</c> if the coverage
+    /// was changed, false if not. In both cases, resultingCoverage will reflect the currentCoverage, changed or not.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="newCoverage">The new coverage.</param>
     /// <param name="resultingCoverage">The resulting coverage.</param>
     /// <returns></returns>
-    public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
-        return Data.TrySetIntelCoverage(player, newCoverage, out resultingCoverage);
+    public bool TryChangeIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
+        return Data.TryChangeIntelCoverage(player, newCoverage, out resultingCoverage);
     }
 
     protected sealed override void AssessIsDiscernibleToUser() {
@@ -80,17 +75,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         // the assessment wouldn't be done again until coverage changed again, if ever.
         var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
         IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage > IntelCoverage.None;
-    }
-
-    /// <summary>
-    /// Has <c>player</c>'s AIMgr assess their awareness of this item.
-    /// <remarks>The item may or may not be operational. If the item is not operational,
-    /// the PlayerAIMgr doing the assessment will not raise any awareChgd events.</remarks>
-    /// </summary>
-    /// <param name="player">The player.</param>
-    private void AssessAwarenessOfItemFor(Player player) {
-        var playerAIMgr = _gameMgr.GetAIManagerFor(player);
-        playerAIMgr.AssessAwarenessOf(this);
     }
 
     #region Event and Property Change Handlers
@@ -104,7 +88,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
     private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         //D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", DebugName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
 
-        AssessAwarenessOfItemFor(playerWhosCoverageChgd);
+        // 6.28.18 AssessAwarenessOfItemFor(playerWhosCoverageChgd); moved to Data
 
         if (IsOperational) {    // Will be called during FinalInitialize if Item should be IntelCoverage.Comprehensive
             if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
@@ -145,43 +129,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
     }
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
-        AssessAssigningComprehensiveIntelCoverage();
-    }
-
-    private void AssessAssigningComprehensiveIntelCoverage() {
-        if (_debugCntls.IsAllIntelCoverageComprehensive) {
-            foreach (var player in _gameMgr.AllPlayers) {
-                SetIntelCoverage(player, IntelCoverage.Comprehensive);
-            }
-            return;
-        }
-
-        if (Owner != TempGameValues.NoPlayer) {
-            SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
-
-            IEnumerable<Player> allies;
-            if (TryGetAllies(out allies)) {
-                allies.ForAll(ally => SetIntelCoverage(ally, IntelCoverage.Comprehensive));
-            }
-        }
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if allies of itemOwner are found, <c>false</c> otherwise.
-    /// <remarks>itemOwner is required as it can be the prior owner of this Item used
-    /// after Owner has already changed.</remarks>
-    /// </summary>
-    /// <param name="itemOwner">The item owner.</param>
-    /// <param name="alliedPlayers">The allied players.</param>
-    /// <returns></returns>
-    protected bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        return alliedPlayers.Any();
-    }
-
     #region Cleanup
 
     protected override void Unsubscribe() {
@@ -195,8 +142,24 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
 
     #region Debug
 
-    public virtual bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
-        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
+    public bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        return Data.__IsPlayerEntitledToComprehensiveRelationship(player);
+    }
+
+    #endregion
+
+    #region IDetectionHandlerClient Members
+
+    /// <summary>
+    /// Attempts to change the IntelCoverage of this Item to newCoverage. Returns <c>true</c> if the coverage
+    /// was changed, false if not. In both cases, resultingCoverage will reflect the currentCoverage, changed or not.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="newCoverage">The new coverage.</param>
+    /// <param name="resultingCoverage">The resulting coverage.</param>
+    /// <returns></returns>
+    bool IDetectionHandlerClient.TryChangeIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
+        return Data.TryChangeIntelCoverage(player, newCoverage, out resultingCoverage);
     }
 
     #endregion

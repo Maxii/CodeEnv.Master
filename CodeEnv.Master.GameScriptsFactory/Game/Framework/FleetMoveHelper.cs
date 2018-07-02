@@ -368,7 +368,6 @@ public class FleetMoveHelper : IDisposable {
         switch (outcome) {
             case OrderOutcome.Success:
                 bool isRemoved = _shipsExpectedToArrive.Remove(ship);
-                D.Assert(isRemoved, ship.DebugName);
                 if (!isRemoved) {
                     string currentOrderMsg = ship.CurrentOrder != null ? ship.CurrentOrder.DebugName : "None";
                     D.Error("{0} erroneously received {1}.{2} from {3} in Frame {4}. Ship's CurrentOrder = {5}.", DebugName, typeof(OrderOutcome).Name,
@@ -390,10 +389,11 @@ public class FleetMoveHelper : IDisposable {
                 // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
                 // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
                 // 4.30.18 Occurred again but unclear whether User order. Added CurrentOrder debug info
-                if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle)) {
+                // 6.20.18 Properly occurs when individual order (__ChgOwner) issued by user to ship so added filter
+                if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle, ShipDirective.__ChgOwner)) {
                     string currentOrderMsg = ship.CurrentOrder != null ? ship.CurrentOrder.DebugName : "None";
-                    D.Warn("{0} received {1}.{2} from {3} in Frame {4}, but UNCLEAR why. Ship's CurrentOrder = {5}.", DebugName, typeof(OrderOutcome).Name,
-                        outcome.GetValueName(), ship.DebugName, Time.frameCount, currentOrderMsg);
+                    D.Warn("{0} received {1}.{2} from \n{3} in Frame {4}, but UNCLEAR why. \nShip's CurrentOrder = {5}.", DebugName,
+                        typeof(OrderOutcome).Name, outcome.GetValueName(), ship.DebugName, Time.frameCount, currentOrderMsg);
                 }
                 isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
@@ -485,6 +485,10 @@ public class FleetMoveHelper : IDisposable {
         while (_currentApCourseIndex <= apTgtCourseIndex) {
             if (_shipsExpectedToArrive.Count == Constants.Zero) {
                 // Fleet move leg complete
+
+                // 6.21.18 If ship has removed itself from _shipsExpectedToArrive via an outcome callback from Ship.ExecuteMoveOrder,
+                // it has also removed itself from Fleet.Elements -> needs repair detaches to repair, losing ownership detaches
+                // into own fleet, dead dies, etc.
                 _shipsExpectedToArrive.UnionWith(_fleet.Elements);
 
                 __RecordWaypointTransitStart(toCalcLastTransitDuration: true, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
@@ -861,12 +865,18 @@ public class FleetMoveHelper : IDisposable {
     private void HandlePathPlotCompleted(Path path) {
         if (path.error) {
             var sectorGrid = SectorGrid.Instance;
-            IntVector3 fleetSectorID = sectorGrid.GetSectorIDThatContains(Position);
-            string fleetSectorIDMsg = sectorGrid.IsSectorOnPeriphery(fleetSectorID) ? "peripheral" : "non-peripheral";
-            IntVector3 apTgtSectorID = sectorGrid.GetSectorIDThatContains(ApTarget.Position);
-            string apTgtSectorIDMsg = sectorGrid.IsSectorOnPeriphery(apTgtSectorID) ? "peripheral" : "non-peripheral";
-            D.Warn("{0} in {1} Sector {2} encountered error plotting course to {3} in {4} Sector {5}.",
-                DebugName, fleetSectorIDMsg, fleetSectorID, ApTarget.DebugName, apTgtSectorIDMsg, apTgtSectorID);
+            IntVector3 fleetSectorID = sectorGrid.GetSectorIDContaining(Position);  ////sectorGrid.GetSectorIDThatContains(Position);
+            ////Sector fleetSector = sectorGrid.GetSector(fleetSectorID);
+            ////string fleetSectorIDMsg = fleetSector.Category.GetValueName();
+
+            IntVector3 apTgtSectorID = sectorGrid.GetSectorIDContaining(ApTarget.Position); ////sectorGrid.GetSectorIDThatContains(ApTarget.Position);
+            ////Sector apTgtSector = sectorGrid.GetSector(apTgtSectorID);
+            ////string apTgtSectorIDMsg = apTgtSector.Category.GetValueName();
+
+            ////D.Warn("{0} in {1} Sector {2} encountered error plotting course to {3} in {4} Sector {5}.",
+            ////    DebugName, fleetSectorIDMsg, fleetSectorID, ApTarget.DebugName, apTgtSectorIDMsg, apTgtSectorID);
+            D.Warn("{0} in Sector {1} encountered error plotting course to {2} in Sector {3}.", DebugName, fleetSectorID,
+                ApTarget.DebugName, apTgtSectorID);
             HandleApCoursePlotFailure();
             return;
         }
@@ -920,13 +930,16 @@ public class FleetMoveHelper : IDisposable {
             ISystem_Ltd fleetSystem;
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {
-                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDThatContains(Position));
+                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID,
+                    SectorGrid.Instance.GetSectorIDContaining(Position));
+                ////SectorGrid.Instance.GetSectorIDThatContains(Position));
                 // 8.18.16 Failure of Assert here has been caused in the past by a missed Topography change when leaving a System
                 return; // 11.26.17 Occurred again so since not 'really' in system, simply return
             }
 
             if (ApTarget.Topography == Topography.System) {
-                IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
+                IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDContaining(ApTarget.Position);
+                ////IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
                 ISystem_Ltd tgtSystem;
                 bool isTgtSystemFound = ownerKnowledge.TryGetSystem(tgtSectorID, out tgtSystem);
                 if (!isTgtSystemFound) {

@@ -98,8 +98,8 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = !transform.name.IsNullOrEmpty() ? transform.name : "Fleet_EditorConfig";
+    protected override string InitializeRootUnitName() {
+        return !transform.name.IsNullOrEmpty() ? transform.name : "DebugFleet";
     }
 
     protected override void MakeElements() {

@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
-        IList<StationaryLocation> GuardStations { get; }
+        IEnumerable<StationaryLocation> GuardStations { get; }
 
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 
@@ -53,9 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// A player is not allowed to guard items if the player knows who owns the item and they are enemies.
         /// </summary>
         /// <param name="player">The player.</param>
-        /// <returns>
-        ///   <c>true</c> if [is guarding allowed by] [the specified player]; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns></returns>
         bool IsGuardingAllowedBy(Player player);
 
     }

@@ -27,6 +27,14 @@ using UnityEngine;
 /// </summary>
 public class FacilityDesignWindow : AUnitDesignWindow {
 
+    private UserResearchManager _userRschMgr;
+    private UserResearchManager UserRschMgr {
+        get {
+            _userRschMgr = _userRschMgr ?? _gameMgr.UserAIManager.ResearchMgr;
+            return _userRschMgr;
+        }
+    }
+
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
         UserDesigns.Add(newDesign as FacilityDesign);
     }
@@ -48,7 +56,7 @@ public class FacilityDesignWindow : AUnitDesignWindow {
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = "Hull";
-        popupContent = TempGameValues.FacilityHullCategoriesInUse.Select(hullCat => hullCat.GetValueName()).ToList();
+        popupContent = UserRschMgr.GetDiscoveredFacilityHullCats().Select(hullCat => hullCat.GetValueName()).ToList();
         return true;
     }
 

@@ -30,6 +30,11 @@ namespace CodeEnv.Master.GameContent {
         public IUniverseCenter UniverseCenter { get; private set; }
 
         /// <summary>
+        /// Returns all sectors including Rim and Periphery Sectors
+        /// </summary>
+        public IEnumerable<ISector> AllSectors { get { return GameReferences.SectorGrid.Sectors; } }
+
+        /// <summary>
         /// The Moons currently present in the game.
         /// </summary>
         public IEnumerable<IMoon> Moons { get { return _planetoids.Where(p => p is IMoon).Cast<IMoon>(); } }
@@ -104,12 +109,11 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IntVector3, ISystem> _systemLookupBySectorID = new Dictionary<IntVector3, ISystem>();
         private IDictionary<IntVector3, IList<IStarbaseCmd>> _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd>>();
 
-        private HashSet<IPlanetoid> _planetoids = new HashSet<IPlanetoid>();
         private IList<IStar> _stars = new List<IStar>();
+        private HashSet<IPlanetoid> _planetoids = new HashSet<IPlanetoid>();
         private HashSet<IUnitElement> _elements = new HashSet<IUnitElement>();
         private HashSet<IUnitCmd> _commands = new HashSet<IUnitCmd>();
         private HashSet<IOwnerItem> _items = new HashSet<IOwnerItem>();
-        private DebugSettings _debugSettings;
 
         private AllKnowledge() {
             Initialize();
@@ -121,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() {
-            _debugSettings = DebugSettings.Instance;
+            __debugSettings = DebugSettings.Instance;
         }
 
         public void Initialize(IUniverseCenter uCenter) {
@@ -234,24 +238,37 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
         public Topography GetSpaceTopography(Vector3 worldLocation) {
-            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(worldLocation);
-            ISystem system;
-            if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
-                // the sector containing worldLocation has a system
-                if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
-                    return Topography.System;
+            IntVector3 sectorID;
+            if (GameReferences.SectorGrid.TryGetSectorIDContaining(worldLocation, out sectorID)) {
+                ISystem system;
+                if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
+                    // the sector containing worldLocation has a system
+                    if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
+                        return Topography.System;
+                    }
                 }
             }
             //TODO add Nebula and DeepNebula
             return Topography.OpenSpace;
         }
+        ////public Topography GetSpaceTopography(Vector3 worldLocation) {
+        ////    IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(worldLocation);
+        ////    ISystem system;
+        ////    if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
+        ////        // the sector containing worldLocation has a system
+        ////        if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
+        ////            return Topography.System;
+        ////        }
+        ////    }
+        ////    //TODO add Nebula and DeepNebula
+        ////    return Topography.OpenSpace;
+        ////}
 
         private void AddStar(IStar star) {
-            // A Star should only be added once when all players get Basic IntelCoverage of all stars
             D.Assert(!_stars.Contains(star));
             _stars.Add(star);
             bool isAdded = _items.Add(star);
-            D.Assert(isAdded, star.DebugName);
+            D.Assert(isAdded);
             AddSystem(star.ParentSystem);
         }
 
@@ -400,6 +417,8 @@ namespace CodeEnv.Master.GameContent {
 
 
         #region Debug 
+
+        private DebugSettings __debugSettings;
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __InitializeValidateKnowledge() {

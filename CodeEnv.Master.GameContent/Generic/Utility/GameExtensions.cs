@@ -28,6 +28,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameExtensions {
 
+        [Obsolete("Not really useful")]
+        public static bool ApproxEqual(this StationaryLocation first, StationaryLocation second) {
+            if (first.Topography == second.Topography) {
+                return first.Position.IsSameAs(second.Position);
+            }
+            return false;
+        }
+
         public static Hero GetMostExperienced(this IEnumerable<Hero> heros) {
             return GameUtility.SelectMostExperiencedHero(heros);
         }
@@ -417,14 +425,22 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Embeds the Ngui-recognized Hex value equivalent value for <c>color</c> around this text.
+        /// <remarks>If replaceLabelBaseTint is false, this embedded color will be used to 'tint' the
+        /// base tint specified in the UILabel rather than the default which is to fully replace it.</remarks>
         /// </summary>
         /// <param name="text">The text.</param>
         /// <param name="color">The color.</param>
+        /// <param name="replaceLabelBaseTint">if set to <c>true</c> [replace label base tint].</param>
         /// <returns></returns>
-        public static string SurroundWith(this string text, GameColor color) {
+        public static string SurroundWith(this string text, GameColor color, bool replaceLabelBaseTint = true) {
             string colorHex = GameUtility.ColorToHex(color);
-            string colorNgui = UnityConstants.NguiEmbeddedColorFormat.Inject(colorHex);
-            return colorNgui + text + UnityConstants.NguiEmbeddedColorTerminator;
+            string nguiColorCodeInitiator = UnityConstants.NguiEmbeddedColorInitiatorFormat.Inject(colorHex);
+            string nguiColorCodeTerminator = UnityConstants.NguiEmbeddedColorTerminator;
+            if (replaceLabelBaseTint) {
+                nguiColorCodeInitiator = UnityConstants.NguiBaseTintRemovalInitiator + nguiColorCodeInitiator;
+                nguiColorCodeTerminator = nguiColorCodeTerminator + UnityConstants.NguiBaseTintRemovalTerminator;
+            }
+            return nguiColorCodeInitiator + text + nguiColorCodeTerminator;
         }
 
     }

@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// Returns a copy of the list of Patrol Stations around this IPatrollable Item.
         /// <remarks>A copy allows the list to be modified without affecting the original list.</remarks>
         /// </summary>
-        IList<StationaryLocation> PatrolStations { get; }
+        IEnumerable<StationaryLocation> PatrolStations { get; }
 
         Player Owner_Debug { get; }
 

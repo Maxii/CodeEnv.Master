@@ -37,8 +37,9 @@ namespace CodeEnv.Master.GameContent {
             : base(GameReferences.GameManager.UserPlayer, uCenter, allStars, allPlanetoids) {
         }
 
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlayerKnowledge"/> class.
+        /// Initializes a new instance of the <see cref="PlayerKnowledge" /> class.
         /// </summary>
         /// <param name="uCenter">The UniverseCenter.</param>
         /// <param name="allStars">All stars.</param>

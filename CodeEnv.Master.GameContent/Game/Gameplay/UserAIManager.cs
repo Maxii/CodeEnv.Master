@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
 
         public UserAIManager(UserPlayerKnowledge knowledge)
             : base(GameReferences.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
+
+        #region Research Support
 
         protected override PlayerResearchManager InitializeResearchMgr() {
             return new UserResearchManager(this, Designs);
@@ -50,6 +52,117 @@ namespace CodeEnv.Master.GameContent {
             return base.TryPickNextResearchTask(justCompletedRsch, out nextRschTask, out isFutureTechRuntimeCreation);
         }
 
+        #endregion
+
+        #region Choose Design
+
+        [Obsolete]
+        public override void ChooseDesign(FacilityHullCategory hullCat, Action<FacilityDesign> onChosen) {
+            D.Assert(_debugControls.AiChoosesUserCentralHubInitialDesigns);
+            D.AssertEqual(FacilityHullCategory.CentralHub, hullCat);
+            base.ChooseDesign(hullCat, onChosen);
+        }
+
+        // Unlike the FacilityCentralHubDesign, no ShipDesign needs to be chosen to form a Fleet.
+        // Fleets are only formed from existing ships. While the AI can use this method
+        // to pick the designs it wants to build in a hanger, the User never will as those
+        // designs are picked from the UnitHud.
+        [Obsolete]
+        public override void ChooseDesign(ShipHullCategory hullCat, Action<ShipDesign> onChosen) {
+            throw new NotImplementedException();
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(SettlementCmdModuleDesign designToBeRefit, Action<SettlementCmdModuleDesign> onChosen) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(designToBeRefit, onChosen);
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(StarbaseCmdModuleDesign designToBeRefit, Action<StarbaseCmdModuleDesign> onChosen) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(designToBeRefit, onChosen);
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(FleetCmdModuleDesign designToBeRefit, Action<FleetCmdModuleDesign> onCompleted) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(designToBeRefit, onCompleted);
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(Action<FleetCmdModuleDesign> onCompleted) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(onCompleted);
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(Action<SettlementCmdModuleDesign> onChosen) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(onChosen);
+        }
+
+        [Obsolete]
+        public override void ChooseDesign(Action<StarbaseCmdModuleDesign> onChosen) {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            base.ChooseDesign(onChosen);
+        }
+
+        public override FacilityDesign ChooseDesign(FacilityHullCategory hullCat) {
+            D.Assert(_debugControls.AiChoosesUserCentralHubInitialDesigns);
+            D.AssertEqual(FacilityHullCategory.CentralHub, hullCat);
+            return base.ChooseDesign(hullCat);
+        }
+
+        public override FacilityDesign ChooseRefitDesign(FacilityDesign existingDesign) {
+            D.Assert(_debugControls.AiChoosesUserElementRefitDesigns);
+            return base.ChooseRefitDesign(existingDesign);
+        }
+
+        // Unlike the FacilityCentralHubDesign, no ShipDesign needs to be chosen to form a Fleet.
+        // Fleets are only formed from existing ships. While the AI can use this method
+        // to pick the designs it wants to build in a hanger, the User never will as those
+        // designs are picked from the UnitHud.
+        public override ShipDesign ChooseDesign(ShipHullCategory hullCat) {
+            throw new NotImplementedException();
+        }
+
+        public override ShipDesign ChooseRefitDesign(ShipDesign existingDesign) {
+            D.Assert(_debugControls.AiChoosesUserElementRefitDesigns);
+            return base.ChooseRefitDesign(existingDesign);
+        }
+
+        public override FleetCmdModuleDesign ChooseFleetCmdModDesign() {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            return base.ChooseFleetCmdModDesign();
+        }
+
+        public override FleetCmdModuleDesign ChooseRefitDesign(FleetCmdModuleDesign designToBeRefit) {
+            D.Assert(_debugControls.AiChoosesUserCmdModRefitDesigns);
+            return base.ChooseRefitDesign(designToBeRefit);
+        }
+
+        public override StarbaseCmdModuleDesign ChooseStarbaseCmdModDesign() {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            return base.ChooseStarbaseCmdModDesign();
+        }
+
+        public override StarbaseCmdModuleDesign ChooseRefitDesign(StarbaseCmdModuleDesign designToBeRefit) {
+            D.Assert(_debugControls.AiChoosesUserCmdModRefitDesigns);
+            return base.ChooseRefitDesign(designToBeRefit);
+        }
+
+        public override SettlementCmdModuleDesign ChooseSettlementCmdModDesign() {
+            D.Assert(_debugControls.AiChoosesUserCmdModInitialDesigns);
+            return base.ChooseSettlementCmdModDesign();
+        }
+
+        public override SettlementCmdModuleDesign ChooseRefitDesign(SettlementCmdModuleDesign designToBeRefit) {
+            D.Assert(_debugControls.AiChoosesUserCmdModRefitDesigns);
+            return base.ChooseRefitDesign(designToBeRefit);
+        }
+
+        #endregion
 
     }
 }

@@ -30,6 +30,13 @@ namespace CodeEnv.Master.GameContent {
         public UserResearchManager(UserAIManager userAiMgr, PlayerDesigns designs)
             : base(userAiMgr, designs) { }
 
+        protected override void HandleResearchCompleted(ResearchTask completedRsch) {
+            base.HandleResearchCompleted(completedRsch);
+            if (!IsResearchQueued && __debugCntls.UserSelectsTechs) {
+                GameReferences.UserActionButton.ShowPickResearchPromptButton(completedRsch);
+            }
+        }
+
         /// <summary>
         /// Returns <c>true</c> if there are ResearchTasks queued, <c>false</c> otherwise.
         /// <remarks>The CurrentResearchTask does not count as queued.</remarks>

@@ -196,12 +196,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override OutputsYield RecalcUnitOutputs() {
-            var unitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
+            var unitOutputs = ElementsData.Select(ed => ed.Outputs).Sum();
             return unitOutputs;
         }
 
         protected override void RefreshComposition() {
-            var elementCategories = _elementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
+            var elementCategories = ElementsData.Select(sData => sData.HullCategory);
             UnitComposition = new FleetComposition(elementCategories);
         }
 
@@ -212,15 +212,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RefreshFullSpeed() {
-            if (_elementsData.Any()) {
+            if (ElementCount > Constants.Zero) {
                 //D.Log(ShowDebugLog, "{0}.{1}.RefreshFullSpeed() called.", DebugName, GetType().Name);
-                UnitFullSpeedValue = _elementsData.Min(eData => (eData as ShipData).FullSpeedValue);
+                UnitFullSpeedValue = ElementsData.Min(sData => sData.FullSpeedValue);
             }
         }
 
         private void RefreshMaxTurnRate() {
-            if (_elementsData.Any()) {
-                UnitMaxTurnRate = _elementsData.Min(data => (data as ShipData).TurnRate);
+            if (ElementCount > Constants.Zero) {
+                UnitMaxTurnRate = ElementsData.Min(sData => sData.TurnRate);
             }
         }
 
@@ -276,6 +276,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        protected override void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            if (HQElementData.IsOwnerChgUnderway && ElementCount > Constants.One) {
+                // 5.17.17 HQElement is changing owner and I'm not going to go with it to that owner
+                // so don't follow its IntelCoverage change. I'll pick up my IntelCoverage as soon as
+                // I get my newly assigned HQElement. Following its change when not going with it results
+                // in telling others of my very temp change which will throw errors when the chg doesn't make sense
+                // - e.g. tracking its change to IntelCoverage.None with an ally.
+                // 5.20.17 This combination of criteria can never occur for a BaseCmd as an element owner change
+                // is only possible when it is the only element.
+                // 6.20.18 Use of IsOwnerChgUnderway is needed to filter out condition where HQElement is about to depart fleet
+                return;
+            }
+            base.HandleHQElementIntelCoverageChanged(playerWhosCoverageChgd);
+        }
 
         protected override Topography GetTopography() {
             if (!IsOperational) {

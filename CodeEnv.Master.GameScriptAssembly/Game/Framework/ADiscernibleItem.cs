@@ -376,26 +376,22 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         AssessCircleHighlighting();
     }
 
-    protected override void HandleOwnerChanging(Player newOwner) {
+    protected override void ImplementUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementUiChangesPriorToOwnerChange(incomingOwner);
         if (_ctxControl != null) {
             D.Assert(__hasInitOnFirstDiscernibleToUserRun);
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
+            if (Owner == TempGameValues.NoPlayer || incomingOwner == TempGameValues.NoPlayer || Owner.IsUser != incomingOwner.IsUser) {
                 // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
                 // aka, a change from one AI player to another does not necessitate a change
 
-                // 5.5.17 No worries about being paused as owner changes are deferred until no longer paused
                 _ctxControl.Dispose();
-                _ctxControl = InitializeContextMenu(newOwner);
+                _ctxControl = InitializeContextMenu(incomingOwner);
             }
-        }
-
-        if (IsSelected) {
-            D.Assert(Owner.IsUser);
         }
     }
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
         }
@@ -500,7 +496,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void HandleMiddlePressRelease() { }
     protected virtual void HandleRightPressRelease() {
         if (!_inputMgr.IsDragging) {
-            //D.Log(ShowDebugLog, "{0}.HandleRightPressRelease called.", DebugName);
+            //D.Log("{0}.HandleRightPressRelease called.", DebugName);
             // right press release while not dragging means both press and release were over this object
             if (_ctxControl == null) {
                 D.Assert(__hasInitOnFirstDiscernibleToUserRun);
@@ -604,10 +600,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     #endregion
-
-    #endregion
-
-    #region Debug
 
     #endregion
 

@@ -551,6 +551,10 @@
     <Compile Include="Generic\Framework\OptionalEquipMountCategory.cs" />
     <Compile Include="Generic\IO\TechStat.cs" />
     <Compile Include="Generic\IO\NewGameConfigurator.cs" />
+    <Compile Include="Generic\Interfaces\ISettleable.cs" />
+    <Compile Include="Generic\Interfaces\Access\IUserActionButton.cs" />
+    <Compile Include="Generic\IO\SectorStarbaseStationVacancyEventArgs.cs" />
+    <Compile Include="Generic\Framework\SectorCategory.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -607,7 +611,7 @@
     <Compile Include="Generic\Graphics\TrackingIconInfo.cs" />
     <Compile Include="Generic\Graphics\TreeLinkID.cs" />
     <Compile Include="Generic\Graphics\TreeNodeID.cs" />
-    <Compile Include="Generic\Framework\UserResearchManager.cs" />
+    <Compile Include="Game\Gameplay\UserResearchManager.cs" />
     <Compile Include="Generic\_Debug\UnityMoveTech.cs" />
   </ItemGroup>
   <ItemGroup />

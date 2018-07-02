@@ -28,6 +28,32 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}[{1}], Player = {2}, Status = {3}, ConstructionCost = {4:0.}, DesignLevel = {5}";
         private const string DesignNameFormat = "{0}_{1}";
 
+        /// <summary>
+        /// Calculates the construction cost required to refit from existingDesign to refitDesign.
+        /// <remarks>Handled this way to bypass use of the MinimumRefitCost when the refitDesign chosen 
+        /// is the same as the existingDesign or the SystemCreation_Default.</remarks>
+        /// </summary>
+        /// <param name="refitDesign">The design to refit too.</param>
+        /// <param name="existingDesign">The existing design being refitted.</param>
+        /// <returns></returns>
+        public static float __CalcRefitConstructionCost(AUnitMemberDesign refitDesign, AUnitMemberDesign existingDesign) {
+            if (refitDesign == existingDesign) {
+                D.Assert(refitDesign.Player.IsUser);    // only user could pick same design or cancel DialogWindow
+                return Constants.ZeroF;
+            }
+            if (refitDesign.Status == SourceAndStatus.SystemCreation_Default) {
+                D.Assert(refitDesign is AUnitCmdModuleDesign);
+                return Constants.ZeroF; // CmdModuleDesign to refit too is the free Default design
+            }
+
+            float refitCost = refitDesign.ConstructionCost - existingDesign.ConstructionCost;
+            if (refitCost < refitDesign.MinConstructionRefitCost) {
+                //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing.", DebugName, refitCost, refitDesign.MinimumRefitCost);
+                refitCost = refitDesign.MinConstructionRefitCost;
+            }
+            return refitCost;
+        }
+
         public virtual string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
@@ -105,20 +131,20 @@ namespace CodeEnv.Master.GameContent {
         public int DesignLevel { get; protected set; }
 
         /// <summary>
-        /// The minimum cost in units of production required to refit a UnitMember using this Design.
-        /// <remarks>The actual production cost required to refit using this Design is
-        /// determined separately. This value is present so the algorithm used won't assign
-        /// a refit cost below this minimum. Typically used when refitting a UnitMember to an older
-        /// and/or obsolete Design whose cost is significantly less than what the current Element costs.</remarks>
-        /// </summary>
-        public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
-
-        /// <summary>
         /// The HullMountCategories that are supported in this design. Only EquipmentStats that can be mounted on one of these mount 
         /// categories can be added, removed and replaced in this design.
         /// <remarks>Some equipment is reqd in a design. These require no Mount. They are added through the constructor.</remarks>
         /// </summary>
         protected abstract OptionalEquipMountCategory[] SupportedOptionalMountCategories { get; }
+
+        /// <summary>
+        /// The minimum cost in units of production required to refit a UnitMember using this Design.
+        /// <remarks>The actual construction cost required to refit using this Design is determined by 
+        /// this class's static __CalcRefitConstructionCost method. This value is present so the algorithm used won't assign
+        /// a refit cost below this minimum. Typically used when refitting a UnitMember to an older
+        /// and/or obsolete Design whose cost is significantly less than what the current Element costs.</remarks>
+        /// </summary>
+        private float MinConstructionRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
 
         protected IDictionary<OptionalEquipSlotID, AEquipmentStat> _optEquipLookupBySlotID;
 
@@ -319,11 +345,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void AssignPropertyValues() {
             ConstructionCost = CalcConstructionCost();
+            __ValidateConstructionCost();
             HitPoints = CalcHitPoints();
             BuyoutCost = (decimal)(ConstructionCost * TempGameValues.__ProductionCostBuyoutMultiplier * Player.BuyoutCostMultiplier);
-            if (ConstructionCost.ApproxEquals(Constants.ZeroF)) {
-                D.Warn("{0}.AssignPropertyValues() has completed with invalid construction cost.", DebugName);
-            }
         }
 
         protected virtual float CalcConstructionCost() {
@@ -418,6 +442,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __ValidateConstructionCost() {
+            if (Status != SourceAndStatus.SystemCreation_Default && ConstructionCost.ApproxEquals(Constants.ZeroF)) {
+                D.Warn("{0}.AssignPropertyValues() has completed with invalid construction cost.", DebugName);
+            }
+        }
+
         #endregion
 
         #region Nested Classes
@@ -473,7 +504,7 @@ namespace CodeEnv.Master.GameContent {
             /// <summary>
             /// The Design was created by the system as a basic default design.
             /// <remarks>The design is by definition, current, as only one exists for each type of design. 
-            /// They are never replaced or obsoleted when new technology is researched that allows an upgrade.</remarks>
+            /// They are replaced rather than obsoleted when new technology is researched that allows an upgrade.</remarks>
             /// <remarks>5.12.18 Currently only used with AUnitCmdModuleDesigns.</remarks>
             /// </summary>
             [EnumAttribute("Default")]

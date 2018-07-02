@@ -406,28 +406,31 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// no subordinate planets or stars attached yet.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
+    /// <param name="sector">The sector.</param>
     /// <param name="parent">The GameObject the System should be a child of.</param>
     /// <param name="cameraStat">The camera stat.</param>
     /// <returns></returns>
-    public SystemItem MakeSystemInstance(string systemName, GameObject parent, FocusableItemCameraStat cameraStat) {
+    public SystemItem MakeSystemInstance(string systemName, Sector sector, GameObject parent, FocusableItemCameraStat cameraStat) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(parent, systemPrefab);
-        SystemItem item = systemGo.GetSafeComponent<SystemItem>();
-        PopulateSystemInstance(systemName, cameraStat, ref item);
-        return item;
+        SystemItem system = systemGo.GetSafeComponent<SystemItem>();
+        PopulateSystemInstance(systemName, sector, cameraStat, ref system);
+        return system;
     }
 
     /// <summary>
-    /// Populates the item instance provided from the stat provided. The Item (with its Data) 
+    /// Populates the item instance provided from the stat provided. The Item (with its Data)
     /// will not be enabled. The item's transform will have the same parent and children it arrived with.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
+    /// <param name="sector">The sector.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="system">The system item.</param>
-    public void PopulateSystemInstance(string systemName, FocusableItemCameraStat cameraStat, ref SystemItem system) {
+    public void PopulateSystemInstance(string systemName, Sector sector, FocusableItemCameraStat cameraStat, ref SystemItem system) {
         D.Assert(!system.IsOperational, system.DebugName);
         D.AssertNotNull(system.transform.parent, system.DebugName);
 
-        SystemData data = new SystemData(system) {
+        SystemData data = new SystemData(system, sector.Data) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };

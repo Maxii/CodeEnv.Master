@@ -46,7 +46,21 @@ namespace CodeEnv.Master.GameContent {
 
         #region Assess Awareness of Resources 
 
-        protected ResourcesYield AssessResources(ResourcesYield dataResources) {
+        /// <summary>
+        /// Assesses what Resources the Report is allowed to show and returns that value. Assessment is based on 
+        /// 1) whether the player's technology is sufficient to have discovered a Resource, and 
+        /// 2) whether the player's IntelCoverage is sufficient to see a Resource when tech is sufficient.
+        /// <remarks>Virtual to allow SystemReport to override and throw an error if used. SystemReport cannot use
+        /// this method with its own Resources from SystemData as SystemReport should only show what the reports
+        /// from the members of the system are allowed to show. Use of this method for SystemReport may result in 
+        /// a different result than calculating from System member reports if IsAwarenessOfPresenceAllowed(resID) is
+        /// ever overridden by SystemReport, StarReport or PlanetoidReport.
+        /// </remarks>
+        /// </summary>
+        /// <param name="dataResources">The resources taken from Data which by definition, have no filtering applied
+        /// from either Technology or IntelCoverage. This value will always be comprehensive.</param>
+        /// <returns></returns>
+        protected virtual ResourcesYield AssessResources(ResourcesYield dataResources) {
             _resourcesToInclude.Clear();
             PlayerAIManager aiMgr = GameReferences.GameManager.GetAIManagerFor(Player);
             IEnumerable<ResourceID> resIDsPresent = dataResources.ResourcesPresent;
@@ -69,6 +83,7 @@ namespace CodeEnv.Master.GameContent {
         /// Returns <c>true</c> if Player is allowed to be aware of the presence of the provided ResourceID
         /// based on Player's IntelCoverage of this Item.
         /// <remarks>Should be used only after Player has discovered the requisite tech to know about the resource.</remarks>
+        /// <remarks>6.12.18 Currently overridden by SystemReport to throw an error if used.</remarks>
         /// </summary>
         /// <param name="resourceID">The resource identifier.</param>
         /// <returns></returns>

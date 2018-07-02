@@ -256,7 +256,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #endregion
 
     /// <summary>
-    /// Refreshes the static fields of References.
+    /// Refreshes the static fields of GameReferences.
     /// </summary>
     /// <param name="isBeingInitialized">if set to <c>true</c> this is being called from InitialzeOnInstance. Most Reference values will be null.</param>
     private void RefreshStaticReferences(bool isBeingInitialized = false) {
@@ -454,9 +454,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void InitializePlayerAIManagers() {
-        if (_playerAiMgrLookup == null) {
-            _playerAiMgrLookup = new Dictionary<Player, PlayerAIManager>(AllPlayers.Count);
-        }
+        _playerAiMgrLookup = _playerAiMgrLookup ?? new Dictionary<Player, PlayerAIManager>(AllPlayers.Count);
         _playerAiMgrLookup.Clear();
 
         var uCenter = UniverseCreator.UniverseCenter;
@@ -919,8 +917,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         InitializePlayers();
         UniverseCreator.InitializeUniverseCenter(); // can't be earlier as Players are checked when Data is assigned
-        GameKnowledge.Initialize(UniverseCreator.UniverseCenter);
         UniverseCreator.BuildSectors();             // can't be earlier as Players are checked when Data is assigned
+        GameKnowledge.Initialize(UniverseCreator.UniverseCenter);
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
     }

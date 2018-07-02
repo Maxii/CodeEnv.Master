@@ -22,22 +22,22 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum SettlementCategory {
 
-        None,
+        None = 0,
 
         [EnumAttribute("Small Colony")]
-        Colony,
+        Colony = 1,
 
         [EnumAttribute("Growing City")]
-        City,
+        City = 2,
 
         [EnumAttribute("Mature City")]
-        CityState,
+        CityState = 3,
 
         [EnumAttribute("Regional Province")]
-        Province,
+        Province = 4,
 
         [EnumAttribute("Expansive Territory")]
-        Territory
+        Territory = 5
 
     }
 }

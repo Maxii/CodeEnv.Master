@@ -77,7 +77,8 @@ namespace CodeEnv.Master.GameContent {
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, Settlement IntelCoverage is Basic, but ParentSystem could be allowing access.
-                    // System uses NonRegressibleIntel where Coverage can't regress. Settlement uses RegressibleIntel which allows regress
+                    // System uses NonRegressibleIntel where Coverage can't regress. Settlement uses RegressibleIntel which allows regress.
+                    // 6.16.18 Cntlr has multiple clients so can't consolidate logic in Item.AssessWhetherToFireOwnerInfoAccessChgdEventFor
                     SystemInfoAccessController parentSysAccessCntlr = (_data as SettlementCmdData).ParentSystemData.InfoAccessCntlr;
                     return parentSysAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
                 default:

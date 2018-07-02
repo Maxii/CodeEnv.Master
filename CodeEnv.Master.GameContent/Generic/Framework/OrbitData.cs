@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="innerRadius">The radius at this slot's lowest orbit.</param>
         /// <param name="outerRadius">The radius at this slot's highest orbit.</param>
         public OrbitData(int slotIndex, float innerRadius, float outerRadius)
-                        : this(slotIndex, innerRadius, outerRadius, GameTimeDuration.OneYear) {
+            : this(slotIndex, innerRadius, outerRadius, GameTimeDuration.OneYear) {
         }
 
         /// <summary>

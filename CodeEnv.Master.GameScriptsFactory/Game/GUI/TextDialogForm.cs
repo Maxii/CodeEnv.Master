@@ -39,7 +39,6 @@ public class TextDialogForm : APopupDialogForm {
     [SerializeField]
     private UIButton _acceptButton = null;
 
-
     [SerializeField]
     private UILabel _titleLabel = null;
 
@@ -63,16 +62,12 @@ public class TextDialogForm : APopupDialogForm {
     }
 
     protected override void InitializeMenuControls() {
-        ////DeactivateAllMenuControls();
-
         // activate and subscribe to menu controls
-        ////bool isShowingButton = false;
         if (Settings.ShowDoneButton) {
             _doneButton.gameObject.SetActive(true);
             if (Settings.DoneButtonDelegate != null) {
                 EventDelegate.Set(_doneButton.onClick, Settings.DoneButtonDelegate);
             }
-            ////isShowingButton = true;
         }
         else {
             if (Settings.ShowCancelButton) {
@@ -80,20 +75,14 @@ public class TextDialogForm : APopupDialogForm {
                 if (Settings.CancelButtonDelegate != null) {
                     EventDelegate.Set(_cancelButton.onClick, Settings.CancelButtonDelegate);
                 }
-                ////isShowingButton = true;
             }
             if (Settings.ShowAcceptButton) {
                 _acceptButton.gameObject.SetActive(true);
                 if (Settings.AcceptButtonDelegate != null) {
                     EventDelegate.Set(_acceptButton.onClick, Settings.AcceptButtonDelegate);
                 }
-                ////isShowingButton = true;
             }
         }
-
-        ////if (!isShowingButton) {
-        ////    D.Warn("{0} is not showing a button?", DebugName);
-        ////}
     }
 
     protected override void UnsubscribeFromMenuControls() {
@@ -116,7 +105,6 @@ public class TextDialogForm : APopupDialogForm {
 
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();
-        ////DeactivateAllMenuControls();
 
         _titleLabel.text = string.Empty;
         _icon.atlas = AtlasID.None.GetAtlas();

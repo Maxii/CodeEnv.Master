@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>5.20.17 Currently only UnitElements and UnitCmds use RegressibleIntel. Ships and FleetCmds
         /// have a LowestAllowedValue of None, whereas Facilities and BaseCmds have Basic.</remarks>
         /// </summary>
-        public virtual IntelCoverage LowestAllowedCoverageValue { get { return CurrentCoverage; } }
+        public abstract IntelCoverage LowestAllowedCoverageValue { get; } 
 
         public AIntel() { }
 
@@ -65,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns <c>true</c> if an assignment to newCoverage is allowed (including the case where newCoverage == CurrentCoverage), 
         /// <c>false</c> if the assignment is not allowed due to the inability of IntelCoverage to regress to newCoverage.
+        /// <remarks>Does not make any change to CurrentCoverage.</remarks>
         /// </summary>
         /// <param name="newCoverage">The new coverage.</param>
         /// <returns>

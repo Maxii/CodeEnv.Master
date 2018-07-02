@@ -102,8 +102,6 @@ namespace CodeEnv.Master.GameContent {
             private string _eDamageableTagName = "Damageable";
 
             private string _eMaxCmdEffectivenssTagName = "MaxCmdEffect";
-            private string _eStartPopTagName = "StartPop";
-            private string _eStartApprovalTagName = "StartApproval";
 
             private string _eAccuracyTagName = "Accuracy";
             private string _eReloadPeriodTagName = "Reload";
@@ -383,13 +381,10 @@ namespace CodeEnv.Master.GameContent {
                 float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
-
                 float maxEffectiveness = float.Parse(levelNode.Element(_eMaxCmdEffectivenssTagName).Value);
-                int startingPop = int.Parse(levelNode.Element(_eStartPopTagName).Value);
-                float startingApproval = float.Parse(levelNode.Element(_eStartApprovalTagName).Value);
 
                 return new StarbaseCmdModuleStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
-                    hitPts, constructCost, expense, maxEffectiveness, startingPop, startingApproval);
+                    hitPts, constructCost, expense, maxEffectiveness);
             }
 
             private SettlementCmdModuleStat CreateSettlementCmdModuleStat(EquipmentStatID statID, XElement levelNode) {
@@ -403,13 +398,10 @@ namespace CodeEnv.Master.GameContent {
                 float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
-
                 float maxEffectiveness = float.Parse(levelNode.Element(_eMaxCmdEffectivenssTagName).Value);
-                int startingPop = int.Parse(levelNode.Element(_eStartPopTagName).Value);
-                float startingApproval = float.Parse(levelNode.Element(_eStartApprovalTagName).Value);
 
                 return new SettlementCmdModuleStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
-                    hitPts, constructCost, expense, maxEffectiveness, startingPop, startingApproval);
+                    hitPts, constructCost, expense, maxEffectiveness);
             }
 
             private FleetCmdModuleStat CreateFleetCmdModuleStat(EquipmentStatID statID, XElement levelNode) {

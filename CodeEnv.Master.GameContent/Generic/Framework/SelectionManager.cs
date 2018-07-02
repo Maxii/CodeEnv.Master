@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Singleton. Selection Manager that keeps track of what single Item is selected in the game. 
+    /// Singleton. Selection Manager that keeps track of what single Item the User has selected in the game. 
     /// <remarks>8.2.17 Replaces deprecated MultiSelectionManager. The only circumstance multiple items can now be concurrently 'chosen' 
     /// is from the UnitHud - one or more listed user-owned Units can be chosen as can one or more of a single Unit's listed elements.</remarks>
     /// </summary>
@@ -64,32 +64,33 @@ namespace CodeEnv.Master.GameContent {
 
         private void CurrentSelectionPropChangingHandler(ISelectable incomingSelection) {
             if (CurrentSelection != null) {
-                CurrentSelection.IsSelected = false;
-                _gameMgr.RequestPauseStateChange(toPause: false);
-                // 8.2.17 ISelectables now auto hide the HUD they show in when DeSelect()ed
+                CurrentSelection.IsSelected = false;    // 8.2.17 ISelectables now auto hide the HUD they show in when DeSelect()ed
+                if (incomingSelection != null) {
+                    // 6.20.18 Request unpause to negate the additional pause request about to occur in ChangedHandler...
+                    _gameMgr.RequestPauseStateChange(toPause: false);
+                }
+                // ...else ChangedHandler will request unpause so also doing it here would request undesirable double unpause 
             }
         }
 
         private void CurrentSelectionPropChangedHandler() {
             if (CurrentSelection != null) {
                 _sfxMgr.PlaySFX(SfxClipID.Select);
-                _gameMgr.RequestPauseStateChange(toPause: true);
+                _gameMgr.RequestPauseStateChange(toPause: true);    // UNCLEAR why does a user selection of an item cause a pause
             }
             else {
-
-                // 1.1.18 Only occurs from UnconsumedPress
+                // 1.1.18 Occurs from UnconsumedPress and a SelectedItem losing its owner
                 _sfxMgr.PlaySFX(SfxClipID.UnSelect);
                 _gameMgr.RequestPauseStateChange(toPause: false);
-
             }
         }
 
         private void UnconsumedPressEventHandler(object sender, EventArgs e) {
             if (_inputHelper.IsLeftMouseButton) {
-                //D.Log("{0} is de-selecting any current selection due to an unconsumed press.", DebugName);
+                //D.Log("{0} is deselecting any current selection due to an unconsumed press.", DebugName);
                 if (_inputHelper.IsOverUI) {
                     // 1.1.18 Shouldn't happen as UI should block ability to select
-                    D.Error("{0} has blocked de-selecting any current selection as the click was over the UI.", DebugName);
+                    D.Error("{0} has blocked deselecting any current selection as the click was over the UI.", DebugName);
                     return;
                 }
                 CurrentSelection = null;

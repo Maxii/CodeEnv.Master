@@ -145,7 +145,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     /// </summary>
     /// <param name="droppedGo">The dropped go.</param>
     void OnDrop(GameObject droppedGo) {
-        //D.Log("{0}.OnDrop({1}) called.", DebugName, droppedGo.name);
+        D.Log("{0}.OnDrop({1}) called.", DebugName, droppedGo.name);
         AEquipmentStat eStat = null;
         EquipmentIconGuiElement droppedEquipIcon = droppedGo.GetComponent<EquipmentIconGuiElement>();
         if (droppedEquipIcon != null) {
@@ -162,6 +162,11 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     }
 
     #endregion
+
+    protected override void AssignColliderEnabledState() {
+        // these storage GuiElements always have their collider enabled to allow drag and drop and tooltip support
+        D.Assert(_collider.enabled);
+    }
 
     protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {

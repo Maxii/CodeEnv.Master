@@ -50,6 +50,8 @@ public class StarCtxControl : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _starMenuOperator.IsFocus; } }
 
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
+
     private StarItem _starMenuOperator;
 
     public StarCtxControl(StarItem star)

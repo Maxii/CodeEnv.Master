@@ -85,7 +85,8 @@ namespace CodeEnv.Master.GameContent {
             Capacity = starStat.Capacity;
             Resources = starStat.Resources;
             Topography = Topography.System;
-            SectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
+            ////SectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
+            SectorID = GameReferences.SectorGrid.GetSectorIDContaining(Position);
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {

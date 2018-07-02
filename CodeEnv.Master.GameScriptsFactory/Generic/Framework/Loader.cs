@@ -171,7 +171,7 @@ public class Loader : AMonoSingleton<Loader> {
     /// elements (serialized slider values with a max must be constants) does not exceed the number of interior mounts available.</remarks>
     /// </summary>
     private void __ValidateMaxInteriorSlots() {
-        foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
+        foreach (var cat in TempGameValues.__ShipHullCategoriesInUse) {
             int eCatMaxAllowedInternalMounts = cat.__MaxSensorMounts() + cat.__MaxSkinMounts() + cat.__MaxScreenMounts() + cat.__MaxFlexMounts();
             int reqdElementSensors = 1;
             int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
@@ -180,7 +180,7 @@ public class Loader : AMonoSingleton<Loader> {
             }
         }
 
-        foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
+        foreach (var cat in TempGameValues.__FacilityHullCategoriesInUse) {
             int eCatMaxAllowedInternalMounts = cat.__MaxSensorMounts() + cat.__MaxSkinMounts() + cat.__MaxScreenMounts() + cat.__MaxFlexMounts();
             int reqdElementSensors = 1;
             int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
@@ -196,7 +196,7 @@ public class Loader : AMonoSingleton<Loader> {
     /// <remarks>6.29.17 One time check to verify that coded values and hull prefab content match.</remarks>
     /// </summary>
     private void __ValidateMaxExteriorHullWeaponSlots() {
-        foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
+        foreach (var cat in TempGameValues.__ShipHullCategoriesInUse) {
             int eCatMaxAllowedSiloMounts = cat.MaxSiloMounts();
             int eCatMaxAllowedTurretMounts = cat.MaxTurretMounts();
 
@@ -212,7 +212,7 @@ public class Loader : AMonoSingleton<Loader> {
             }
         }
 
-        foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
+        foreach (var cat in TempGameValues.__FacilityHullCategoriesInUse) {
             int eCatMaxAllowedSiloMounts = cat.MaxSiloMounts();
             int eCatMaxAllowedTurretMounts = cat.MaxTurretMounts();
 

@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -71,7 +72,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     [Obsolete("Use isAvailableChanged")]
     public event EventHandler availabilityChanged;
 
+#pragma warning disable 0612
+    [Obsolete]
     public event EventHandler<SubordinateOwnerChangingEventArgs> subordinateOwnerChanging;
+#pragma warning restore 0612
 
     public event EventHandler<SubordinateDamageIncurredEventArgs> subordinateDamageIncurred;
 
@@ -108,7 +112,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         protected set { SetProperty<ReworkingMode>(ref _reworkUnderway, value, "ReworkUnderway", ReworkUnderwayPropChangedHandler); }
     }
 
-    public int UnitElementCount { get { return Command.ElementCount; } }
+    public int UnitElementCount { get { return Data.UnitElementCount; } }
 
     public new AUnitElementData Data {
         get { return base.Data as AUnitElementData; }
@@ -147,8 +151,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     public IElementSensorRangeMonitor SRSensorMonitor { get; private set; }
-
-    public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
 
     /// <summary>
     /// Indicates whether this element is actively repairing. An element that
@@ -465,7 +467,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             else {
                 D.AssertEqual(EquipmentCategory.ProjectileWeapon, weapCat);
                 AProjectileOrdnance projectile;
-                if (_debugCntls.MovementTech == UnityMoveTech.Kinematic) {
+                if (__debugCntls.MovementTech == UnityMoveTech.Kinematic) {
                     projectile = ordnanceTransform.GetComponent<KinematicProjectile>();
                 }
                 else {
@@ -685,6 +687,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
+    [Obsolete]
     private void OnSubordinateOwnerChanging(Player incomingOwner) {
         if (subordinateOwnerChanging != null) {
             subordinateOwnerChanging(this, new SubordinateOwnerChangingEventArgs(incomingOwner));
@@ -819,21 +822,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    protected override void HandleOwnerChanging(Player incomingOwner) {
-        base.HandleOwnerChanging(incomingOwner);
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        D.Assert(IsAssaultAllowedBy(incomingOwner));
-
-        OnSubordinateOwnerChanging(incomingOwner);   // 5.17.17 If Cmd is going to chg owner, it must do it BEFORE all these other changes propagate
-
+    protected override void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
+        if (UnitElementCount == Constants.One) {
+            // 6.22.18 Confirm that last ElementData has already changed CmdData's Owner.  
+            // The IntelCoverage changes below will generate errors in PlayerKnowledge if Cmd Owner has not yet changed. 
+            // If not already changed, Cmd's PlayerKnowledge will still be that of the 'about to be changed' owner and 
+            // it will throw an error when it finds that this owned element doesn't have IntelCoverage.Comprehensive. 
+            // The same thing will happen when it finds allies whose coverage of this element aren't Comprehensive.
+            D.AssertEqual(Command.Owner, incomingOwner);
+        }
         // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
         ResetBasedOnCurrentDetection(Owner);
 
         IEnumerable<Player> allies;
-        if (TryGetAllies(out allies)) {
+        if (Data.TryGetAllies(out allies)) {
             allies.ForAll(ally => {
                 if (ally != incomingOwner && !ally.IsRelationshipWith(incomingOwner, DiplomaticRelationship.Alliance)) {
-                    // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                    // 5.18.17 no point assessing current detection for incomingOwner or a incomingOwner ally
                     // as HandleOwnerChgd will assign Comprehensive to them all. 
                     ResetBasedOnCurrentDetection(ally);
                 }
@@ -846,39 +852,31 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         ResetOrderAndState();
     }
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         if (DisplayMgr != null) {
             DisplayMgr.MeshColor = Owner.Color;
             AssessIcon();
         }
-        // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
     #region Orders Support Members
 
     /// <summary>
-    /// Clears the CurrentOrder and initiates Idling state when the CurrentOrder has the provided <c>cmdOrderID</c>.
+    /// Clears the CurrentOrder and resets the CurrentState to Idling when the CurrentOrder has the provided <c>cmdOrderID</c>.
     /// If the cmdOrderID provided is the default, the CurrentOrder will be cleared and Idling state
     /// initiated no matter what CurrentOrder's CmdOrderID is.
     /// <remarks>Return value is primarily for debugging, returning <c>true</c> if the CurrentOrder was cleared (and Idled), <c>false</c> otherwise.</remarks>
     /// </summary>
     /// <param name="cmdOrderID">The command order identifier.</param>
     /// <returns></returns>
-    internal bool ClearOrder(Guid cmdOrderID) {
-        bool toClear = cmdOrderID == default(Guid) ? true : cmdOrderID == _lastCmdOrderID;
-        if (toClear) {
-            ClearOrder();
+    internal bool ClearOrderAndResetState(Guid cmdOrderID) {
+        bool toClearAndReset = cmdOrderID == default(Guid) ? true : cmdOrderID == _lastCmdOrderID;
+        if (toClearAndReset) {
+            ReturnFromCalledStates();
+            ResetOrderAndState();
         }
-        return toClear;
-    }
-
-    /// <summary>
-    /// Clears the CurrentOrder and (re)initiates Idling state.
-    /// </summary>
-    protected void ClearOrder() {
-        ReturnFromCalledStates();
-        ResetOrderAndState();
+        return toClearAndReset;
     }
 
     protected virtual void ResetOrderAndState() {
@@ -907,6 +905,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected AUnitElementData.PreReworkValuesStorage _elementPreReworkValues;
 
+    #region Pick Design Support
+
+    protected AUnitCmdModuleDesign _chosenCmdModuleDesign;
+
+    protected void HandleCmdModDesignChosen(AUnitCmdModuleDesign chosenDesign) {
+        _chosenCmdModuleDesign = chosenDesign;
+    }
+
+    #endregion
+
     protected abstract bool IsCurrentStateCalled { get; }
 
     protected void RefreshReworkingVisuals(float percentCompletion) {
@@ -915,66 +923,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    protected float __CalcRefitCost(AUnitMemberDesign refitDesign, AUnitMemberDesign existingDesign) {
-        float refitCost = refitDesign.ConstructionCost - existingDesign.ConstructionCost;
-        if (refitCost < refitDesign.MinimumRefitCost) {
-            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
-            refitCost = refitDesign.MinimumRefitCost;
-        }
-        return refitCost;
-    }
-
-    protected bool TryGetUpgradeDesign(AUnitCmdModuleDesign currentCmdModDesign, out AUnitCmdModuleDesign upgradedCmdModDesign) {
-        var ownerDesigns = OwnerAiMgr.Designs;
-        if (currentCmdModDesign is SettlementCmdModuleDesign) {
-            SettlementCmdModuleDesign settleCmdModDesign;
-            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as SettlementCmdModuleDesign, out settleCmdModDesign)) {
-                upgradedCmdModDesign = settleCmdModDesign;
-                return true;
-            }
-        }
-        else if (currentCmdModDesign is StarbaseCmdModuleDesign) {
-            StarbaseCmdModuleDesign sbCmdModDesign;
-            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as StarbaseCmdModuleDesign, out sbCmdModDesign)) {
-                upgradedCmdModDesign = sbCmdModDesign;
-                return true;
-            }
-        }
-        else {
-            D.Assert(currentCmdModDesign is FleetCmdModuleDesign);
-            FleetCmdModuleDesign fCmdModDesign;
-            if (ownerDesigns.TryGetUpgradeDesign(currentCmdModDesign as FleetCmdModuleDesign, out fCmdModDesign)) {
-                upgradedCmdModDesign = fCmdModDesign;
-                return true;
-            }
-        }
-        upgradedCmdModDesign = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Validates the common starting values of a State that is Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
-        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
-        D.Assert(!IsDead);
-    }
-
-    /// <summary>
-    /// Validates the common starting values of a State that is not Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonNonCallableStateValues() {
-        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
-        D.Assert(!IsDead);
-        D.AssertDefault(_lastCmdOrderID);
-    }
-
-    protected virtual void ResetCommonNonCallableStateValues() {
+    protected virtual void ResetAndValidateCommonNonCallableExitStateValues() {
         _activeFsmReturnHandlers.Clear();
         _hasOrderOutcomeCallbackAttemptOccurred = false;
         _lastCmdOrderID = default(Guid);
+        // 6.23.18 Can't Assert !_isWaitingToProcessReturn as ExitState can be called while waiting to process Return() - e.g. New Order
+        _isWaitingToProcessReturn = false;
+    }
+
+    protected virtual void ResetAndValidateCommonCallableExitStateValues() {
+        D.Assert(_isWaitingToProcessReturn);
     }
 
     protected void ReturnFromCalledStates() {
@@ -1157,6 +1115,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
+    private void UponSectorStationVacancyChanged(StationaryLocation station, bool isVacant) {
+        RelayToCurrentState(station, isVacant);
+    }
+
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) { return RelayToCurrentState(firingSolutions); }
 
     private void UponDamageIncurred() { RelayToCurrentState(); }
@@ -1235,8 +1197,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Show Icon
 
     private void InitializeIcon() {
-        _debugCntls.showElementIcons += ShowElementIconsChangedEventHandler;
-        if (_debugCntls.ShowElementIcons) {
+        __debugCntls.showElementIcons += ShowElementIconsChangedEventHandler;
+        if (__debugCntls.ShowElementIcons) {
             EnableIcon(true);
         }
     }
@@ -1268,7 +1230,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
             }
             else {
-                D.Assert(!_debugCntls.ShowElementIcons);
+                D.Assert(!__debugCntls.ShowElementIcons);
             }
         }
     }
@@ -1288,7 +1250,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected abstract TrackingIconInfo MakeIconInfo();
 
     private void ShowElementIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(_debugCntls.ShowElementIcons);
+        EnableIcon(__debugCntls.ShowElementIcons);
     }
 
     /// <summary>
@@ -1296,8 +1258,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        if (_debugCntls != null) {
-            _debugCntls.showElementIcons -= ShowElementIconsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showElementIcons -= ShowElementIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
             var icon = DisplayMgr.TrackingIcon;
@@ -1402,6 +1364,34 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Debug
 
+    public bool __IsOwnerChgUnderway { get { return Data.__IsOwnerChgUnderway; } }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is Call()able.
+    /// </summary>
+    /// <param name="calledStateName">Name of the called state.</param>
+    /// <param name="includeFsmTgt">if set to <c>true</c> [include FSM TGT].</param>
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+        D.Assert(!IsDead);
+        D.Assert(!_isWaitingToProcessReturn);
+    }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is not Call()able.
+    /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateCommonNonCallableEnterStateValues() {
+        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
+        D.Assert(!IsDead);
+        D.Assert(!_isWaitingToProcessReturn);
+        D.AssertDefault(_lastCmdOrderID);
+        FsmEventSubscriptionMgr.__ValidateNoRemainingSubscriptions();
+    }
+
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateCurrentStateNotACalledState() {
         if (IsCurrentStateCalled) {
@@ -1418,20 +1408,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
 
     public bool __HasCommand { get { return Command != null; } }
-
-    public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
-        if (_debugCntls.IsAllIntelCoverageComprehensive) {
-            return true;
-        }
-        if (IsOwnerChangeUnderway) {
-            return true;
-        }
-        bool isEntitled = Owner.IsRelationshipWith(player, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
-        if (!isEntitled) {
-            //D.Warn("{0} is not entitled to Comprehensive IntelCoverage. IsOwnerChangeUnderway: {1}.", DebugName, IsOwnerChangeUnderway);
-        }
-        return isEntitled;
-    }
 
     public bool __TryGetIsHQChangedEventSubscribers(out string targetNames) {
         if (isHQChanged != null) {
@@ -1460,7 +1436,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected void __ChangeOwner(Player newOwner) { // OPTIMIZE
         D.AssertNotEqual(Owner, newOwner, DebugName);
-        D.Assert(!IsPaused);
+        D.Assert(!IsPaused);    // New orders aren't processed until unpaused
         Data.Owner = newOwner;
     }
 
@@ -1516,6 +1492,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Nested Classes
 
+    [Obsolete]
     public class SubordinateOwnerChangingEventArgs : EventArgs {
 
         public Player IncomingOwner { get; private set; }
@@ -1687,6 +1664,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd item) { }
 
+    void IFsmEventSubscriptionMgrClient.HandleSectorStationVacancyChgd(StationaryLocation station, bool isVacant) {
+        UponSectorStationVacancyChanged(station, isVacant);
+    }
+
     #endregion
 
     #region IAssaultable Members
@@ -1727,11 +1708,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
 
         int currentFrame = Time.frameCount;
-        if (IsOwnerChangeUnderway) {
-            // 5.17.17 Multiple assaults in the same frame by the same or other players can occur even if 
-            // AssaultShuttles aren't instantaneous.
-            // 5.22.17 Changed to warn to reconfirm this takes place with real AssaultVehicles
-            D.Warn("{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
+        if (Data.__IsOwnerChgUnderway) {
+            // 6.20.18 Owner change processing is atomic but does generate IntelCoverage and InfoAccess change events
+            // after all owner changes are propagated, but before the owner change process has completed. The only
+            // way an assault could occur while an owner change is being processed is as a result of one of these change
+            // events, but I can't imagine how those events could cause an atomic assault attempt to occur...
+            D.Error("{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
                 DebugName, __assaulterName, currentFrame);
             return false;
         }
@@ -1750,7 +1732,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             // may have something to do with the infrequent but bad behaviour I see with SensorMonitor's OnTriggerExit warnings
             // (items exiting at wrong distance). I'm speculating that multiple collider enable/disable in the same frame 
             // creates some instability.
-            D.Log(/*ShowDebugLog,*/ "{0} assault is not allowed by {1} in Frame {2} when previously assaulted in same frame.",
+            D.Log("{0} assault is not allowed by {1} in Frame {2} when previously assaulted in same frame.",
                 DebugName, __assaulterName, currentFrame);
             return false;
         }
@@ -1759,7 +1741,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (__debugSettings.AllPlayersInvulnerable) {
             return false;
         }
-        if (_debugCntls.AreAssaultsAlwaysSuccessful) {
+        if (__debugCntls.AreAssaultsAlwaysSuccessful) {
             Data.Owner = player;
             return true;
         }

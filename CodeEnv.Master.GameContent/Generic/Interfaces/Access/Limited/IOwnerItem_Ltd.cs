@@ -40,22 +40,10 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
-        Player Owner_Debug { get; }
-
         /// <summary>
         /// The display name of this item.
         /// </summary>
         string Name { get; }
-
-        /// <summary>
-        /// Debug version of TryGetOwner without the validation that 
-        /// requestingPlayer already knows owner when OwnerInfoAccess is available.
-        /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>
-        /// </summary>
-        /// <param name="requestingPlayer">The requesting player.</param>
-        /// <param name="owner">The owner.</param>
-        /// <returns></returns>
-        bool TryGetOwner_Debug(Player requestingPlayer, out Player owner);
 
         /// <summary>
         /// Returns <c>true</c> if the requestingPlayer has InfoAccess to the
@@ -69,11 +57,23 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOwnerAccessibleTo(Player player);
 
+        Player Owner_Debug { get; }
+
         /// <summary>
         /// Logs the current subscribers of this Item's infoAccessChgd event.
         /// <remarks>4.17.17 Used for debugging the receipt of infoAccessChgd events in unexpected places.</remarks>
         /// </summary>
         void __LogInfoAccessChangedSubscribers();
+
+        /// <summary>
+        /// Debug version of TryGetOwner without the validation that 
+        /// requestingPlayer already knows owner when OwnerInfoAccess is available.
+        /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>
+        /// </summary>
+        /// <param name="requestingPlayer">The requesting player.</param>
+        /// <param name="owner">The owner.</param>
+        /// <returns></returns>
+        bool __TryGetOwner_ForDiscoveringPlayersProcess(Player requestingPlayer, out Player owner);
 
 
     }

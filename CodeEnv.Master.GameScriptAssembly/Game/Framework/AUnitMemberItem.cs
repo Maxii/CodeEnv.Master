@@ -283,6 +283,18 @@ public abstract class AUnitMemberItem : AMortalItemStateMachine, ISensorDetector
 
     protected abstract void HandleAwarenessChgd_Internal();
 
+    string IFsmEventSubscriptionMgrClient.DebugName => throw new NotImplementedException();
+
+    bool IFsmEventSubscriptionMgrClient.ShowDebugLog => throw new NotImplementedException();
+
+    Player IFsmEventSubscriptionMgrClient.Owner => throw new NotImplementedException();
+
+    PlayerAIManager IFsmEventSubscriptionMgrClient.OwnerAiMgr => throw new NotImplementedException();
+
+    void IFsmEventSubscriptionMgrClient.HandleSectorStationVacancyChgd(StationaryLocation station, bool isVacant) {
+        throw new NotImplementedException();
+    }
+
     #endregion
 }
 

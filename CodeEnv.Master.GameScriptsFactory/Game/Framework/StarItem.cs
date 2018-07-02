@@ -70,8 +70,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     #region Initialization
 
-    protected override bool InitializeDebugLog() {
-        return _debugCntls.ShowStarDebugLogs;
+    protected override bool __InitializeDebugLog() {
+        return __debugCntls.ShowStarDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -174,27 +174,27 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     #region Event and Property Change Handlers
 
     private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(_debugCntls.ShowStarIcons);
+        EnableIcon(__debugCntls.ShowStarIcons);
     }
 
     #endregion
 
     protected override void HandleInfoAccessChangedFor(Player player) {
         base.HandleInfoAccessChangedFor(player);
-        ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
+        ParentSystem.AssessWhetherToFireOwnerInfoAccessChangedEventFor(player);
     }
 
-    protected override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
+    protected override void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
         if (Owner != TempGameValues.NoPlayer) {
             // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
             ResetBasedOnCurrentDetection(Owner);
 
             IEnumerable<Player> allies;
-            if (TryGetAllies(out allies)) {
+            if (Data.TryGetAllies(out allies)) {
                 allies.ForAll(ally => {
-                    if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
-                        // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                    if (ally != incomingOwner && !ally.IsRelationshipWith(incomingOwner, DiplomaticRelationship.Alliance)) {
+                        // 5.18.17 no point assessing current detection for incomingOwner or a incomingOwner ally
                         // as HandleOwnerChgd will assign Comprehensive to them all. 
                         ResetBasedOnCurrentDetection(ally);
                     }
@@ -204,8 +204,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
     }
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         if (DisplayMgr != null && DisplayMgr.TrackingIcon != null) {
             DisplayMgr.TrackingIcon.Color = Owner.Color;
         }
@@ -216,8 +216,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     #region Show Icon
 
     private void InitializeIcon() {
-        _debugCntls.showStarIcons += ShowStarIconsChangedEventHandler;
-        if (_debugCntls.ShowStarIcons) {
+        __debugCntls.showStarIcons += ShowStarIconsChangedEventHandler;
+        if (__debugCntls.ShowStarIcons) {
             EnableIcon(true);
         }
     }
@@ -281,8 +281,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        if (_debugCntls != null) {
-            _debugCntls.showStarIcons -= ShowStarIconsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showStarIcons -= ShowStarIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
             var icon = DisplayMgr.TrackingIcon;
@@ -358,8 +358,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (_debugCntls.ShowObstacleZones) {
+        __debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -375,12 +375,12 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
+        EnableDebugShowObstacleZone(__debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        if (_debugCntls != null) {
-            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
 
@@ -403,7 +403,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IAssemblySupported).LocalAssemblyStations; } }
+    public IEnumerable<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IAssemblySupported).LocalAssemblyStations; } }
 
     #endregion
 

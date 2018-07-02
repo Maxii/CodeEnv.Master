@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, OrderID = {4}, FollowonOrder = {5}]";
 
         private static readonly BaseDirective[] DirectivesWithNullTarget = new BaseDirective[]  {
                                                                                                     BaseDirective.Cancel,
@@ -42,8 +42,9 @@ namespace CodeEnv.Master.GameContent {
         public string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
+                string orderIdText = OrderID.ToShortText();
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, orderIdText, followonOrderText);
             }
         }
 

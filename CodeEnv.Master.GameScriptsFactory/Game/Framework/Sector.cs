@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Sector.cs
-// Non-MonoBehaviour Sector.
+// Non-MonoBehaviour ASector that supports Systems and Starbases.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,10 +25,15 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Non-MonoBehaviour Sector.
+/// Non-MonoBehaviour ASector that supports Systems and Starbases.
 /// </summary>
-public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd, IShipNavigableDestination, IFleetNavigableDestination, IPatrollable,
-    IFleetExplorable, IGuardable {
+public class Sector : ASector {
+
+    /// <summary>
+    /// The multiplier to apply to the sector radius value used when determining the
+    /// placement of the surrounding starbase stations from the sector's center.
+    /// </summary>
+    private const float StarbaseStationDistanceMultiplier = 0.7F;
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -43,28 +48,10 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private const float GuardStationDistanceMultiplier = 0.2F;
 
     /// <summary>
-    /// Occurs when the owner of this <c>AItem</c> is about to change.
-    /// The new incoming owner is the <c>Player</c> provided in the EventArgs.
-    /// </summary>
-    public event EventHandler<OwnerChangingEventArgs> ownerChanging;
-
-    /// <summary>
-    /// Occurs when the owner of this <c>AItem</c> has changed.
-    /// </summary>
-    public event EventHandler ownerChanged;
-
-    /// <summary>
-    /// Occurs when InfoAccess rights change for a player on an item.
-    /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
-    /// </summary>
-    public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
-
-    /// <summary>
     /// The SectorCategory(Core, Peripheral or Rim) of this Sector.
     /// </summary>
-    public SectorCategory Category { get; private set; }
-
-    public bool ShowDebugLog { get; set; }
+    [Obsolete]
+    public SectorCategory Category { get { return Data.Category; } }
 
     private SectorData _data;
     public SectorData Data {
@@ -76,6 +63,32 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     /// <summary>
+    /// Returns any vacant starbase stations.
+    /// <remarks>6.26.18 Currently starbase stations are located outside of the system, if present.</remarks>
+    /// <remarks>6.26.18 Currently there will be no stations present in Peripheral or Rim Sectors.</remarks>
+    /// </summary>
+    public override IEnumerable<StationaryLocation> VacantStarbaseStations {
+        get {
+            return StarbaseLookupByStation.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
+        }
+    }
+
+    /// <summary>
+    /// Returns all starbases present in the Sector.
+    /// <remarks>6.26.18 Currently there will be no starbases present in Peripheral or Rim Sectors.</remarks>
+    /// <remarks>With the exception of Peripheral and Rim Sectors, all players are allowed to maintain one or more Starbases
+    /// in any sector once founded, without regard to who owns the sector. However, a player may not found a starbase
+    /// in a sector owned by an opponent that will fire on it (aka a war enemy or cold war enemy whose policy is to attack
+    /// cold war enemies in their territory).</remarks>
+    /// </summary>
+    public override IEnumerable<StarbaseCmdItem> AllStarbases {
+        get { return StarbaseLookupByStation.Values.Where(starbase => starbase != null); }
+    }
+
+    private Vector3 _position;
+    public override Vector3 Position { get { return _position; } }
+
+    /// <summary>
     /// Returns <c>true</c> if this Sector is owned by the User, <c>false</c> otherwise.
     /// <remarks>Shortcut that avoids having to access Owner to determine. If the user player
     /// is using this method (e.g. via ContextMenus), he/she always has access rights to the answer
@@ -83,11 +96,12 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// owner access rights is immaterial as the answer will always be false. The only time the
     /// AI will use it is when I intend for the AI to "cheat", aka gang up on the user.</remarks>
     /// </summary>
+    [Obsolete("Not currently used")]
     public bool IsUserOwned { get { return Owner.IsUser; } }
 
-    public Topography Topography { get { return Data.Topography; } }
+    public override Topography Topography { get { return Data.Topography; } }
 
-    public bool IsHudShowing {
+    public override bool IsHudShowing {
         get { return _hudManager != null && _hudManager.IsHudShowing; }
     }
 
@@ -100,66 +114,76 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         private set { Data.IsOperational = value; }
     }
 
-    public string DebugName { get { return Data.DebugName; } }
+    public override string DebugName { get { return Data.DebugName; } }
 
     /// <summary>
     /// The display name of this Sector.
     /// </summary>
-    public string Name {
+    public override string Name {
         get { return Data.Name; }
         set { Data.Name = value; }
     }
 
-    public Vector3 Position { get; private set; }
+    public override IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
-    public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
+    public override IntVector3 SectorID { get { return Data.SectorID; } }
 
-    public IntVector3 SectorID { get { return Data.SectorID; } }
-
+    [Obsolete("Not currently used")]
     public SectorReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     /// <summary>
     /// The radius of the sphere inscribed inside a sector cube = 600.
     /// </summary>
-    public float Radius { get { return TempGameValues.SectorSideLength / 2F; } }
+    public override float Radius { get { return NormalCellRadius; } }
 
     private SystemItem _system;
     /// <summary>
     /// The System present in this Sector, if any.
     /// </summary>
-    public SystemItem System {
-        private get { return _system; }
+    public override SystemItem System {
+        get { return _system; }
         set {
             D.AssertNull(_system);    // one time only, if at all 
             SetProperty<SystemItem>(ref _system, value, "System", SystemPropSetHandler);
         }
     }
 
-    public Player Owner { get { return Data.Owner; } }
+    /// <summary>
+    /// The owner of this sector. 
+    /// </summary>
+    public override Player Owner { get { return Data.Owner; } }
 
     private AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
+    private IDictionary<StationaryLocation, StarbaseCmdItem> _starbaseLookupByStation;
+    private IDictionary<StationaryLocation, StarbaseCmdItem> StarbaseLookupByStation {
+        get {
+            _starbaseLookupByStation = _starbaseLookupByStation ?? InitializeStarbaseLookupByStation();
+            return _starbaseLookupByStation;
+        }
+    }
+
+    /// <summary>
+    /// Players that have already permanently acquired access to this item's Owner.
+    /// <remarks>Used in conjunction with AssessWhetherToFireOwnerInfoAccessChangedEventFor(player),
+    /// this collection enables avoidance of unnecessary reassessments.</remarks>
+    /// </summary>
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<IDisposable> _subscriptions;
     private IInputManager _inputMgr;
     private ItemHoveredHudManager _hudManager;
-    private IGameManager _gameMgr;
-    private DebugSettings _debugSettings;
 
     #region Initialization
 
-    public Sector(Vector3 position, SectorCategory category) {
-        Position = position;
-        Category = category;
-        Initialize();
+    public Sector(Vector3 position) : base() {
+        _position = position;
         Subscribe();
     }
 
-    private void Initialize() {
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _inputMgr = GameReferences.InputManager;
-        _gameMgr = GameReferences.GameManager;
-        _debugSettings = DebugSettings.Instance;
-        _playersWithInfoAccessToOwner = new List<Player>(TempGameValues.MaxPlayers);
+        _playersWithInfoAccessToOwner = new List<Player>();
     }
 
     private void Subscribe() {
@@ -181,38 +205,82 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     ///  Subscribes to changes to values contained in Data. Called when Data is set.
     /// </summary>
     private void SubscribeToDataValueChanges() {
-        D.AssertNotNull(_subscriptions);
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, NamePropChangedHandler));
         Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
     }
 
-    private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
-        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
-        var patrolStations = new List<StationaryLocation>(8);
-        foreach (Vector3 loc in stationLocations) {
-            patrolStations.Add(new StationaryLocation(loc));
+    private IDictionary<StationaryLocation, StarbaseCmdItem> InitializeStarbaseLookupByStation() {
+        var lookup = new Dictionary<StationaryLocation, StarbaseCmdItem>(15);
+        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
+        float universeRadiusSqrd = universeRadius * universeRadius;
+        float radiusOfSphereContainingStations = Radius * StarbaseStationDistanceMultiplier;
+        var vertexStationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingStations);
+        foreach (Vector3 loc in vertexStationLocations) {
+            if (GameUtility.IsLocationContainedInUniverse(loc, universeRadiusSqrd)) {
+                lookup.Add(new StationaryLocation(loc), null);
+            }
         }
-        return patrolStations;
+        var faceStationLocations = MyMath.CalcCubeFaceCenters(Position, radiusOfSphereContainingStations);
+        foreach (Vector3 loc in faceStationLocations) {
+            if (GameUtility.IsLocationContainedInUniverse(loc, universeRadiusSqrd)) {
+                lookup.Add(new StationaryLocation(loc), null);
+            }
+        }
+        if (System == null) {
+            if (GameUtility.IsLocationContainedInUniverse(Position, universeRadiusSqrd)) {
+                lookup.Add(new StationaryLocation(Position), null);
+            }
+        }
+        return lookup;
     }
 
-    private IList<StationaryLocation> InitializeGuardStations() {
-        var guardStations = new List<StationaryLocation>(2);
+    private IEnumerable<StationaryLocation> InitializePatrolStations() {
+        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
+        float universeRadiusSqrd = universeRadius * universeRadius;
+
+        float radiusOfSphereContainingStations = Radius * PatrolStationDistanceMultiplier;
+        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingStations);
+        var stations = new List<StationaryLocation>(8);
+        foreach (Vector3 loc in stationLocations) {
+            if (GameUtility.IsLocationContainedInUniverse(loc, universeRadiusSqrd)) {
+                stations.Add(new StationaryLocation(loc));
+            }
+        }
+        D.Assert(stations.Any());
+        return stations;
+    }
+
+    private IEnumerable<StationaryLocation> InitializeGuardStations() {
+        var universeSize = _gameMgr.GameSettings.UniverseSize;
+
+        var stations = new List<StationaryLocation>(2);
         float distanceFromPosition = Radius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
-        guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
-        guardStations.Add(new StationaryLocation(Position + localPointBelowPosition));
-        return guardStations;
+
+        Vector3 stationLoc = Position + localPointAbovePosition;
+        if (GameUtility.IsLocationContainedInUniverse(stationLoc, universeSize)) {
+            stations.Add(new StationaryLocation(Position + localPointAbovePosition));
+        }
+
+        stationLoc = Position + localPointBelowPosition;
+        if (GameUtility.IsLocationContainedInUniverse(stationLoc, universeSize)) {
+            stations.Add(new StationaryLocation(Position + localPointBelowPosition));
+        }
+        D.Assert(stations.Any());
+        return stations;
     }
 
     /// <summary>
     /// The final Initialization opportunity before CommenceOperations().
     /// </summary>
-    public void FinalInitialize() {
+    public override void FinalInitialize() {
         Data.FinalInitialize();
         IsOperational = true;
+        //D.Log("{0}.FinalInitialize called.", DebugName);
     }
 
     #endregion
@@ -220,12 +288,12 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// <summary>
     /// Called when the Sector should begin operations.
     /// </summary>
-    public void CommenceOperations() {
-        //D.Assert(_gameMgr.IsRunning); // OPTIMIZE Currently called in GameState.PrepareForRunning
+    public override void CommenceOperations() {
         Data.CommenceOperations();
+        //D.Log("{0}.CommenceOperations called.", DebugName);
     }
 
-    public void ShowHud(bool toShow) {
+    public override void ShowHud(bool toShow) {
         if (_hudManager != null) {
             if (toShow) {
                 _hudManager.ShowHud();
@@ -236,9 +304,9 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    public SectorReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
+    public override SectorReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
-    public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
+    public override IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
     /// <summary>
     /// Sets the Intel coverage for this player. 
@@ -246,25 +314,14 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="newCoverage">The new coverage.</param>
-    public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+    public override void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
         Data.SetIntelCoverage(player, newCoverage);
     }
 
     /// <summary>
-    /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
-    /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
-    /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <param name="newCoverage">The new coverage.</param>
-    /// <param name="resultingCoverage">The resulting coverage.</param>
-    /// <returns></returns>
-    public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
-        return Data.TrySetIntelCoverage(player, newCoverage, out resultingCoverage);
-    }
-
-    /// <summary>
-    /// Assesses whether to fire its infoAccessChanged event.
+    /// Assesses whether to fire a infoAccessChanged event indicating InfoAccess rights to the Owner has been 
+    /// permanently achieved (due to NonRegressibleIntel).
+    /// <remarks>All other infoAccessChanged events are fired when IntelCoverage changes.</remarks>
     /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
     /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
     /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
@@ -277,7 +334,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
-    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+    internal override void AssessWhetherToFireOwnerInfoAccessChangedEventFor(Player player) {
         if (!_playersWithInfoAccessToOwner.Contains(player)) {
             // A Sector provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
             // and second and more commonly, if a System provides access. A System provides access to its Owner
@@ -291,132 +348,86 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    #region Clear Random Point Inside Sector
+    #region Starbases
 
     /// <summary>
-    /// Returns a random position inside the sector that is clear of any interference.
-    /// The point returned is guaranteed to be inside the radius of the universe.
+    /// Gets the starbase located at the provided station. 
+    /// <remarks>Throws an error if no starbase is located there.</remarks>
     /// </summary>
+    /// <param name="station">The station.</param>
     /// <returns></returns>
-    public Vector3 GetClearRandomPointInsideSector() {
-        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
-        return GetClearRandomPointInsideSector(Constants.Zero, universeRadius * universeRadius);
+    public override StarbaseCmdItem GetStarbaseLocatedAt(StationaryLocation station) {
+        StarbaseCmdItem starbase = StarbaseLookupByStation[station];
+        D.AssertNotNull(starbase);
+        return starbase;
     }
 
-    private Vector3 GetClearRandomPointInsideSector(int iterateCount, float universeRadiusSqrd) {
-        var pointCandidate = GetRandomInsidePoint();
-        if (Category == SectorCategory.Core) {
-            if (ConfirmLocationIsClear(pointCandidate)) {
-                return pointCandidate;
-            }
-        }
-        else if (Category == SectorCategory.Peripheral) {
-            // may be outside universe radius
-            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadiusSqrd) {
-                // inside the universe
-                if (ConfirmLocationIsClear(pointCandidate)) {
-                    return pointCandidate;
-                }
-            }
-        }
-        else {
-            D.AssertEqual(SectorCategory.Rim, Category);
-            D.Warn("{0}: Checking for a clear location in a Rim Sector??", DebugName);
-            // could easily be outside universe radius
-            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadiusSqrd) {
-                // inside the universe
-                if (ConfirmLocationIsClear(pointCandidate)) {
-                    return pointCandidate;
-                }
-            }
-        }
-        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 
-        // 3.27.17, 4.3.17, 5.12.17 Confirmed failed peripheral sector. I'm guessing almost all sector is outside radius
-        if (iterateCount > 100) {
-            var sectorGrid = SectorGrid.Instance;
-            D.Error("{0}: Iterate check error. Category = {1}.".Inject(DebugName, Category.GetValueName()));
-        }
-        iterateCount++;
-        return GetClearRandomPointInsideSector(iterateCount, universeRadiusSqrd);
+    public override bool IsStationVacant(StationaryLocation station) {
+        return StarbaseLookupByStation[station] == null;
     }
 
     /// <summary>
-    /// Returns a randomly selected point guaranteed to be inside the sector.
-    /// <remarks>Warning: If this sector is a Peripheral or Rim Sector,
-    /// the point returned is NOT guaranteed to be within the universe's radius.</remarks>
+    /// Indicates whether founding a Starbase by <c>player</c> is allowed in this Sector.
+    /// <remarks>Player is not allowed to found a starbase if 1) no vacant stations are available, or 
+    /// 2) player has knowledge of Sector owner and that owner is an opponent. Knowledge of station
+    /// availability does not require knowledge of owner. As all players have basic knowledge of sectors,
+    /// they can tell whether a station is occupied simply from gravitational patterns.</remarks>
     /// </summary>
-    private Vector3 GetRandomInsidePoint() {
-        float radius = Radius;
-        float x = UnityEngine.Random.Range(-radius, radius);
-        float y = UnityEngine.Random.Range(-radius, radius);
-        float z = UnityEngine.Random.Range(-radius, radius);
-        return Position + new Vector3(x, y, z);
-    }
-
-    /// <summary>
-    /// Checks the location to confirm it is in a 'clear' area, aka that it is not in a location that interferes
-    /// with other existing items. Returns <c>true</c> if the location is clear, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="location">The location.</param>
+    /// <param name="player">The player.</param>
     /// <returns></returns>
-    private bool ConfirmLocationIsClear(Vector3 location) {
-        bool isInsideSystem = false;
+    public override bool IsFoundingStarbaseAllowedBy(Player player) {
+        GameColor unusedAttractivenessColor;
+        return __IsFoundingStarbaseAllowedBy(player, out unusedAttractivenessColor);
+    }
+
+    public override bool IsFoundingSettlementAllowedBy(Player player) { // TODO move to ASector?
         if (System != null) {
-            if (MyMath.IsPointOnOrInsideSphere(System.Position, System.ClearanceRadius, location)) {
-                // point is close to or inside System
-                if (MyMath.IsPointOnOrInsideSphere(System.Star.Position, System.Star.ClearanceRadius, location)) {
-                    return false;
-                }
-                if (System.Settlement != null && MyMath.IsPointOnOrInsideSphere(System.Settlement.Position, System.Settlement.ClearanceRadius, location)) {
-                    return false;   // IMPROVE Settlement can be null while a Settlement is being built in the system
-                }
-                foreach (var planet in System.Planets) {
-                    if (MyMath.IsPointOnOrInsideSphere(planet.Position, planet.ClearanceRadius, location)) {
-                        return false;
-                    }
-                }
-                isInsideSystem = true;
-            }
+            return System.IsFoundingSettlementAllowedBy(player);
         }
-
-        var gameKnowledge = _gameMgr.GameKnowledge;
-        if (!isInsideSystem) {
-            // UNCLEAR can starbases be inside system?
-            var uCenter = gameKnowledge.UniverseCenter;
-            if (uCenter != null) {
-                if (MyMath.IsPointOnOrInsideSphere(uCenter.Position, uCenter.ClearanceRadius, location)) {
-                    return false;
-                }
-            }
-            IEnumerable<IStarbaseCmd> starbases;
-            if (gameKnowledge.TryGetStarbases(SectorID, out starbases)) {
-                foreach (var sbase in starbases) {
-                    if (MyMath.IsPointOnOrInsideSphere(sbase.Position, sbase.ClearanceRadius, location)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        IEnumerable<IFleetCmd> fleets;
-        if (gameKnowledge.TryGetFleets(SectorID, out fleets)) {
-            foreach (var fleet in fleets) {
-                if (MyMath.IsPointOnOrInsideSphere(fleet.Position, fleet.ClearanceRadius, location)) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return false;
     }
+
+    public override void Add(StarbaseCmdItem newStarbase) {
+        StationaryLocation newlyOccupiedStation = new StationaryLocation(newStarbase.Position);
+        Add(newStarbase, newlyOccupiedStation);
+    }
+
+    public override void Add(StarbaseCmdItem newStarbase, StationaryLocation newlyOccupiedStation) {
+        Vector3 newlyOccupiedStationLoc = newlyOccupiedStation.Position;
+        StationaryLocation closestVacantStation = GameUtility.GetClosest(newlyOccupiedStationLoc, VacantStarbaseStations);
+        if (closestVacantStation != newlyOccupiedStation) {
+            D.Warn("{0}'s closest vacant station to the new starbase is {1:0.00} units away.", DebugName,
+                Vector3.Distance(closestVacantStation.Position, newlyOccupiedStationLoc));
+        }
+
+        StarbaseLookupByStation[closestVacantStation] = newStarbase;
+        newStarbase.deathOneShot += StarbaseDeathEventHandler;
+        Data.Add(newStarbase.Data);
+
+        OnStationVacancyChanged(closestVacantStation, isVacant: false);
+    }
+
+    #endregion
+
+    #region Clear Random Point Inside Sector
 
     #endregion
 
     #region Event and Property Change Handlers
 
+    private void StarbaseDeathEventHandler(object sender, EventArgs e) {
+        StarbaseCmdItem deadStarbase = sender as StarbaseCmdItem;
+        HandleStarbaseDeath(deadStarbase);
+    }
+
     private void SystemPropSetHandler() {
         Data.SystemData = System.Data;
-        // The owner of a sector and all it's celestial objects is determined by the ownership of the System, if any
     }
+
+    //******************************************************************************************************************
+    // Sector ownership: 6.10.18 The owner of a sector is determined in SectorData by a combination of system and 
+    // starbase owners, if any. The owner of the starbases is not affected by a change in the owner of the sector.
+    //******************************************************************************************************************
 
     private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
         HandleIntelCoverageChanged(e.Player);
@@ -428,36 +439,42 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     private void OwnerPropChangingHandler(Player newOwner) {
+        // Data.IsOwnerChangeUnderway = true; Handled by AItemData before any change work is done
         HandleOwnerChanging(newOwner);
+        OnOwnerChanging(newOwner);
     }
 
     private void OwnerPropChangedHandler() {
         HandleOwnerChanged();
+        OnOwnerChanged();
+        Data.IsOwnerChgUnderway = false;
     }
 
     private void InputModePropChangedHandler() {
         HandleInputModeChanged(_inputMgr.InputMode);
     }
 
-    private void OnOwnerChanging(Player newOwner) {
-        if (ownerChanging != null) {
-            ownerChanging(this, new OwnerChangingEventArgs(newOwner));
-        }
-    }
+    private void IsOperationalPropChangedHandler() { }
 
-    private void OnOwnerChanged() {
-        if (ownerChanged != null) {
-            ownerChanged(this, EventArgs.Empty);
-        }
-    }
-
-    private void OnInfoAccessChanged(Player player) {
-        if (infoAccessChgd != null) {
-            infoAccessChgd(this, new InfoAccessChangedEventArgs(player));
-        }
+    private void NamePropChangedHandler() {
+        // TODO refresh SectorExaminer if in SectorViewMode with Examiner over this sector
     }
 
     #endregion
+
+    private void HandleStarbaseDeath(StarbaseCmdItem deadStarbase) {
+        StationaryLocation deadStarbaseStation = default(StationaryLocation);
+        foreach (var station in StarbaseLookupByStation.Keys) {
+            if (StarbaseLookupByStation[station] == deadStarbase) {
+                deadStarbaseStation = station;
+                break;
+            }
+        }
+        D.AssertNotDefault(deadStarbaseStation);
+        StarbaseLookupByStation[deadStarbaseStation] = null;
+        Data.Remove(deadStarbase.Data);
+        OnStationVacancyChanged(deadStarbaseStation, isVacant: true);
+    }
 
     private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         if (!IsOperational) {
@@ -484,11 +501,11 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     private void HandleOwnerChanging(Player newOwner) {
-        OnOwnerChanging(newOwner);
+        //D.Log("{0}.Owner changing from {1} to {2}.", DebugName, Owner.DebugName, newOwner.DebugName);
     }
 
     private void HandleOwnerChanged() {
-        OnOwnerChanged();
+        // TODO: Change color of sector to represent owner if in SectorView mode
     }
 
     private void HandleInputModeChanged(GameInputMode inputMode) {
@@ -510,52 +527,14 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    #region Debug
-
-    public bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
-        D.Warn("Not yet fully implemented.");
-        if (System != null && System.GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
-            return true;
-        }
-        return false;
-    }
-
-    private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
-
-    /// <summary>
-    /// Logs a statement that the method that calls this has been called.
-    /// Logging only occurs if DebugSettings.EnableEventLogging and ShowDebugLog are true.
-    /// </summary>
-    private void LogEvent() {
-        if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
-            string methodName = GetMethodName();
-            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
-            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
-        }
-    }
-
-    private string GetMethodName() {
-        var stackFrame = new System.Diagnostics.StackFrame(2);
-        string methodName = stackFrame.GetMethod().ReflectedType.Name;
-        if (methodName.Contains(Constants.LessThan)) {
-            string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);
-            methodName = coroutineMethodName;
-        }
-        else {
-            methodName = stackFrame.GetMethod().Name;
-        }
-        return methodName;
-    }
-
-    #endregion
-
     #region Cleanup
 
     /// <summary>
     /// Cleans up this instance.
     /// Note: most members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
-    private void Cleanup() {
+    protected override void Cleanup() {
+        base.Cleanup();
         if (_hudManager != null) {
             _hudManager.Dispose();
         }
@@ -571,88 +550,89 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #endregion
 
-    public override string ToString() {
-        return DebugName;
+    #region Debug
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    [Obsolete]
+    private void __ValidateFollowingOwnerChange() {
+        if (Category == SectorCategory.Rim || Category == SectorCategory.Peripheral) {
+            D.Error("{0} as Category {1} should not be able to change owner.", DebugName, Category.GetValueName()); // 6.26.18 Bases only in Core
+        }
     }
 
-    #region Nested Classes
-
-    public enum SectorCategory {
-
-        None,
-
-        /// <summary>
-        /// Indicates the sector is entirely contained within the boundary of the universe.
-        /// </summary>
-        Core,
-
-        /// <summary>
-        /// Indicates the sector is substantially inside the boundary of the universe.
-        /// <remarks>5.13.17 Current implementation &gt; 40%, &lt; 100% contained.</remarks>
-        /// </summary>
-        Peripheral,
-
-        /// <summary>
-        /// Indicates the sector is partially inside the boundary of the universe.
-        /// <remarks>5.13.17 Current implementation &lt; 40% contained.</remarks>
-        /// </summary>
-        Rim
-    }
-
-    #endregion
-
-    #region IDisposable
-
-    private bool _alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-
-        Dispose(true);
-
-        // This object is being cleaned up by you explicitly calling Dispose() so take this object off
-        // the finalization queue and prevent finalization code from 'disposing' a second time
-        GC.SuppressFinalize(this);
+    public GameColor __GetFoundUserStarbaseAttractivenessColor() {
+        Player userPlayer = _gameMgr.UserPlayer;
+        GameColor attractivenessColor;
+        __IsFoundingStarbaseAllowedBy(userPlayer, out attractivenessColor);
+        return attractivenessColor;
     }
 
     /// <summary>
-    /// Releases unmanaged and - optionally - managed resources.
+    /// Indicates whether founding a Starbase by <c>player</c> is allowed in this Sector.
+    /// <remarks>6.26.18 No player is allowed to found a starbase in a Peripheral or Rim Sector.</remarks>
+    /// <remarks>Player is not allowed to found a starbase if 1) no vacant stations are available, or
+    /// 2) player has knowledge of Sector owner and that owner is an opponent. Knowledge of station
+    /// availability does not require knowledge of owner. As all players have basic knowledge of sectors,
+    /// they can tell whether a station is occupied simply from gravitational patterns.</remarks>
+    /// <remarks>6.19.18 AttractivenessColor indicates how attractive it is to found a Starbase in this sector.
+    /// Currently, attractiveness is simply determined by whether knowledge of owner exists, and if it does
+    /// which owner it is. Max attractiveness (Green) is when the owner is the player, next most attractive (DarkGreen) is when
+    /// the sector is not owned, lower attractiveness (Yellow) is when the owner is not known, and finally not attractive (Red)
+    /// is when founding a starbase is not allowed.</remarks>
     /// </summary>
-    /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isExplicitlyDisposing) {
-        if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-            D.Warn("{0} has already been disposed.", GetType().Name);
-            return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    /// <param name="player">The player.</param>
+    /// <param name="attractivenessColor">The resulting attractiveness GameColor.</param>
+    /// <returns></returns>
+    private bool __IsFoundingStarbaseAllowedBy(Player player, out GameColor attractivenessColor) {
+        attractivenessColor = GameColor.Red;
+        if (!AreAnyStationsVacant) {
+            return false;
         }
-
-        if (isExplicitlyDisposing) {
-            // Dispose of managed resources here as you have called Dispose() explicitly
-            Cleanup();
+        if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
+            if (System != null && System.Settlement != null) {
+                D.Assert(System.Settlement.IsOwnerAccessibleTo(player));
+            }
+            if (Owner == TempGameValues.NoPlayer) {
+                attractivenessColor = GameColor.DarkGreen;  // next most attractive
+                return true;
+            }
+            if (Owner == player) {
+                attractivenessColor = GameColor.Green; // most attractive
+                return true;
+            }
+            return false;   // can't found starbases in sectors that are owned by opponent
         }
-
-        // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
-        // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
-        // called Dispose(false) to cleanup unmanaged resources
-
-        _alreadyDisposed = true;
+        else {
+            // don't have access to owner, so can't tell if anyone owns it -> appears to be OK to found starbases for now
+            if (System != null && System.Settlement != null) {
+                D.Assert(!System.Settlement.IsOwnerAccessibleTo(player));
+            }
+            attractivenessColor = GameColor.Yellow; // indicates maybe
+            return true;
+        }
     }
 
-    #endregion
-
-    #region INavigableDestination Members
-
-    public bool IsMobile { get { return false; } }
+    public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        return Data.__IsPlayerEntitledToComprehensiveRelationship(player);
+    }
 
     #endregion
 
     #region IFleetNavigableDestination Members
 
-    // TODO what about a Starbase or Nebula?
-    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+    // TODO what about a Nebula?
+    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         if (System != null) {
             return System.GetObstacleCheckRayLength(fleetPosition);
+        }
+
+        // no System so could be Starbase on Sector Center Station located at Position
+        StarbaseCmdItem closestStarbase;
+        if (TryGetClosestStarbaseTo(Position, out closestStarbase)) {
+            if (closestStarbase.Position.IsSameAs(Position)) {
+                StarbaseCmdItem centerStarbase = closestStarbase;
+                return centerStarbase.GetObstacleCheckRayLength(fleetPosition);
+            }
         }
         return Vector3.Distance(fleetPosition, Position);
     }
@@ -661,9 +641,9 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region IShipNavigableDestination Members
 
-    public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
-        float distanceToShip = Vector3.Distance(ship.Position, Position);
-        if (distanceToShip > Radius / 2F) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
+        float shipDistanceToSectorCenter = Vector3.Distance(ship.Position, Position);
+        if (shipDistanceToSectorCenter > Radius / 2F) {
             // outside of the outer half of sector
             float innerShellRadius = Radius / 2F;   // HACK 600
             float outerShellRadius = innerShellRadius + 20F;   // HACK depth of arrival shell is 20
@@ -683,25 +663,23 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+    public override IEnumerable<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
     #region IPatrollable Members
 
-    private IList<StationaryLocation> _patrolStations;
-    public IList<StationaryLocation> PatrolStations {
+    private IEnumerable<StationaryLocation> _patrolStations;
+    public override IEnumerable<StationaryLocation> PatrolStations {
         get {
-            if (_patrolStations == null) {
-                _patrolStations = InitializePatrolStations();
-            }
-            return new List<StationaryLocation>(_patrolStations);
+            _patrolStations = _patrolStations ?? InitializePatrolStations();
+            return _patrolStations;
         }
     }
 
-    public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
+    public override Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
-    public bool IsPatrollingAllowedBy(Player player) {
+    public override bool IsPatrollingAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
@@ -710,19 +688,17 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #endregion
 
-    #region IGuardable
+    #region IGuardable Members
 
-    private IList<StationaryLocation> _guardStations;
-    public IList<StationaryLocation> GuardStations {
+    private IEnumerable<StationaryLocation> _guardStations;
+    public override IEnumerable<StationaryLocation> GuardStations {
         get {
-            if (_guardStations == null) {
-                _guardStations = InitializeGuardStations();
-            }
-            return new List<StationaryLocation>(_guardStations);
+            _guardStations = _guardStations ?? InitializeGuardStations();
+            return _guardStations;
         }
     }
 
-    public bool IsGuardingAllowedBy(Player player) {
+    public override bool IsGuardingAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
@@ -733,11 +709,12 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region IFleetExplorable Members
 
-    public bool IsFullyExploredBy(Player player) {
-        return System != null ? System.IsFullyExploredBy(player) : true;
+    public override bool IsFullyExploredBy(Player player) {
+        bool isSystemFullyExplored = System == null || System.IsFullyExploredBy(player);
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive && isSystemFullyExplored;
     }
 
-    public bool IsExploringAllowedBy(Player player) {
+    public override bool IsExploringAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
@@ -748,20 +725,26 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region ISector_Ltd Members
 
-    ISystem_Ltd ISector_Ltd.System { get { return System; } }
+    public override Player Owner_Debug { get { return Data.Owner; } }
 
-    public Player Owner_Debug { get { return Data.Owner; } }
-
-    public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
+    /// <summary>
+    /// Debug version of TryGetOwner without the validation that
+    /// requestingPlayer already knows owner when OwnerInfoAccess is available.
+    /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>
+    /// </summary>
+    /// <param name="requestingPlayer">The requesting player.</param>
+    /// <param name="owner">The owner.</param>
+    /// <returns></returns>
+    public override bool __TryGetOwner_ForDiscoveringPlayersProcess(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             return true;
         }
-        owner = null;
+        owner = TempGameValues.NoPlayer;
         return false;
     }
 
-    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
+    public override bool TryGetOwner(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             if (owner != TempGameValues.NoPlayer) {
@@ -770,26 +753,12 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             }
             return true;
         }
-        owner = null;
+        owner = TempGameValues.NoPlayer;
         return false;
     }
 
-    public bool IsOwnerAccessibleTo(Player player) {
+    public override bool IsOwnerAccessibleTo(Player player) {
         return InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
-    }
-
-    public void __LogInfoAccessChangedSubscribers() {
-        if (infoAccessChgd != null) {
-            IList<string> targetNames = new List<string>();
-            var subscribers = infoAccessChgd.GetInvocationList();
-            foreach (var sub in subscribers) {
-                targetNames.Add(sub.Target.ToString());
-            }
-            Debug.LogFormat("{0}.InfoAccessChgdSubscribers: {1}.", DebugName, targetNames.Concatenate());
-        }
-        else {
-            Debug.LogFormat("{0}.InfoAccessChgd event has no subscribers.", DebugName);
-        }
     }
 
     #endregion

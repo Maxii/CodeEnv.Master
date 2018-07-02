@@ -86,5 +86,13 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
         _facilityMenuOperator.CurrentOrder = new FacilityOrder(directive, OrderSource.User);
     }
 
+    #region Debug
+
+    protected override bool __IsSubmenuSupportedFor(FacilityDirective directive) {
+        return false;
+    }
+
+    #endregion
+
 }
 

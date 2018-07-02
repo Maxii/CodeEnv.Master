@@ -33,6 +33,9 @@ using UnityEngine;
 public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private const string SectorIDLabelText = "Sector {0}.";
+    private const string DebugNameFormat = "{0}[{1}]";
+
+    private const float HotSpotColliderSideLength = TempGameValues.SectorSideLength / 5F;  // 240
 
     [Tooltip("Controls showing the debug log for SectorExaminer and the highlighted sector.")]
     [SerializeField]
@@ -48,6 +51,11 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     [SerializeField]
     private int _distanceInSectorsFromCamera = 2;
 
+    [SerializeField]
+    private bool _showHotSpot = false;
+
+    public string DebugName { get { return DebugNameFormat.Inject(typeof(SectorExaminer).Name, CurrentSectorID.DebugName); } }
+
     private IntVector3 _currentSectorID;
     /// <summary>
     /// The Location of this SectorExaminer expressed as the ID of the Sector it is over.
@@ -56,25 +64,25 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         get {
             if (_currentSectorID == default(IntVector3)) {
                 // First time initialization. Can't be done in Awake as it can run before SectorGrid.Awake?
-                _currentSectorID = _sectorGrid.GetSectorIDThatContains(Position);
+                _currentSectorID = _sectorGrid.GetSectorIDContaining(Position);
+                ////_currentSectorID = _sectorGrid.GetSectorIDThatContains(Position);
             }
             return _currentSectorID;
         }
         private set { SetProperty<IntVector3>(ref _currentSectorID, value, "CurrentSectorID", CurrentSectorIdPropChangedHandler, CurrentSectorIdPropChangingHandler); }
     }
 
-    private bool IsSectorWireframeShowing { get { return _wireframe != null && _wireframe.IsShowing; } }
+    private bool IsSectorWireframeShowing { get { return _sectorWireframe != null && _sectorWireframe.IsShowing; } }
 
     private bool IsContextMenuShowing { get { return _ctxControl != null && _ctxControl.IsShowing; } }
 
     private float _distanceToHighlightedSector;
     private SectorGrid _sectorGrid;
-    private CubeWireframe _wireframe;
-    /// <summary>
-    /// The Collider over the center of this Examiner (which is over the Sector) used for
-    /// actuation of the Context Menu.
-    /// </summary>
-    private BoxCollider _collider;
+    private CubeWireframe _sectorWireframe;
+    private CubeWireframe _hotSpotWireframe;
+
+    private BoxCollider _hotSpotCollider;
+    private Transform _hotSpotTransform;
     private ICtxControl _ctxControl;
     private ITrackingWidget _sectorIDLabel;
     private PlayerViewMode _viewMode;
@@ -90,19 +98,33 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _inputMgr = InputManager.Instance;
         _mainCameraCntl = MainCameraControl.Instance;
         _distanceToHighlightedSector = _distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
-        InitializeColliderHotspot();
+        InitializeHotspot();
         Subscribe();
     }
 
-    private void InitializeColliderHotspot() {
-        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        float sectorSideLength = TempGameValues.SectorSideLength;
-        float colliderSideLength = sectorSideLength / 5F;
-        _collider.size = new Vector3(colliderSideLength, colliderSideLength, colliderSideLength);   // 240x240x240 collider
-        float colliderOffsetDistance = (sectorSideLength / 2F) - colliderSideLength;
-        Vector3 colliderLocalOffset = new Vector3(0F, colliderOffsetDistance, 0F);  // above the center to avoid systems in center
-        _collider.center = colliderLocalOffset;
-        _collider.enabled = false;
+    private void InitializeHotspot() {
+        // 6.15.18 Ngui 3DWorld event raycasts don't detect Trigger Colliders. If you have 3DWorld objects moving around in 3D world
+        // space (like FleetIcons, this hotSpot, etc), and you want them to respond to events (hover, etc.), the object's collider 
+        // IsTrigger = false is required. To keep this collider from 'colliding' with other 3D world objects, you need to place it
+        // on a layer that doesn't collide with the Default layer, in this case the TransparentFX layer. In addition, the 
+        // WorldEventDispatchers (Non-UI Camera(s) with a UICamera script using EventType = 3DWorld) must be able to 'see' the
+        // TransparentFX layer.
+        _hotSpotTransform = gameObject.GetSingleComponentInImmediateChildren<Transform>();
+        D.AssertEqual(Layers.TransparentFX, (Layers)_hotSpotTransform.gameObject.layer);
+
+        _hotSpotCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(_hotSpotTransform.gameObject);
+        _hotSpotCollider.size = new Vector3(HotSpotColliderSideLength, HotSpotColliderSideLength, HotSpotColliderSideLength);   // 240x240x240 collider
+        _hotSpotCollider.isTrigger = false;
+        _hotSpotCollider.center = Vector3.zero;
+        _hotSpotCollider.enabled = false;
+
+        float hotSpotYOffset = (TempGameValues.SectorSideLength / 2F) - HotSpotColliderSideLength; // 360
+        Vector3 hotSpotLocalOffset = new Vector3(0F, hotSpotYOffset, 0F);  // above the center to avoid systems in center
+        _hotSpotTransform.localPosition = hotSpotLocalOffset;
+
+        var hotSpotEventListener = MyEventListener.Get(_hotSpotTransform.gameObject);
+        hotSpotEventListener.onHover += HoverEventHandler;
+        hotSpotEventListener.onPress += PressEventHandler;
     }
 
     private void Subscribe() {
@@ -141,15 +163,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         HandleCurrentSectorIdChanged();
     }
 
-    private void HandleCurrentSectorIdChanged() {
-        Vector3 sectorPosition = _sectorGrid.GetSectorPosition(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
-        transform.position = sectorPosition;
-        ShowSectorWireframe(true);
-        UpdateSectorIDLabel();
-        HighlightSectorContents(true);
-        ShowSectorDebugLog(true);
-    }
-
     private void CameraSectorIDChangedEventHandler(object sender, EventArgs e) {
         ShowSectorUnderMouse();
     }
@@ -158,23 +171,39 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         HandleViewModeChanged();
     }
 
+    private void HoverEventHandler(GameObject go, bool isOver) {
+        HandleHoveredChanged(isOver);
+    }
+
+    private void PressEventHandler(GameObject go, bool isDown) {
+        if (_inputHelper.IsRightMouseButton && !isDown) {
+            HandleRightPressRelease();
+        }
+    }
+
+    #endregion
+
     private void HandleViewModeChanged() {
         _viewMode = PlayerViews.Instance.ViewMode;
         switch (_viewMode) {
             case PlayerViewMode.SectorView:
                 DynamicallySubscribe(true);
-                _collider.enabled = true;
+                _hotSpotCollider.enabled = true;
                 break;
             case PlayerViewMode.NormalView:
                 // turn off wireframe, sectorID label, collider, contextMenu, sector highlights and HUD
                 DynamicallySubscribe(false);
-                ShowSectorWireframe(false);
+                ShowSectorWireframes(false);
 
-                if (_wireframe != null) {
-                    _wireframe.Dispose();
-                    _wireframe = null;
+                if (_sectorWireframe != null) {
+                    _sectorWireframe.Dispose();
+                    _sectorWireframe = null;
                 }
-                _collider.enabled = false;
+                if (_hotSpotWireframe != null) {
+                    _hotSpotWireframe.Dispose();
+                    _hotSpotWireframe = null;
+                }
+                _hotSpotCollider.enabled = false;
                 if (IsContextMenuShowing) {
                     _ctxControl.Hide();
                 }
@@ -182,7 +211,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 ShowSectorDebugLog(false);
 
                 // OPTIMIZE cache sector
-                Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+                var sector = _sectorGrid.GetSector(CurrentSectorID);
                 if (sector.IsHudShowing) {
                     sector.ShowHud(false);
                 }
@@ -193,48 +222,33 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         }
     }
 
-    private void HoverEventHandler(bool isOver) {
-        HandleHoveredChanged(isOver);
-    }
-
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
             D.Log(ShowDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
-            Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+            var sector = _sectorGrid.GetSector(CurrentSectorID);
             sector.ShowHud(isOver);
         }
-    }
-
-    private void PressEventHandler(bool isDown) {
-        if (_inputHelper.IsRightMouseButton && !isDown) {
-            HandleRightPressRelease();
-        }
-    }
-
-    void OnHover(bool isOver) {
-        HoverEventHandler(isOver);
-    }
-
-    void OnPress(bool isDown) {
-        PressEventHandler(isDown);
     }
 
     private void HandleRightPressRelease() {
         if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            if (_ctxControl == null) {
-                _ctxControl = InitializeContextMenu();
-            }
+            _ctxControl = _ctxControl ?? InitializeContextMenu();
             _ctxControl.AttemptShowContextMenu();
         }
     }
 
-    #endregion
+    private void HandleCurrentSectorIdChanged() {
+        Vector3 sectorPosition = _sectorGrid.GetSectorPosition(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
+        transform.position = sectorPosition;
+        ShowSectorWireframes(true);
+        UpdateSectorIDLabel();
+        HighlightSectorContents(true);
+        ShowSectorDebugLog(true);
+    }
 
     private void UpdateSectorIDLabel() {
-        if (_sectorIDLabel == null) {
-            _sectorIDLabel = InitializeSectorIDLabel();
-        }
+        _sectorIDLabel = _sectorIDLabel ?? InitializeSectorIDLabel();
         _sectorIDLabel.Set(SectorIDLabelText.Inject(CurrentSectorID));
     }
 
@@ -258,25 +272,29 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             }
             else {
                 HighlightSectorContents(false);
-                ShowSectorWireframe(false);
+                ShowSectorWireframes(false);
                 ShowSectorDebugLog(false);
             }
         }
     }
 
-    private void ShowSectorWireframe(bool toShow) {
+    private void ShowSectorWireframes(bool toShow) {
         if (toShow == IsSectorWireframeShowing) {
             return;
         }
         //D.Log(ShowDebugLog, "{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
-
+        bool toShowHotSpot = _showHotSpot && toShow;
         if (toShow) {
-            if (_wireframe == null) {
-                _wireframe = new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
+            _sectorWireframe = _sectorWireframe ?? new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F,
+                color: TempGameValues.SectorHighlightColor);
+            if (toShowHotSpot) {
+                _hotSpotWireframe = _hotSpotWireframe ?? new CubeWireframe("HotSpotWireframe", _hotSpotTransform, _hotSpotCollider.size,
+                    color: GameColor.Red);
             }
             UpdateSectorIDLabel();
         }
-        _wireframe.Show(toShow);
+        _sectorWireframe.Show(toShow);
+        _hotSpotWireframe.Show(toShowHotSpot);
         _sectorIDLabel.Show(toShow);
     }
 
@@ -294,13 +312,18 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void ShowSectorDebugLog(bool toShow) {
         if (ShowDebugLog) {
-            Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+            var sector = _sectorGrid.GetSector(CurrentSectorID);
             sector.ShowDebugLog = toShow;
         }
     }
 
     protected override void Cleanup() {
-        if (_wireframe != null) { _wireframe.Dispose(); }
+        if (_sectorWireframe != null) {
+            _sectorWireframe.Dispose();
+        }
+        if (_hotSpotWireframe != null) {
+            _hotSpotWireframe.Dispose();
+        }
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_sectorIDLabel);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
@@ -313,6 +336,10 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _subscriptions.Clear();
         UICamera.onMouseMove -= MouseMovedEventHandler;
         _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+
+        var hotSpotEventListener = MyEventListener.Get(_hotSpotTransform.gameObject);
+        hotSpotEventListener.onHover -= HoverEventHandler;
+        hotSpotEventListener.onPress -= PressEventHandler;
     }
 
     public override string ToString() {
@@ -325,23 +352,23 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
         switch (placement) {
             case WidgetPlacement.Above:
-                return new Vector3(Constants.ZeroF, _collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(Constants.ZeroF, _hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.AboveLeft:
-                return new Vector3(-_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(-_hotSpotCollider.bounds.extents.x, _hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.AboveRight:
-                return new Vector3(_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(_hotSpotCollider.bounds.extents.x, _hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.Below:
-                return new Vector3(Constants.ZeroF, -_collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(Constants.ZeroF, -_hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.BelowLeft:
-                return new Vector3(-_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(-_hotSpotCollider.bounds.extents.x, -_hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.BelowRight:
-                return new Vector3(_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+                return new Vector3(_hotSpotCollider.bounds.extents.x, -_hotSpotCollider.bounds.extents.y, Constants.ZeroF);
             case WidgetPlacement.Left:
-                return new Vector3(-_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+                return new Vector3(-_hotSpotCollider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
             case WidgetPlacement.Right:
-                return new Vector3(_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+                return new Vector3(_hotSpotCollider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
             case WidgetPlacement.Over:
-                return _collider.center;
+                return _hotSpotCollider.center;
             case WidgetPlacement.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
@@ -351,8 +378,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     public Vector3 Position { get { return transform.position; } }
 
     public bool IsMobile { get { return true; } }
-
-    public string DebugName { get { return GetType().Name; } }
 
     #endregion
 

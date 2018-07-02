@@ -47,6 +47,10 @@ public abstract class AFleetUnitHudForm : AForm {
     [SerializeField]
     private UIButton _unitScuttleButton = null;
     [SerializeField]
+    private MyNguiToggleButton _unitFoundStarbaseButton = null;
+    [SerializeField]
+    private MyNguiToggleButton _unitFoundSettlementButton = null;
+    [SerializeField]
     private MyNguiToggleButton _unitGuardButton = null;
     [SerializeField]
     private MyNguiToggleButton _unitPatrolButton = null;
@@ -114,6 +118,8 @@ public abstract class AFleetUnitHudForm : AForm {
         _sortedShipIconTransforms = new List<Transform>();
         _toggleButtonsUsedThisSession = new HashSet<MyNguiToggleButton>();
 
+        _unitFoundStarbaseButton.Initialize();
+        _unitFoundSettlementButton.Initialize();
         _unitGuardButton.Initialize();
         _unitPatrolButton.Initialize();
         _unitRepairButton.Initialize();
@@ -130,6 +136,8 @@ public abstract class AFleetUnitHudForm : AForm {
         EventDelegate.Add(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
         EventDelegate.Add(_unitMergeButton.onClick, UnitMergeButtonClickedEventHandler);
         EventDelegate.Add(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
+        _unitFoundStarbaseButton.toggleStateChanged += UnitFoundStarbaseButtonToggleChangedEventHandler;
+        _unitFoundSettlementButton.toggleStateChanged += UnitFoundSettlementButtonToggleChangedEventHandler;
         _unitGuardButton.toggleStateChanged += UnitGuardButtonToggleChangedEventHandler;
         _unitPatrolButton.toggleStateChanged += UnitPatrolButtonToggleChangedEventHandler;
         _unitRepairButton.toggleStateChanged += UnitRepairButtonToggleChangedEventHandler;
@@ -162,6 +170,14 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void SelectedUnitPropChangedHandler() {
         HandleSelectedUnitChanged();
+    }
+
+    private void UnitFoundStarbaseButtonToggleChangedEventHandler(object sender, EventArgs e) {
+        HandleUnitFoundStarbaseButtonToggleChanged();
+    }
+
+    private void UnitFoundSettlementButtonToggleChangedEventHandler(object sender, EventArgs e) {
+        HandleUnitFoundSettlementButtonToggleChanged();
     }
 
     private void UnitGuardButtonToggleChangedEventHandler(object sender, EventArgs e) {
@@ -288,7 +304,7 @@ public abstract class AFleetUnitHudForm : AForm {
             }
             else {
                 // clicked on icon that is the single icon already picked so do nothing
-                D.AssertEqual(_pickedUnitIcons.First(), icon);
+                D.AssertEqual(_pickedUnitIcons.Single(), icon);
                 return;
             }
         }
@@ -359,7 +375,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void HandleUnitFocusButtonClicked() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
-        FocusOn(_pickedUnitIcons.First().Unit);
+        FocusOn(_pickedUnitIcons.Single().Unit);
     }
 
     private void HandleUnitClearOrdersButtonClicked() {
@@ -392,14 +408,91 @@ public abstract class AFleetUnitHudForm : AForm {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
 
         var scuttleOrder = new FleetOrder(FleetDirective.Scuttle, OrderSource.User);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         pickedUnit.CurrentOrder = scuttleOrder;
     }
+
+    private void HandleUnitFoundStarbaseButtonToggleChanged() {
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
+        _toggleButtonsUsedThisSession.Add(_unitFoundStarbaseButton);
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
+        bool isButtonToggledIn = _unitFoundStarbaseButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            ISector_Ltd closestFoundStarbaseSector;
+            if (_playerAiMgr.TryFindClosestSectorToFoundStarbase(pickedUnit.Position, out closestFoundStarbaseSector)) {
+                FleetOrder foundStarbaseOrder = new FleetOrder(FleetDirective.FoundStarbase, OrderSource.User, closestFoundStarbaseSector as IFleetNavigableDestination);
+                pickedUnit.CurrentOrder = foundStarbaseOrder;
+                D.Log("{0} is issuing an order to {1} to found a Starbase in {2}.", DebugName, pickedUnit.DebugName, closestFoundStarbaseSector.DebugName);
+                _unitFoundStarbaseButton.SetIconColor(TempGameValues.SelectedColor);
+                AssessUnitButtons();
+            }
+            else {
+                D.Warn("{0} found no Sectors for {1} to found a Starbase.", DebugName, pickedUnit.DebugName);
+                _unitFoundStarbaseButton.SetToggledState(false);    // release the button
+            }
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitFoundStarbaseButton.SetIconColor(GameColor.White);
+        }
+    }
+
+    private void HandleUnitFoundSettlementButtonToggleChanged() {
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
+        _toggleButtonsUsedThisSession.Add(_unitFoundSettlementButton);
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
+        bool isButtonToggledIn = _unitFoundSettlementButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            ISystem_Ltd closestFoundSettlementSystem;
+            if (_playerAiMgr.TryFindClosestSystemToFoundSettlement(pickedUnit.Position, out closestFoundSettlementSystem)) {
+                FleetOrder settleOrder = new FleetOrder(FleetDirective.FoundSettlement, OrderSource.User, closestFoundSettlementSystem as IFleetNavigableDestination);
+                pickedUnit.CurrentOrder = settleOrder;
+                D.Log("{0} is issuing an order to {1} to found a Settlement in {2}.", DebugName, pickedUnit.DebugName, closestFoundSettlementSystem.DebugName);
+                _unitFoundSettlementButton.SetIconColor(TempGameValues.SelectedColor);
+                AssessUnitButtons();
+            }
+            else {
+                D.Warn("{0} found no Systems for {1} to found a Settlement.", DebugName, pickedUnit.DebugName);
+                _unitFoundSettlementButton.SetToggledState(false);    // release the button
+            }
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitFoundSettlementButton.SetIconColor(GameColor.White);
+        }
+    }
+    ////private void HandleUnitSettleButtonToggleChanged() {
+    ////    D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
+    ////    _toggleButtonsUsedThisSession.Add(_unitSettleButton);
+    ////    var pickedUnit = _pickedUnitIcons.Single().Unit;
+    ////    bool isButtonToggledIn = _unitSettleButton.IsToggledIn;
+    ////    if (isButtonToggledIn) {
+    ////        ISettleable closestSystemAllowedToSettle;
+    ////        if (_playerAiMgr.TryFindClosestSettleableSystem(pickedUnit.Position, out closestSystemAllowedToSettle)) {
+    ////            FleetOrder settleOrder = new FleetOrder(FleetDirective.Settle, OrderSource.User, closestSystemAllowedToSettle as IFleetNavigableDestination);
+    ////            pickedUnit.CurrentOrder = settleOrder;
+    ////            D.Log("{0} is issuing an order to {1} to Settle {2}.", DebugName, pickedUnit.DebugName, closestSystemAllowedToSettle.DebugName);
+    ////            _unitSettleButton.SetIconColor(TempGameValues.SelectedColor);
+    ////            AssessUnitButtons();
+    ////        }
+    ////        else {
+    ////            D.Warn("{0} found nothing for {1} to settle.", DebugName, pickedUnit.DebugName);
+    ////            _unitSettleButton.SetToggledState(false);    // release the button
+    ////        }
+    ////    }
+    ////    else {
+    ////        FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+    ////        pickedUnit.CurrentOrder = cancelOrder;
+    ////        _unitSettleButton.SetIconColor(GameColor.White);
+    ////    }
+    ////}
 
     private void HandleUnitGuardButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitGuardButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitGuardButton.IsToggledIn;
         if (isButtonToggledIn) {
             IGuardable closestItemAllowedToGuard;
@@ -425,7 +518,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitPatrolButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitPatrolButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitPatrolButton.IsToggledIn;
         if (isButtonToggledIn) {
             IPatrollable closestItemAllowedToPatrol;
@@ -451,7 +544,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitRepairButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitRepairButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitRepairButton.IsToggledIn;
         if (isButtonToggledIn) {
             IUnitBaseCmd_Ltd closestRepairBase;
@@ -477,7 +570,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitRefitButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitRefitButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
         if (isButtonToggledIn) {
             IUnitBaseCmd closestRefitBase;
@@ -500,7 +593,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitDisbandButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
         if (isButtonToggledIn) {
             // OPTIMIZE reqdHangerSlots = pickedUnit.ElementCount?
@@ -525,7 +618,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitExploreButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitExploreButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitExploreButton.IsToggledIn;
         if (isButtonToggledIn) {
             IFleetExplorable closestFleetExplorableItem;
@@ -548,7 +641,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitJoinHangerButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitHangerButton);
-        var pickedUnit = _pickedUnitIcons.First().Unit;
+        var pickedUnit = _pickedUnitIcons.Single().Unit;
         bool isButtonToggledIn = _unitHangerButton.IsToggledIn;
         if (isButtonToggledIn) {
             IUnitBaseCmd closestBase;
@@ -603,7 +696,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
         if (_pickedUnitIcons.Count == Constants.One) {
             // 11.18.17 picked units are limited to one to make cancel order practical to implement
-            var pickedUnit = _pickedUnitIcons.First().Unit;
+            var pickedUnit = _pickedUnitIcons.Single().Unit;
 
             isUnitClearOrdersButtonEnabled = true;
             isUnitScuttleButtonEnabled = pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Scuttle);
@@ -646,6 +739,26 @@ public abstract class AFleetUnitHudForm : AForm {
             }
             else {
                 _unitDisbandButton.IsEnabled = isOrderedToDisband ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Disband);
+            }
+
+            bool isOrderedToFoundStarbase = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.FoundStarbase);
+            iconColor = isOrderedToFoundStarbase ? TempGameValues.SelectedColor : GameColor.White;
+            _unitFoundStarbaseButton.SetToggledState(isOrderedToFoundStarbase, iconColor);
+            if(HasBeenUsedThisSession(_unitFoundStarbaseButton)) {
+                _unitFoundStarbaseButton.IsEnabled = true;
+            }
+            else {
+                _unitFoundStarbaseButton.IsEnabled = isOrderedToFoundStarbase ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.FoundStarbase);
+            }
+
+            bool isOrderedToSettle = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.FoundSettlement);
+            iconColor = isOrderedToSettle ? TempGameValues.SelectedColor : GameColor.White;
+            _unitFoundSettlementButton.SetToggledState(isOrderedToSettle, iconColor);
+            if (HasBeenUsedThisSession(_unitFoundSettlementButton)) {
+                _unitFoundSettlementButton.IsEnabled = true;
+            }
+            else {
+                _unitFoundSettlementButton.IsEnabled = isOrderedToSettle ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.FoundSettlement);
             }
 
             bool isOrderedToGuard = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Guard);
@@ -704,6 +817,8 @@ public abstract class AFleetUnitHudForm : AForm {
         _unitClearOrdersButton.isEnabled = false;
         _unitMergeButton.isEnabled = false;
         _unitScuttleButton.isEnabled = false;
+        _unitFoundStarbaseButton.IsEnabled = false;
+        _unitFoundSettlementButton.IsEnabled = false;
         _unitGuardButton.IsEnabled = false;
         _unitPatrolButton.IsEnabled = false;
         _unitRepairButton.IsEnabled = false;
@@ -805,21 +920,31 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(icon.Element);
     }
 
-    protected abstract void HandleShipCreateFleetButtonClicked();
+    #region Ship CreateFleetButton Clicked
+
+    private void HandleShipCreateFleetButtonClicked() {
+        ChooseCmdModuleDesignAndFormFleet();
+    }
+
+    protected virtual void ChooseCmdModuleDesignAndFormFleet() {
+        var chosenDesign = _playerAiMgr.ChooseFleetCmdModDesign();
+        FormFleetFrom(chosenDesign);
+    }
 
     /// <summary>
-    /// Called by derived classes when the player has selected a CmdModuleDesign to apply to the fleet being created.
+    /// Called when the player has selected a CmdModuleDesign to apply to the fleet being created.
     /// </summary>
-    /// <param name="cmdModDesign">The command mod design.</param>
-    protected void ApplyToFleetBeingCreated(FleetCmdModuleDesign cmdModDesign) {
+    /// <param name="chosenDesign">The command mod design.</param>
+    protected void FormFleetFrom(FleetCmdModuleDesign chosenDesign) {
         Utility.ValidateForRange(_pickedShipIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
 
-        // organize the picked ships under their current Cmds
+        // organize the picked, qualified ships under their current Cmds
         var pickedCmds = _pickedUnitIcons.Select(icon => icon.Unit);
         var pickedShips = _pickedShipIcons.Select(icon => icon.Element);
+        var createFleetShips = pickedShips.Where(ship => ship.Availability != NewOrderAvailability.Unavailable);
         IDictionary<FleetCmdItem, IList<ShipItem>> shipsByCmdLookup = new Dictionary<FleetCmdItem, IList<ShipItem>>(_pickedUnitIcons.Count);
         foreach (var cmd in pickedCmds) {
-            foreach (var ship in pickedShips) {
+            foreach (var ship in createFleetShips) {
                 if (cmd.Contains(ship)) {
                     IList<ShipItem> cmdsShips;
                     if (!shipsByCmdLookup.TryGetValue(cmd, out cmdsShips)) {
@@ -846,7 +971,7 @@ public abstract class AFleetUnitHudForm : AForm {
             resultingFleet = fleetsToMerge.Single();
         }
 
-        UnitFactory.Instance.ReplaceCmdModuleWith(cmdModDesign, resultingFleet);
+        UnitFactory.Instance.ReplaceCmdModuleWith(chosenDesign, resultingFleet);
 
         var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
         bool isAdded = allFleets.Add(resultingFleet);
@@ -858,6 +983,8 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         RebuildUnitIcons(allFleets, resultingFleet);
     }
+
+    #endregion
 
     private void HandleShipScuttleButtonClicked() {
         D.Assert(_pickedShipIcons.Any());
@@ -1138,6 +1265,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private bool HasBeenUsedThisSession(MyNguiToggleButton button) {
         return _toggleButtonsUsedThisSession.Contains(button);
     }
+
     private GameObject MakeBlankIconPrefab() {
         return new GameObject("BlankIconPrefab");
     }
@@ -1168,6 +1296,12 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void ResetUnitOrderToggleButtons() {
+        _unitFoundStarbaseButton.SetToggledState(false);
+        _unitFoundStarbaseButton.IsEnabled = false;
+
+        _unitFoundSettlementButton.SetToggledState(false);
+        _unitFoundSettlementButton.IsEnabled = false;
+
         _unitGuardButton.SetToggledState(false);
         _unitGuardButton.IsEnabled = false;
 
@@ -1195,6 +1329,8 @@ public abstract class AFleetUnitHudForm : AForm {
         EventDelegate.Remove(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
         EventDelegate.Remove(_unitMergeButton.onClick, UnitMergeButtonClickedEventHandler);
         EventDelegate.Remove(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
+        _unitFoundStarbaseButton.toggleStateChanged -= UnitFoundStarbaseButtonToggleChangedEventHandler;
+        _unitFoundSettlementButton.toggleStateChanged -= UnitFoundSettlementButtonToggleChangedEventHandler;
         _unitGuardButton.toggleStateChanged -= UnitGuardButtonToggleChangedEventHandler;
         _unitPatrolButton.toggleStateChanged -= UnitPatrolButtonToggleChangedEventHandler;
         _unitRepairButton.toggleStateChanged -= UnitRepairButtonToggleChangedEventHandler;
@@ -1240,6 +1376,8 @@ public abstract class AFleetUnitHudForm : AForm {
         D.AssertNotNull(_shipCreateFleetButton);
         D.AssertNotNull(_shipScuttleButton);
 
+        D.AssertNotNull(_unitFoundStarbaseButton);
+        D.AssertNotNull(_unitFoundSettlementButton);
         D.AssertNotNull(_unitGuardButton);
         D.AssertNotNull(_unitPatrolButton);
         D.AssertNotNull(_unitRepairButton);

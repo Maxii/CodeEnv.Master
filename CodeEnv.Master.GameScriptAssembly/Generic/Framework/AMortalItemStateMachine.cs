@@ -145,6 +145,25 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     #endregion
 
+    protected virtual bool IsPaused { get { return false; } }
+
+    /// <summary>
+    /// Gets the seconds spent in the current state
+    /// </summary>
+    protected float timeInCurrentState {
+        get {
+            return Time.time - _timeEnteredState;
+        }
+    }
+
+    /// <summary>
+    /// Indicates whether this FSM is in the 1 frame time gap between a Call()ed state's
+    /// Return() and FsmReturnHandler's processing of the Return cause.
+    /// <remarks>Used by clients to detect presence in this 1 frame gap for debug and filtering.
+    /// 6.23.18 Currently used by Cmd clients to detect and/or filter out leaked order outcome callbacks.</remarks>
+    /// </summary>
+    protected bool _isWaitingToProcessReturn;
+
     /// <summary>
     /// The enter state coroutine.
     /// </summary>
@@ -161,17 +180,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// The time that the current state was entered
     /// </summary>
     private float _timeEnteredState;
-
-    protected virtual bool IsPaused { get { return false; } }
-
-    /// <summary>
-    /// Gets the seconds spent in the current state
-    /// </summary>
-    protected float timeInCurrentState {
-        get {
-            return Time.time - _timeEnteredState;
-        }
-    }
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
@@ -334,6 +342,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// CallingState_EnterState() will resume execution from where it Call()ed CalledState during the next Update().
     /// </summary>
     protected void Return() {
+        // 6.23.18 Don't Assert !_isWaitingToProcessReturn as multiple Return()s can be called in sequence without 
+        // any FsmReturnHandler processing when Call()ed states are two or more deep - see client's ReturnFromCalledStates()
+        _isWaitingToProcessReturn = true;
+
         //D.Log("{0}: Return() from state {1} called.", DebugName, CurrentState.ToString());
         if (state.exitState != null) {
             //D.Log(ShowDebugLog, "{0} setting up {1}_ExitState() to run in Return(). MethodName: {2}.", DebugName, CurrentState.ToString(), state.exitState.Method.Name);
@@ -367,6 +379,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// The state to use if there is no waiting calling state.
     /// </param>
     protected void Return(object baseState) {
+        // 6.23.18 Don't Assert !_isWaitingToProcessReturn as multiple Return()s can be called in sequence without 
+        // any FsmReturnHandler processing when Call()ed states are two or more deep - see client's ReturnFromCalledStates()
+        _isWaitingToProcessReturn = true;
+
         //D.Log("{0}.Return({1}) from state {2} called.", DebugName, baseState.ToString(), CurrentState.ToString());
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();

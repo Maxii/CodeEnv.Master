@@ -25,6 +25,8 @@ namespace CodeEnv.Master.Common {
     [Serializable]
     public struct IntVector3 : IEquatable<IntVector3>, IComparable<IntVector3> {
 
+        private const string DebugNameFormat = "({0},{1},{2})";
+
         public static readonly IntVector3 One = new IntVector3(1, 1, 1);
 
         #region Comparison Operators Override
@@ -69,7 +71,7 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        private const string ToStringFormat = "({0},{1},{2})";
+        public string DebugName { get { return DebugNameFormat.Inject(x, y, z); } }
 
         public float SqrMagnitude { get { return Vector3.Dot((Vector3)this, (Vector3)this); } }
 
@@ -110,7 +112,7 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         public override string ToString() {
-            return ToStringFormat.Inject(x, y, z);
+            return DebugName;
         }
 
         #region IEquatable<IntVector3> Members

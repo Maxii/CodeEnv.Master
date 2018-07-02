@@ -38,8 +38,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        private float _approval;
-        public float Approval {
+        private float _approval = Constants.OneHundredPercent;
+        public float Approval { // IMPROVE not currently used
             get { return _approval; }
             set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
@@ -95,12 +95,14 @@ namespace CodeEnv.Master.GameContent {
 
         public override void FinalInitialize() {
             base.FinalInitialize();
+            D.AssertNotEqual(Constants.Zero, Population);
             // Deployment has already occurred
         }
 
         private IntVector3 InitializeSectorID() {
-            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
-            D.AssertNotDefault(sectorID);
+            ////IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
+            ////D.AssertNotDefault(sectorID);
+            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDContaining(Position);
             MarkAsChanged();
             return sectorID;
         }
@@ -116,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         protected sealed override OutputsYield RecalcUnitOutputs() {
-            var unitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
+            var unitOutputs = ElementsData.Select(fData => fData.Outputs).Sum();
             __ValidateProductionPresenceIn(ref unitOutputs);
             return unitOutputs;
         }
@@ -128,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void RefreshComposition() {
-            var elementCategories = _elementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
+            var elementCategories = ElementsData.Select(fd => fd.HullCategory);
             UnitComposition = new BaseComposition(elementCategories);
         }
 

@@ -164,6 +164,14 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+        #region Dictionary Extensions
+
+        public static string ToDebugString<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) {
+            return "{" + string.Join(",", dictionary.Select(kv => kv.Key + "=" + kv.Value).ToArray()) + "}";
+        }
+
+        #endregion
+
         #region Enumerables
 
         /// <summary>
@@ -358,6 +366,15 @@ namespace CodeEnv.Master.Common {
         }
 
         #endregion
+
+        /// <summary>
+        /// Returns the shortest possible string version of the provided GUID.
+        /// </summary>
+        /// <param name="guid">The unique identifier.</param>
+        /// <returns></returns>
+        public static string ToShortText(this Guid guid) {
+            return Convert.ToBase64String(guid.ToByteArray());
+        }
 
         /// <summary>
         /// Allows syntax like: <c>if(reallyLongStringVariableName.EqualsAnyOf(string1, string2, string3)</c>, or

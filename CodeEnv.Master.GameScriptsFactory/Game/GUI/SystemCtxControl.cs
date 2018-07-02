@@ -33,7 +33,9 @@ public class SystemCtxControl : ACtxControl {
                                                                                             FleetDirective.FullSpeedMove,
                                                                                             FleetDirective.Guard,
                                                                                             FleetDirective.Explore,
-                                                                                            FleetDirective.Patrol
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.FoundSettlement,
+                                                                                            FleetDirective.FoundStarbase
                                                                                         };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
@@ -45,6 +47,8 @@ public class SystemCtxControl : ACtxControl {
     protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _systemMenuOperator.IsFocus; } }
+
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
 
     private SystemItem _systemMenuOperator;
 
@@ -75,6 +79,11 @@ public class SystemCtxControl : ACtxControl {
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.FoundSettlement:
+                return !isOrderAuthorizedByUserRemoteFleet || !_systemMenuOperator.IsFoundingSettlementAllowedBy(_user);
+            case FleetDirective.FoundStarbase:
+                ISector_Ltd systemSector = SectorGrid.Instance.GetSector(_systemMenuOperator.SectorID);
+                return !isOrderAuthorizedByUserRemoteFleet || !systemSector.IsFoundingStarbaseAllowedBy(_user);
             case FleetDirective.Patrol:
                 return !isOrderAuthorizedByUserRemoteFleet || !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
@@ -98,11 +107,29 @@ public class SystemCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigableDestination target = _systemMenuOperator;
+        IFleetNavigableDestination target = GetFleetTarget(directive);
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         remoteFleet.CurrentOrder = order;
     }
+
+    private IFleetNavigableDestination GetFleetTarget(FleetDirective directive) {
+        switch (directive) {
+            case FleetDirective.FoundStarbase:
+                var systemSector = SectorGrid.Instance.GetSector(_systemMenuOperator.SectorID);
+                return systemSector;
+            case FleetDirective.FullSpeedMove:
+            case FleetDirective.Move:
+            case FleetDirective.Guard:
+            case FleetDirective.Explore:
+            case FleetDirective.Patrol:
+            case FleetDirective.FoundSettlement:
+                return _systemMenuOperator;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
+    }
+
 
     #region Targeting OrbitalPlane point Archive
 

@@ -32,8 +32,8 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
     private StarbaseCmdItem _command;
     private IList<FacilityItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = "AutoStarbase";
+    protected override string InitializeRootUnitName() {
+        return "AutoStarbase";
     }
 
     protected override void MakeElements() {
@@ -62,13 +62,18 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
 
     protected override void PositionUnit() {
         base.PositionUnit();
-        LogEvent();
         // Starbases don't need to be deployed. They are already on location
+    }
+
+    protected override void HandleUnitPositioned() {
+        base.HandleUnitPositioned();
         PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
+        SectorGrid.Instance.GetSector(SectorID).Add(_command);
     }
 
     protected override void CompleteUnitInitialization() {
         LogEvent();
+        PopulateCmdWithColonists();
         _elements.ForAll(e => e.FinalInitialize());
         _command.FinalInitialize();
     }
@@ -98,6 +103,11 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
 
     protected override void ClearElementReferences() {
         _elements.Clear();
+    }
+
+    private void PopulateCmdWithColonists() {   // TODO Starbases should probably be built and populated with some other ship
+        Level currentColonyShipLevel = _ownerDesigns.GetCurrentShipTemplateDesign(ShipHullCategory.Colonizer).HullStat.Level;
+        _command.Data.Population = currentColonyShipLevel.GetInitialColonistPopulation();
     }
 
     #region Debug

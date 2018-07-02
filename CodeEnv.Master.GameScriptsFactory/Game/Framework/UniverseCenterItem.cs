@@ -67,7 +67,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #region Initialization
 
-    protected override bool InitializeDebugLog() {
+    protected override bool __InitializeDebugLog() {
         return _showDebugLog;
     }
 
@@ -123,7 +123,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return new UniverseCenterDisplayManager(gameObject, TempGameValues.UCenterMeshCullLayer);
     }
 
-    private IList<StationaryLocation> InitializePatrolStations() {
+    private IEnumerable<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
@@ -133,7 +133,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return patrolStations;
     }
 
-    private IList<StationaryLocation> InitializeGuardStations() {
+    private IEnumerable<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
         float distanceFromPosition = Data.CloseOrbitOuterRadius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
@@ -170,18 +170,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         D.Warn("{0}.ShowSelectedItemHud is not currently supported.", DebugName);  // UNCLEAR should not be called as can't be owned?
     }
 
-    #region Event and Property Change Handlers
-
-    protected override void HandleOwnerChanging(Player newOwner) {
-        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(DebugName));
-    }
-
-    protected override void HandleOwnerChanged() {
-        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(DebugName));
-    }
-
-    #endregion
-
     #region Cleanup
 
     protected override void Cleanup() {
@@ -199,11 +187,16 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     [SerializeField]
     private bool _showDebugLog = false;
 
+    protected override void __ValidateFollowingOwnerChange() {
+        base.__ValidateFollowingOwnerChange();
+        throw new InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(DebugName, Owner.DebugName));
+    }
+
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (_debugCntls.ShowObstacleZones) {
+        __debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -219,12 +212,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
+        EnableDebugShowObstacleZone(__debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        if (_debugCntls != null) {
-            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.GetComponent<DrawColliderGizmo>();
@@ -244,7 +237,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+    public IEnumerable<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
@@ -456,13 +449,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #region IPatrollable Members
 
-    private IList<StationaryLocation> _patrolStations;
-    public IList<StationaryLocation> PatrolStations {
+    private IEnumerable<StationaryLocation> _patrolStations;
+    public IEnumerable<StationaryLocation> PatrolStations {
         get {
-            if (_patrolStations == null) {
-                _patrolStations = InitializePatrolStations();
-            }
-            return new List<StationaryLocation>(_patrolStations);
+            _patrolStations = _patrolStations ?? InitializePatrolStations();
+            return _patrolStations;
         }
     }
 
@@ -479,13 +470,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #region IGuardable
 
-    private IList<StationaryLocation> _guardStations;
-    public IList<StationaryLocation> GuardStations {
+    private IEnumerable<StationaryLocation> _guardStations;
+    public IEnumerable<StationaryLocation> GuardStations {
         get {
-            if (_guardStations == null) {
-                _guardStations = InitializeGuardStations();
-            }
-            return new List<StationaryLocation>(_guardStations);
+            _guardStations = _guardStations ?? InitializeGuardStations();
+            return _guardStations;
         }
     }
 

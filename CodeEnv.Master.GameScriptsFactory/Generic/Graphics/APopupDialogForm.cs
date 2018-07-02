@@ -91,6 +91,8 @@ public abstract class APopupDialogForm : AForm {
             set { _player = value; }
         }
 
+        public object OptionalParameter { get; set; }
+
         public string Title { get; set; }
 
         public AtlasID IconAtlasID { get; set; }

@@ -27,6 +27,12 @@ using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class for Context Menu Controls.
+/// <remarks>6.20.18 Menu hiding and pause/resume behaviour. A CtxMenu hides itself when something besides a menu item is clicked. 
+/// This is implemented in CtxMenu.LateUpdate where it detects that UICamera.selectedObject is no longer the CtxMenu
+/// and therefore hides the menu. ACtxControl detects the completion of the hide and requests an unpause. InputManager
+/// does not detect the 'unconsumed click' when a CtxMenu is showing as ACtxControl has changed InputManager's InputMode to PartialPopup
+/// which doesn't listen to 3DWorld events. Accordingly, SelectionManager doesn't receive an unconsumedPress event and therefore
+/// doesn't undesirably deselect the SelectedItem and request an additional unpause.</remarks>
 /// </summary>
 public abstract class ACtxControl : ICtxControl {
 
@@ -83,7 +89,8 @@ public abstract class ACtxControl : ICtxControl {
 
     /// <summary>
     /// Indicates whether the menu will be populated with any content when the SelectedItem is the menu operator.
-    /// <remarks>Helps determine whether to show the menu, as a menu without content has nothing to pick to close it.</remarks>
+    /// <remarks>Helps determine whether to show the menu, as a menu limited to disabled or no content has nothing to pick.</remarks>
+    /// <remarks>6.18.19 A menu with only disabled members can still be closed by clicking outside the menu.</remarks>
     /// </summary>
     protected virtual bool SelectedItemMenuHasContent { get { return false; } }
 
@@ -159,7 +166,7 @@ public abstract class ACtxControl : ICtxControl {
         Subscribe();
     }
 
-    private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {    // IMPROVE use of strings
+    private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {
 
         Profiler.BeginSample("Proper AddComponent allocation");
         _ctxObject = ctxObjectGO.AddMissingComponent<CtxObject>();
@@ -188,12 +195,15 @@ public abstract class ACtxControl : ICtxControl {
         // CtxObject hold the .menuItems that are set programmatically when Show is called. 
 
         _availableSubMenus = _availableSubMenus ?? GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
-            .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();
+            .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();   // IMPROVE use of string
         D.Assert(_uniqueSubmenuQtyReqd <= _availableSubMenus.Length);
+        if (_uniqueSubmenuQtyReqd == _availableSubMenus.Length) {
+            D.Warn("{0}: ContextMenu SubMenus may soon run out so add more.", DebugName);
+        }
 
         if (_generalCtxMenu == null) {
             _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
-                .Single(menu => menu.gameObject.name.Equals("GeneralMenu"));
+                .Single(menu => menu.gameObject.name.Equals("GeneralMenu"));  // IMPROVE use of string
         }
 
         if (!_generalCtxMenu.items.IsNullOrEmpty()) {
@@ -383,12 +393,7 @@ public abstract class ACtxControl : ICtxControl {
         int menuItemID = _ctxObject.selectedItem;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
-                //if (menuItemID == _optimalFocusDistanceItemID) {
-                //    HandleMenuPick_OptimalFocusDistance();
-                //}
-                //else {
                 HandleMenuPick_MenuOperatorIsSelected(menuItemID);
-                //}
                 break;
             case CtxMenuOpenedMode.MenuOperatorIsFocus:
                 D.AssertEqual(_optimalFocusDistanceItemID, menuItemID);
@@ -429,13 +434,12 @@ public abstract class ACtxControl : ICtxControl {
 
     #endregion
 
-    private void HandleShowCtxMenu() {
+    protected virtual void HandleShowCtxMenu() {
         _gameMgr.RequestPauseStateChange(toPause: true);
         InputManager.Instance.InputMode = GameInputMode.PartialPopup;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
                 PopulateMenu_MenuOperatorIsSelected();
-                //AddOptimalFocusDistanceItemToMenu();
                 break;
             case CtxMenuOpenedMode.MenuOperatorIsFocus:
                 AddOptimalFocusDistanceItemToMenu();
@@ -473,6 +477,15 @@ public abstract class ACtxControl : ICtxControl {
         _remoteUserOwnedSelectedItem = null;
         _menuOpenedMode = CtxMenuOpenedMode.None;
 
+        // Note: Changed SelectionManager to use unconsumedPress rather than onClick as this way
+        // an open ContextMenu hides itself (and changes the inputMode back to normal) AFTER the unconsumedPress
+        // delegate would have been received. The delegate isn't received as there is no subscription active
+        // while in the pop up inputMode. The upshot is that the SelectionManager will not lose its selection when
+        // randomly clicking on open space to get out of a context menu. Using onClick didn't work as the onClick
+        // delegate isn't fired until the completion of the click action, which is way after the input mode is changed
+        // back to normal, thereby firing unconsumedPress which undesirably clears the SelectionManager.
+
+
         InputManager.Instance.InputMode = GameInputMode.Normal;
         _gameMgr.RequestPauseStateChange(toPause: false);
     }
@@ -500,9 +513,9 @@ public abstract class ACtxControl : ICtxControl {
         _nextAvailableItemId++; // probably not necessary as this is the last item being added
     }
 
-    protected virtual void PopulateMenu_UserRemoteFleetIsSelected() {   // IMPROVE temp virtual to allow SectorCtxControl to override
+    private void PopulateMenu_UserRemoteFleetIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceMenuLabel();
         topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteFleetDirectives) {
             int topLevelItemID = _nextAvailableItemId;
@@ -523,7 +536,7 @@ public abstract class ACtxControl : ICtxControl {
 
     private void PopulateMenu_UserRemoteShipIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceMenuLabel();
         topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteShipDirectives) {
             int topLevelItemID = _nextAvailableItemId;
@@ -544,7 +557,7 @@ public abstract class ACtxControl : ICtxControl {
 
     private void PopulateMenu_UserRemoteBaseIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceMenuLabel();
         topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteBaseDirectives) {
             int topLevelItemID = _nextAvailableItemId;
@@ -582,7 +595,12 @@ public abstract class ACtxControl : ICtxControl {
         return Vector3.Distance(PositionForDistanceMeasurements, target.Position);
     }
 
-    private CtxMenu.Item CreateRemoteSelectedItemDistanceLabel() {
+    /// <summary>
+    /// Creates a menu item that acts as a label to inform the user of the distance
+    /// to the remote selected item.
+    /// </summary>
+    /// <returns></returns>
+    private CtxMenu.Item CreateRemoteSelectedItemDistanceMenuLabel() {
         float distanceToSelectedItem = GetDistanceTo(_remoteUserOwnedSelectedItem);
         var menuItem = new CtxMenu.Item() {
             text = SelectedItemDistanceTextFormat.Inject(distanceToSelectedItem)

@@ -28,7 +28,7 @@ using UnityEngine;
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
 public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigableDestination, IPatrollable, IFleetExplorable,
-    IGuardable, ISectorViewHighlightable {
+    IGuardable, ISectorViewHighlightable/*, ISettleable*/ {
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -100,6 +100,11 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
+    /// <summary>
+    /// Players that have already permanently acquired access to this item's Owner.
+    /// <remarks>Used in conjunction with AssessWhetherToFireOwnerInfoAccessChangedEventFor(player),
+    /// this collection enables avoidance of unnecessary reassessments.</remarks>
+    /// </summary>
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<APlanetoidItem> _planetoids;
     private IList<MoonItem> _moons;
@@ -118,8 +123,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
-    protected override bool InitializeDebugLog() {
-        return _debugCntls.ShowSystemDebugLogs;
+    protected override bool __InitializeDebugLog() {
+        return __debugCntls.ShowSystemDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -163,7 +168,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return new SystemDisplayManager(gameObject, TempGameValues.SystemMeshCullLayer);
     }
 
-    private IList<StationaryLocation> InitializePatrolStations() {
+    private IEnumerable<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
@@ -173,7 +178,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return patrolStations;
     }
 
-    private IList<StationaryLocation> InitializeGuardStations() {
+    private IEnumerable<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
         float distanceFromPosition = Radius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
@@ -257,12 +262,48 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     /// <summary>
-    /// Assesses whether to fire its infoAccessChanged event.
+    /// Indicates whether founding a Settlement by <c>player</c> is allowed in this System.
+    /// <remarks>Founding a Settlement is known to be allowed if player 1) has access to the Sector/System owner, and 
+    /// 2) the sector is either unowned or owned by player, and 3) if owned by player there is no current settlement.
+    /// It is assumed to be allowed if player doesn't have access to Sector/System owner.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
+    public bool IsFoundingSettlementAllowedBy(Player player) {
+        GameColor unusedAttractivenessColor;
+        return __IsFoundingSettlementAllowedBy(player, out unusedAttractivenessColor);
+    }
+
+    /// <summary>
+    /// Returns the settlement station (StationaryLocation) that is closest to worldLocation.
+    /// <remarks>Typically, worldLocation is the current position of the ColonyShip that is attempting 
+    /// to create a Settlement within the System's OrbitSlot reserved for such.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The location in world coordinates.</param>
+    /// <returns></returns>
+    public StationaryLocation GetClosestSettlementStationTo(Vector3 worldLocation) {
+        Vector3 closestSettlementStationWorldLocation = MyMath.FindClosestPointOnSphereTo(worldLocation, Position, SettlementOrbitData.MeanRadius);
+        __ValidateLocation(closestSettlementStationWorldLocation);
+        return new StationaryLocation(closestSettlementStationWorldLocation);
+    }
+
+
+    /// <summary>
+    /// Assesses whether to fire a infoAccessChanged event indicating InfoAccess rights to the Owner has been 
+    /// permanently achieved (due to NonRegressibleIntel).
+    /// <remarks>All other infoAccessChanged events are fired when IntelCoverage changes.</remarks>
     /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
     /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
     /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
     /// two undetectable Items, but they only change access to Owner when IntelCoverage
     /// exceeds Basic.</remarks>
+    /// <remarks>6.10.18 This was required because System and Sector were assigned the lowestCommonCoverage
+    /// of System and Sector members. This meant that the only time System and Sector coverage changed was when
+    /// ALL members had or exceeded a coverage. Thus, one could have access to the owner of a System's Settlement
+    /// without having access to the owner of the System. This was a TEMP fix for the Owner value, but 
+    /// doesn't deal with other values. If System and Sector were assigned the highestCoverage
+    /// of any member, this would result in the elimination of this fix, but it creates other potential
+    /// issues, aka have access to owner in the System, but not the settlement...</remarks>
     /// <remarks>3.22.17 This is the fix to a gnarly BUG that allowed changes in access to
     /// Owner without an event alerting subscribers that it had occurred. The subscribers
     /// relied on the event to keep their state correct, then found later that they had 
@@ -270,12 +311,12 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
-    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+    internal void AssessWhetherToFireOwnerInfoAccessChangedEventFor(Player player) {
         if (Settlement != null) {
             // Settlements come and go so they must always be checked if present
-            Settlement.AssessWhetherToFireInfoAccessChangedEventFor(player);
+            Settlement.AssessWhetherToFireOwnerInfoAccessChangedEventFor(player);
         }
-        SectorGrid.Instance.GetSector(SectorID).AssessWhetherToFireInfoAccessChangedEventFor(player);
+        SectorGrid.Instance.GetSector(SectorID).AssessWhetherToFireOwnerInfoAccessChangedEventFor(player);
 
         if (!_playersWithInfoAccessToOwner.Contains(player)) {
             if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
@@ -313,7 +354,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
                 Settlement.CelestialOrbitSimulator.IsActivated = true;
             }
-            D.Log(ShowDebugLog, "{0} has been deployed to {1}.", Settlement.DebugName, DebugName);
+            D.Log(/*ShowDebugLog, */"{0} has been deployed to {1}.", Settlement.DebugName, DebugName);
         }
         else {
             // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
@@ -323,8 +364,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
         }
@@ -355,8 +396,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     #region Show Tracking Label
 
     private void InitializeTrackingLabel() {
-        _debugCntls.showSystemTrackingLabels += ShowSystemTrackingLabelsChangedEventHandler;
-        if (_debugCntls.ShowSystemTrackingLabels) {
+        __debugCntls.showSystemTrackingLabels += ShowSystemTrackingLabelsChangedEventHandler;
+        if (__debugCntls.ShowSystemTrackingLabels) {
             EnableTrackingLabel(true);
         }
     }
@@ -386,12 +427,12 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     private void ShowSystemTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
-        EnableTrackingLabel(_debugCntls.ShowSystemTrackingLabels);
+        EnableTrackingLabel(__debugCntls.ShowSystemTrackingLabels);
     }
 
     private void CleanupTrackingLabel() {
-        if (_debugCntls != null) {
-            _debugCntls.showSystemTrackingLabels -= ShowSystemTrackingLabelsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showSystemTrackingLabels -= ShowSystemTrackingLabelsChangedEventHandler;
         }
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
@@ -407,6 +448,69 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         if (Data != null) {  // GameObject can be destroyed during Universe Creation before initialized
             Data.Dispose();
         }
+    }
+
+    #endregion
+
+    #region Debug
+
+    public GameColor __GetFoundUserSettlementAttractivenessColor() {
+        Player userPlayer = _gameMgr.UserPlayer;
+
+        GameColor attractivenessColor;
+        __IsFoundingSettlementAllowedBy(userPlayer, out attractivenessColor);
+        return attractivenessColor;
+    }
+
+    /// <summary>
+    /// Indicates whether founding a Settlement by <c>player</c> is allowed in this System.
+    /// <remarks>Founding a Settlement is known to be allowed if player 1) has access to the Sector/System owner, and 
+    /// 2) the sector is either unowned or owned by player, and 3) if owned by player there is no current settlement.
+    /// It is assumed to be allowed if player doesn't have access to Sector/System owner.
+    /// <remarks>6.19.18 AttractivenessColor indicates how attractive it is to found a Settlement in this system.
+    /// Currently, attractiveness is simply determined by whether knowledge of the sector owner exists, and if it does
+    /// which owner it is. Max attractiveness (Green) is when the sector owner is the player, next most attractive (DarkGreen) is when
+    /// the sector is not owned, lower attractiveness (Yellow) is when the sector owner is not known, and finally not attractive (Red)
+    /// is when founding a settlement is not allowed.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="attractivenessColor">The resulting attractiveness GameColor.</param>
+    /// <returns></returns>
+    private bool __IsFoundingSettlementAllowedBy(Player player, out GameColor attractivenessColor) {
+        attractivenessColor = GameColor.Red;
+        var sector = SectorGrid.Instance.GetSector(SectorID);
+        Player sectorOwner;
+        if (sector.TryGetOwner(player, out sectorOwner)) {
+            D.Assert(InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));
+            if (sectorOwner == TempGameValues.NoPlayer) {
+                if (Settlement != null) {
+                    // if no Sector owner, there isn't a System owner and there can't be a settlement. 6.23.18 Cause resolved
+                    D.Error("{0}: How can {1} not be null when sector owner is {2}.", DebugName, Settlement.DebugName, sectorOwner.DebugName);
+                }
+                D.AssertEqual(TempGameValues.NoPlayer, Owner);
+                attractivenessColor = GameColor.DarkGreen;  // next most attractive
+                return true;
+            }
+            if (sectorOwner == player) {
+                if (Settlement == null) {
+                    attractivenessColor = GameColor.Green;  // most attractive
+                    return true;
+                }
+                return false;
+            }
+            return false;   // can't settle systems in sectors that are owned by opponent even if opponent Settlement not present
+        }
+        else {
+            // don't have access to sector owner, so can't tell if anyone owns it -> appears settleable for now
+            D.Assert(!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));
+            attractivenessColor = GameColor.Yellow; // indicates maybe
+            return true;
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateLocation(Vector3 worldLocation) {
+        D.Assert(GameUtility.IsLocationContainedInUniverse(worldLocation, _gameMgr.GameSettings.UniverseSize));
     }
 
     #endregion
@@ -475,19 +579,17 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+    public IEnumerable<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
     #region IPatrollable Members
 
-    private IList<StationaryLocation> _patrolStations;
-    public IList<StationaryLocation> PatrolStations {
+    private IEnumerable<StationaryLocation> _patrolStations;
+    public IEnumerable<StationaryLocation> PatrolStations {
         get {
-            if (_patrolStations == null) {
-                _patrolStations = InitializePatrolStations();
-            }
-            return new List<StationaryLocation>(_patrolStations);
+            _patrolStations = _patrolStations ?? InitializePatrolStations();
+            return _patrolStations;
         }
     }
 
@@ -502,15 +604,13 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
-    #region IGuardable
+    #region IGuardable Members
 
-    private IList<StationaryLocation> _guardStations;
-    public IList<StationaryLocation> GuardStations {
+    private IEnumerable<StationaryLocation> _guardStations;
+    public IEnumerable<StationaryLocation> GuardStations {
         get {
-            if (_guardStations == null) {
-                _guardStations = InitializeGuardStations();
-            }
-            return new List<StationaryLocation>(_guardStations);
+            _guardStations = _guardStations ?? InitializeGuardStations();
+            return _guardStations;
         }
     }
 

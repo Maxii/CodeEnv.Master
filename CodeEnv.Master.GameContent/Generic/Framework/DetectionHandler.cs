@@ -165,7 +165,7 @@ namespace CodeEnv.Master.GameContent {
                 // is when the ElementSensorMonitor attached to this same element is telling us of lost detection as part of 
                 // its reset and reacquire process when the element's owner is changing. Confirmed this path is used when changing owner.
                 D.Assert(_itemClient is IUnitElement);
-                D.Assert((_itemClient as IUnitElement).IsOwnerChangeUnderway);
+                D.Assert((_itemClient as IUnitElement).__IsOwnerChgUnderway);
                 // 4.22.17 ResetBasedOnCurrentDetection has already run (from xxxItem.HandleOwnerChanging) which is what reduced 
                 // IntelCoverage below Comprehensive. This current pass is from the SensorRangeMonitor of this same element. 
                 // If it is the only remaining monitor detecting this element and its telling it of lost detection, then it could 
@@ -193,7 +193,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Assesses and assigns the Item's IntelCoverage for this <c>player</c>.
+        /// Assesses and assigns the Item's IntelCoverage for this <c>player</c> based on detection level.
+        /// The maximum coverage an Item with RegressibleIntel can achieve via sensor detection is Broad.
         /// <remarks>Player can be self when the current owner is losing ownership and needs to 
         /// reassess their coverage of their [about to be former] item.</remarks>
         /// <remarks>4.22.17 Player can be an ally of current owner when the current owner is losing ownership and has each ally
@@ -226,8 +227,8 @@ namespace CodeEnv.Master.GameContent {
             }
 
             IntelCoverage resultingCoverage;
-            if (_itemClient.TrySetIntelCoverage(player, newCoverage, out resultingCoverage)) {
-                //D.Log(ShowDebugLog, "{0} set {1}'s IntelCoverage to {2}.", DebugName, player, resultingCoverage.GetValueName());
+            if (_itemClient.TryChangeIntelCoverage(player, newCoverage, out resultingCoverage)) {
+                //D.Log(ShowDebugLog, "{0} changed {1}'s IntelCoverage to {2}.", DebugName, player, resultingCoverage.GetValueName());
             }
         }
 
@@ -244,7 +245,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player.</param>
         public void ResetBasedOnCurrentDetection(Player player) {
             if (_debugControls.IsAllIntelCoverageComprehensive) {
-                // player must already know about this item to call this so can't lose knowledge once Comprehensive and aware of it
+                // 6.28.18 do not re-assess and assign IntelCoverage when coverage is permanently Comprehensive
                 return;
             }
             // by definition, the player must have knowledge of the item before reassessing that knowledge

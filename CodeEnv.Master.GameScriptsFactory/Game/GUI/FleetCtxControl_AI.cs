@@ -50,6 +50,8 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _fleetMenuOperator.IsFocus; } }
 
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
+
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_AI(FleetCmdItem fleetCmd)

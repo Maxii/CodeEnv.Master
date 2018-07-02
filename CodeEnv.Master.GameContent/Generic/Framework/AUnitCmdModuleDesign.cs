@@ -67,7 +67,10 @@ namespace CodeEnv.Master.GameContent {
             CmdModuleStat = cmdModStat;
         }
 
-        protected override float CalcConstructionCost() {
+        protected sealed override float CalcConstructionCost() {
+            if (Status == SourceAndStatus.SystemCreation_Default) {
+                return Constants.ZeroF; // free default version
+            }
             float cumConstructionCost = base.CalcConstructionCost();
             cumConstructionCost += CmdModuleStat.ConstructCost;
             cumConstructionCost += ReqdMRSensorStat.ConstructCost;

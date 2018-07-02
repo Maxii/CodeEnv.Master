@@ -27,25 +27,29 @@ public class UserFleetUnitHudForm : AFleetUnitHudForm {
 
     public override FormID FormID { get { return FormID.UserFleet; } }
 
-    protected override void HandleShipCreateFleetButtonClicked() {
-        var acceptDelegate = new EventDelegate(this, "HandlePlayerPickedCmdModDesign");
-        var cancelDelegate = new EventDelegate(() => {
+    #region Pick Design Support
+
+    protected override void ChooseCmdModuleDesignAndFormFleet() {
+        if (!DebugControls.Instance.AiChoosesUserCmdModInitialDesigns) {
+            HaveUserPickCmdModDesign();
+        }
+        else {
+            base.ChooseCmdModuleDesignAndFormFleet();
+        }
+    }
+
+    private void HaveUserPickCmdModDesign() {
+        string dialogText = "Pick the CmdModDesign you wish to use to split off a new Fleet. \nCancel to not split off the Fleet.";
+        EventDelegate cancelDelegate = new EventDelegate(() => {
+            // ShipCreateFleetButton is ignored. Creation of fleet will not occur
             DialogWindow.Instance.Hide();
-            // Button is ignored. Creation of fleet will not occur
         });
-
-        var dialogSettings = new APopupDialogForm.DialogSettings(SelectedUnit.Owner, acceptDelegate, cancelDelegate);
-        DialogWindow.Instance.Show(FormID.SelectFleetCmdModDesignDialog, dialogSettings);
+        bool useUserActionButton = false;
+        DialogWindow.Instance.HaveUserPickCmdModDesign(FormID.SelectFleetCmdModDesignDialog, dialogText, cancelDelegate,
+            (chosenCmdModDesign) => FormFleetFrom(chosenCmdModDesign as FleetCmdModuleDesign), useUserActionButton);
     }
 
-    private void HandlePlayerPickedCmdModDesign(AUnitMemberDesign pickedDesign) {
-        FleetCmdModuleDesign pickedCmdModuleDesign = pickedDesign as FleetCmdModuleDesign;
-        D.AssertNotNull(pickedCmdModuleDesign);
-
-        DialogWindow.Instance.Hide();
-
-        ApplyToFleetBeingCreated(pickedCmdModuleDesign);
-    }
+    #endregion
 
     protected override void AssessInteractibleHud() {
         if (_pickedShipIcons.Count == Constants.One) {

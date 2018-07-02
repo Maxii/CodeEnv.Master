@@ -94,9 +94,11 @@ namespace CodeEnv.Master.GameContent {
 
         private EquipmentStatFactory _eStatFactory;
         private Player _player;
+        private PlayerAIManager _playerAiMgr;
 
-        public PlayerDesigns(Player player) {
-            _player = player;
+        public PlayerDesigns(PlayerAIManager playerAiMgr) {
+            _playerAiMgr = playerAiMgr;
+            _player = playerAiMgr.Owner;
             InitializeValuesAndReferences();
             InitializeEquipLevelLookup();
         }
@@ -130,14 +132,38 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Makes any updates needed to current AEquipmentStats. If any Stat improvement effects
-        /// a required Template Design, that Design is also updated.
+        /// Makes any updates needed to current AEquipmentStats and Template designs. If any Stat improvement effects
+        /// a Template Design, that Design is also updated.
         /// <remarks>Use of EquipmentStatID is simply a convenient container for passing the EquipmentCategory paired with
         /// its highest Level researched. In this case it is not used as a Stat ID.</remarks>
         /// </summary>
         /// <param name="allEnabledEqCatsWithHighestLevelResearched">All the enabled EquipmentCategories paired with their highest Level researched.</param>
-        public void UpdateEquipLevelAndTemplateDesigns(IList<EquipmentStatID> allEnabledEqCatsWithHighestLevelResearched) {
-            IList<EquipmentCategory> improvedEqCats = new List<EquipmentCategory>();
+        public void UpdateEquipLevelAndTemplateDesigns(IEnumerable<EquipmentStatID> allEnabledEqCatsWithHighestLevelResearched) {
+            IList<EquipmentCategory> improvedEqCats;
+            UpdateEquipLevel(allEnabledEqCatsWithHighestLevelResearched, out improvedEqCats);
+
+            D.Assert(GameReferences.GameManager.IsRunning);
+            if (improvedEqCats.Any()) {
+                //D.Log("{0} is about to updated template designs using {1}.", DebugName, improvedEqCats.Select(cat => cat.GetValueName()).Concatenate());
+                UpdateTemplateDesigns(improvedEqCats);
+            }
+        }
+
+        /// <summary>
+        /// Makes any updates needed to current AEquipmentStats. Template designs are not updated.
+        /// <remarks>Called from PlayerResearchMgr constructor before any Templates have been created.</remarks>
+        /// <remarks>Use of EquipmentStatID is simply a convenient container for passing the EquipmentCategory paired with
+        /// its highest Level researched. In this case it is not used as a Stat ID.</remarks>
+        /// </summary>
+        /// <param name="allEnabledEqCatsWithHighestLevelResearched">All the enabled EquipmentCategories paired with their highest Level researched.</param>
+        public void UpdateEquipLevel(IEnumerable<EquipmentStatID> allEnabledEqCatsWithHighestLevelResearched) {
+            IList<EquipmentCategory> unusedImprovedEqCats;
+            UpdateEquipLevel(allEnabledEqCatsWithHighestLevelResearched, out unusedImprovedEqCats);
+        }
+
+        private void UpdateEquipLevel(IEnumerable<EquipmentStatID> allEnabledEqCatsWithHighestLevelResearched,
+            out IList<EquipmentCategory> improvedEqCats) {
+            improvedEqCats = new List<EquipmentCategory>();
             foreach (var ePair in allEnabledEqCatsWithHighestLevelResearched) {
                 EquipmentCategory eqCat = ePair.Category;
                 Level eqLevel = ePair.Level;
@@ -152,44 +178,38 @@ namespace CodeEnv.Master.GameContent {
                 _currentEquipLevelLookup[eqCat] = eqLevel;
                 improvedEqCats.Add(eqCat);
             }
-
-            if (GameReferences.GameManager.IsRunning) { // If not yet running, NewGameUnitGenerator has not yet created any ReqdDesigns
-                if (improvedEqCats.Any()) {
-                    UpdateTemplateDesigns(improvedEqCats);
-                }
-            }
         }
 
         /// <summary>
-        /// Returns ShipHullStats that have been researched. The Level of the HullStat
+        /// Returns ShipHullStats that have been discovered. The Level of the HullStat
         /// returned will be the highest level currently researched.
         /// </summary>
         /// <returns></returns>
         public IEnumerable<ShipHullStat> GetAllCurrentShipHullStats() {
             IList<ShipHullStat> stats = new List<ShipHullStat>();
-            var allHullCats = TempGameValues.ShipHullCategoriesInUse;
+            var discoveredHullCats = _playerAiMgr.ResearchMgr.GetDiscoveredShipHullCats();
             ShipHullStat hullStat;
-            foreach (var hullCat in allHullCats) {
-                if (TryGetCurrentHullStat(hullCat, out hullStat)) {
-                    stats.Add(hullStat);
-                }
+            foreach (var hullCat in discoveredHullCats) {
+                bool isFound = TryGetCurrentHullStat(hullCat, out hullStat);
+                D.Assert(isFound);
+                stats.Add(hullStat);
             }
             return stats;
         }
 
         /// <summary>
-        /// Returns FacilityHullStats that have been researched. The Level of the HullStat
+        /// Returns FacilityHullStats that have been discovered. The Level of the HullStat
         /// returned will be the highest level currently researched.
         /// </summary>
         /// <returns></returns>
         public IEnumerable<FacilityHullStat> GetAllCurrentFacilityHullStats() {
             IList<FacilityHullStat> stats = new List<FacilityHullStat>();
-            var allHullCats = TempGameValues.FacilityHullCategoriesInUse;
+            var discoveredHullCats = _playerAiMgr.ResearchMgr.GetDiscoveredFacilityHullCats();
             FacilityHullStat hullStat;
-            foreach (var hullCat in allHullCats) {
-                if (TryGetCurrentHullStat(hullCat, out hullStat)) {
-                    stats.Add(hullStat);
-                }
+            foreach (var hullCat in discoveredHullCats) {
+                bool isFound = TryGetCurrentHullStat(hullCat, out hullStat);
+                D.Assert(isFound);
+                stats.Add(hullStat);
             }
             return stats;
         }
@@ -482,7 +502,7 @@ namespace CodeEnv.Master.GameContent {
             relevantImprovedEqCats.Clear();
             relevantImprovedEqCats.AddRange(improvedEqCats.Intersect(_equipCatsUsedByStarbaseCmdTemplateDesign));
             if (relevantImprovedEqCats.Any()) {
-                UpdateStarbaseCmdTemplateDesign();
+                AttemptStarbaseCmdTemplateDesignUpdate();
             }
 
             relevantImprovedEqCats.Clear();
@@ -504,6 +524,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Updates the Template Design of the FleetCmdModule.
+        /// Throws an error if the FleetCmdModule has not yet been researched.
+        /// </summary>
         private void UpdateFleetCmdTemplateDesign() {
             FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
             var cmdModuleStat = GetCurrentFleetCmdModuleStat();
@@ -512,8 +536,9 @@ namespace CodeEnv.Master.GameContent {
                 RootDesignName = TempGameValues.FleetCmdModTemplateRootDesignName,
                 Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
             };
+            cmdModDesign.AssignPropertyValues();
 
-            D.Assert(IsFleetCmdTemplateDesignPresent());    // will always be present as only called after NewGameUnitGenerator makes designs
+            D.Assert(IsFleetCmdModuleTemplateDesignPresent);    // will always be present as only called after NewGameUnitGenerator makes designs
 
             FleetCmdModuleDesign existingTemplateDesign = GetCurrentFleetCmdModTemplateDesign();
             int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
@@ -522,6 +547,10 @@ namespace CodeEnv.Master.GameContent {
             Add(cmdModDesign);
         }
 
+        /// <summary>
+        /// Updates the Template Design of the SettlementCmdModule.
+        /// Throws an error if the SettlementCmdModule has not yet been researched.
+        /// </summary>
         private void UpdateSettlementCmdTemplateDesign() {
             FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
             var cmdModuleStat = GetCurrentSettlementCmdModuleStat();
@@ -530,8 +559,9 @@ namespace CodeEnv.Master.GameContent {
                 RootDesignName = TempGameValues.SettlementCmdModTemplateRootDesignName,
                 Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
             };
+            cmdModDesign.AssignPropertyValues();
 
-            D.Assert(IsSettlementCmdTemplateDesignPresent());    // will always be present as only called after NewGameUnitGenerator makes designs
+            D.Assert(IsSettlementCmdModuleTemplateDesignPresent);    // will always be present as only called after NewGameUnitGenerator makes designs
 
             SettlementCmdModuleDesign existingTemplateDesign = GetCurrentSettlementCmdModTemplateDesign();
             int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
@@ -540,7 +570,11 @@ namespace CodeEnv.Master.GameContent {
             Add(cmdModDesign);
         }
 
-        private void UpdateStarbaseCmdTemplateDesign() {
+        /// <summary>
+        /// Attempts to update the Template Design of the StarbaseCmdModule.
+        /// Does nothing if the StarbaseCmdModule has not yet been researched.
+        /// </summary>
+        private void AttemptStarbaseCmdTemplateDesignUpdate() {
             StarbaseCmdModuleStat cmdModuleStat;
             if (TryGetCurrentStarbaseCmdModuleStat(out cmdModuleStat)) {
                 FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
@@ -549,8 +583,9 @@ namespace CodeEnv.Master.GameContent {
                     RootDesignName = TempGameValues.StarbaseCmdModTemplateRootDesignName,
                     Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
                 };
+                cmdModDesign.AssignPropertyValues();
 
-                if (IsStarbaseCmdTemplateDesignPresent()) {  // if CmdModuleStat JUST enabled, there won't yet be a Template design
+                if (IsStarbaseCmdModuleTemplateDesignPresent) {  // if CmdModuleStat JUST discovered, there won't yet be a Template design
                     StarbaseCmdModuleDesign existingTemplateDesign = GetCurrentStarbaseCmdModTemplateDesign();
                     int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
                     cmdModDesign.IncrementDesignLevelAndName(newDesignLevel);
@@ -563,86 +598,93 @@ namespace CodeEnv.Master.GameContent {
         private void UpdateFacilityTemplateDesigns(IEnumerable<EquipmentCategory> updatedEqCats) {
             D.AssertNotEqual(Constants.Zero, updatedEqCats.Count());
 
-            // 5.1.18 This just reduces which HullCats to consider for updates. UpdateFacilityTemplateDesign(HullCat)
-            // will still test for whether there the HullStat for that HullCat is available.
             IEnumerable<FacilityHullCategory> hullCatsToUpdate;
             if (updatedEqCats.Contains(EquipmentCategory.SRSensor)) {
-                hullCatsToUpdate = TempGameValues.FacilityHullCategoriesInUse;
+                // if SRSensor updated, all discovered HullCat Templates must be updated
+                hullCatsToUpdate = _playerAiMgr.ResearchMgr.GetDiscoveredFacilityHullCats();
             }
             else {
+                // only the Templates for the hulls that have just been discovered/updated need to be updated
                 hullCatsToUpdate = updatedEqCats.Select(eCat => eCat.FacilityHullCat());
             }
 
             foreach (var hullCat in hullCatsToUpdate) {
-                UpdateFacilityTemplateDesign(hullCat);
+                UpdateTemplateDesign(hullCat);
             }
         }
 
-        private void UpdateFacilityTemplateDesign(FacilityHullCategory hullCat) {
+        /// <summary>
+        /// Updates the Template Design associated with the provided HullCategory.
+        /// Throws an error if the Hull of this HullCategory has not yet been researched.
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        private void UpdateTemplateDesign(FacilityHullCategory hullCat) {
             FacilityHullStat hullStat;
-            if (TryGetCurrentHullStat(hullCat, out hullStat)) {
-                SensorStat reqdSrSensorStat = GetCurrentSRSensorStat();
-                FacilityDesign design = new FacilityDesign(_player, reqdSrSensorStat, hullStat) {
-                    RootDesignName = hullCat.GetEmptyTemplateDesignName(),
-                    Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
-                };
+            bool isFound = TryGetCurrentHullStat(hullCat, out hullStat);
+            D.Assert(isFound);
 
-                if (IsTemplateDesignPresent(hullCat)) {  // if hullCat's HullStat JUST enabled, there won't yet be a Template design
-                    FacilityDesign existingTemplateDesign = GetCurrentFacilityTemplateDesign(hullCat);
-                    int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
-                    design.IncrementDesignLevelAndName(newDesignLevel);
-                }
+            SensorStat reqdSrSensorStat = GetCurrentSRSensorStat();
+            FacilityDesign design = new FacilityDesign(_player, reqdSrSensorStat, hullStat) {
+                RootDesignName = hullCat.GetEmptyTemplateDesignName(),
+                Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
+            };
+            design.AssignPropertyValues();
 
-                Add(design);
+            if (IsTemplateDesignPresent(hullCat)) {  // if hullCat's HullStat JUST enabled, there won't yet be a Template design
+                FacilityDesign existingTemplateDesign = GetCurrentFacilityTemplateDesign(hullCat);
+                int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
+                design.IncrementDesignLevelAndName(newDesignLevel);
             }
+
+            Add(design);
         }
 
         private void UpdateShipTemplateDesigns(IEnumerable<EquipmentCategory> updatedEqCats) {
             D.AssertNotEqual(Constants.Zero, updatedEqCats.Count());
 
-            // 5.1.18 This just reduces which HullCats to consider for updates. UpdateFacilityTemplateDesign(HullCat)
-            // will still test for whether there the HullStat for that HullCat is available.
             IEnumerable<ShipHullCategory> hullCatsToUpdate;
             if (updatedEqCats.Contains(EquipmentCategory.SRSensor) || updatedEqCats.Contains(EquipmentCategory.StlPropulsion)
-                || updatedEqCats.Contains(EquipmentCategory.FtlPropulsion)) {
-                hullCatsToUpdate = TempGameValues.ShipHullCategoriesInUse;
+                 || updatedEqCats.Contains(EquipmentCategory.FtlPropulsion)) {
+                // if SRSensor, STL or FTL Propulsion updated, all discovered HullCat Templates must be updated
+                hullCatsToUpdate = _playerAiMgr.ResearchMgr.GetDiscoveredShipHullCats();
             }
             else {
+                // only the Templates for the hulls that have just been discovered/updated need to be updated
                 hullCatsToUpdate = updatedEqCats.Select(eCat => eCat.ShipHullCat());
             }
 
             foreach (var hullCat in hullCatsToUpdate) {
-                UpdateShipTemplateDesign(hullCat);
+                UpdateTemplateDesign(hullCat);
             }
         }
 
-        private void UpdateShipTemplateDesign(ShipHullCategory hullCat) {
+        /// <summary>
+        /// Updates the Template Design associated with the provided HullCategory.
+        /// Throws an error if the Hull of this HullCategory has not yet been researched.
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        private void UpdateTemplateDesign(ShipHullCategory hullCat) {
             ShipHullStat hullStat;
-            if (TryGetCurrentHullStat(hullCat, out hullStat)) {
-                SensorStat reqdSrSensorStat = GetCurrentSRSensorStat();
-                EngineStat stlEngineStat = GetCurrentStlEngineStat();
+            bool isFound = TryGetCurrentHullStat(hullCat, out hullStat);
+            D.Assert(isFound);
 
-                ShipDesign design = new ShipDesign(_player, reqdSrSensorStat, hullStat, stlEngineStat, ShipCombatStance.Disengage) {
-                    RootDesignName = hullCat.GetEmptyTemplateDesignName(),
-                    Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
-                };
+            SensorStat reqdSrSensorStat = GetCurrentSRSensorStat();
+            EngineStat stlEngineStat = GetCurrentStlEngineStat();
 
-                EngineStat ftlEngineStat;
-                if (TryGetCurrentFtlEngineStat(out ftlEngineStat)) {
-                    OptionalEquipSlotID slotID;
-                    bool isEmptySlotFound = design.TryGetEmptySlotIDFor(EquipmentCategory.FtlPropulsion, out slotID);
-                    D.Assert(isEmptySlotFound);
-                    design.Add(slotID, ftlEngineStat);
-                }
+            ShipDesign design = new ShipDesign(_player, reqdSrSensorStat, hullStat, stlEngineStat, ShipCombatStance.Disengage) {
+                RootDesignName = hullCat.GetEmptyTemplateDesignName(),
+                Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template
+            };
+            // ShipTemplateDesigns don't automatically contain FTL engines
+            design.AssignPropertyValues();
 
-                if (IsTemplateDesignPresent(hullCat)) {  // if hullCat's HullStat JUST enabled, there won't yet be a Template design
-                    ShipDesign existingTemplateDesign = GetCurrentShipTemplateDesign(hullCat);
-                    int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
-                    design.IncrementDesignLevelAndName(newDesignLevel);
-                }
-
-                Add(design);
+            if (IsTemplateDesignPresent(hullCat)) {  // if hullCat's HullStat JUST enabled, there won't yet be a Template design
+                ShipDesign existingTemplateDesign = GetCurrentShipTemplateDesign(hullCat);
+                int newDesignLevel = existingTemplateDesign.DesignLevel + Constants.One;
+                design.IncrementDesignLevelAndName(newDesignLevel);
             }
+
+            Add(design);
         }
 
         #endregion
@@ -979,11 +1021,14 @@ namespace CodeEnv.Master.GameContent {
             IList<ShipDesign> designs;
             if (_shipDesignsLookupByHull.TryGetValue(hullCat, out designs)) {
                 var templateDesign = designs.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-                if (templateDesign != null) {
-                    return true;
-                }
+                return templateDesign != null;
             }
             return false;
+        }
+
+        public bool AreDeployableDesignsPresent(ShipHullCategory hullCat) {
+            IEnumerable<ShipDesign> unusedDeployableDesigns;
+            return TryGetDeployableDesigns(hullCat, out unusedDeployableDesigns);
         }
 
         /// <summary>
@@ -991,6 +1036,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <returns></returns>
+        [Obsolete("Use AreUpgradeDesignsAvailable")]
         public bool IsUpgradeDesignAvailable(ShipDesign designToUpgrade) {
             if (!CanDesignEverBeUpgraded(designToUpgrade)) {
                 // 4.30.18 Occurs when the item of a design is taken over and then tests for refit potential
@@ -1043,11 +1089,14 @@ namespace CodeEnv.Master.GameContent {
             IList<FacilityDesign> designs;
             if (_facilityDesignsLookupByHull.TryGetValue(hullCat, out designs)) {
                 var templateDesign = designs.SingleOrDefault(d => d.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-                if (templateDesign != null) {
-                    return true;
-                }
+                return templateDesign != null;
             }
             return false;
+        }
+
+        public bool AreDeployableDesignsPresent(FacilityHullCategory hullCat) {
+            IEnumerable<FacilityDesign> unusedDeployableDesigns;
+            return TryGetDeployableDesigns(hullCat, out unusedDeployableDesigns);
         }
 
         /// <summary>
@@ -1055,6 +1104,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <returns></returns>
+        [Obsolete("Use AreUpgradeDesignsAvailable")]
         public bool IsUpgradeDesignAvailable(FacilityDesign designToUpgrade) {
             if (!CanDesignEverBeUpgraded(designToUpgrade)) {
                 // 4.30.18 Occurs when the item of a design is taken over and then tests for refit potential
@@ -1103,9 +1153,20 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public bool IsFleetCmdTemplateDesignPresent() {
-            var templateDesign = _fleetCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-            return templateDesign != null;
+        public bool IsFleetCmdModuleTemplateDesignPresent { get { return _fleetCmdModDesignLookupByName.Any(); } }
+
+        /// <summary>
+        /// Returns <c>true</c> if deployable CmdModuleDesigns for the indicated Unit type are present. 
+        /// <remarks>6.6.18 OPTIMIZE At a minimum, the DefaultDesign will be available if the CmdModule 
+        /// for this Unit type has been discovered -> test can be the same as Template presence test.</remarks>
+        /// <remarks>6.6.18 The Fleet CmdModule will always be discovered at the start of the game.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public bool AreDeployableFleetCmdModuleDesignsPresent {
+            get {
+                var deployableDesigns = _fleetCmdModDesignLookupByName.Values.Where(d => d.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                return deployableDesigns.Any();
+            }
         }
 
         /// <summary>
@@ -1113,6 +1174,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <returns></returns>
+        [Obsolete("Use AreUpgradeDesignsAvailable")]
         public bool IsUpgradeDesignAvailable(FleetCmdModuleDesign designToUpgrade) {
             if (!CanDesignEverBeUpgraded(designToUpgrade)) {
                 // 4.30.18 Occurs when the item of a design is taken over and then tests for refit potential
@@ -1160,9 +1222,20 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public bool IsStarbaseCmdTemplateDesignPresent() {
-            var templateDesign = _starbaseCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-            return templateDesign != null;
+        public bool IsStarbaseCmdModuleTemplateDesignPresent { get { return _starbaseCmdModDesignLookupByName.Any(); } }
+
+        /// <summary>
+        /// Returns <c>true</c> if deployable CmdModuleDesigns for the indicated Unit type are present. 
+        /// <remarks>6.6.18 OPTIMIZE At a minimum, the DefaultDesign will be available if the CmdModule 
+        /// for this Unit type has been discovered -> test can be the same as Template presence test.</remarks>
+        /// <remarks>6.6.18 The Starbase CmdModule may not be discovered at the start of the game.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public bool AreDeployableStarbaseCmdModuleDesignsPresent {
+            get {
+                var deployableDesigns = _starbaseCmdModDesignLookupByName.Values.Where(d => d.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                return deployableDesigns.Any();
+            }
         }
 
         /// <summary>
@@ -1170,6 +1243,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <returns></returns>
+        [Obsolete("Use AreUpgradeDesignsAvailable")]
         public bool IsUpgradeDesignAvailable(StarbaseCmdModuleDesign designToUpgrade) {
             if (!CanDesignEverBeUpgraded(designToUpgrade)) {
                 // 4.30.18 Occurs when the item of a design is taken over and then tests for refit potential
@@ -1218,9 +1292,20 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public bool IsSettlementCmdTemplateDesignPresent() {
-            var templateDesign = _settlementCmdModDesignLookupByName.Values.SingleOrDefault(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
-            return templateDesign != null;
+        public bool IsSettlementCmdModuleTemplateDesignPresent { get { return _settlementCmdModDesignLookupByName.Any(); } }
+
+        /// <summary>
+        /// Returns <c>true</c> if deployable CmdModuleDesigns for the indicated Unit type are present. 
+        /// <remarks>6.6.18 OPTIMIZE At a minimum, the DefaultDesign will be available if the CmdModule 
+        /// for this Unit type has been discovered -> test can be the same as Template presence test.</remarks>
+        /// <remarks>6.6.18 The Settlement CmdModule will always be discovered at the start of the game.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public bool AreDeployableSettlementCmdModuleDesignsPresent {
+            get {
+                var deployableDesigns = _settlementCmdModDesignLookupByName.Values.Where(d => d.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                return deployableDesigns.Any();
+            }
         }
 
         /// <summary>
@@ -1228,6 +1313,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <returns></returns>
+        [Obsolete("Use AreUpgradeDesignsAvailable")]
         public bool IsUpgradeDesignAvailable(SettlementCmdModuleDesign designToUpgrade) {
             if (!CanDesignEverBeUpgraded(designToUpgrade)) {
                 // 4.30.18 Occurs when the item of a design is taken over and then tests for refit potential
@@ -1296,8 +1382,20 @@ namespace CodeEnv.Master.GameContent {
             return _shipDesignLookupByName.TryGetValue(designName, out design);
         }
 
-        public bool TryGetDesigns(ShipHullCategory hullCategory, out IList<ShipDesign> designs) {
-            return _shipDesignsLookupByHull.TryGetValue(hullCategory, out designs);
+        /// <summary>
+        /// Returns <c>true</c> if one or more deployable (not the Template) designs of this hullCategory are available. 
+        /// If <c>false</c> it indicates that the Hull has not yet been researched by this player.
+        /// <remarks>If true, all designs, including the single Current version as well as all Obsolete versions are returned.</remarks>
+        /// <remarks>The template design will never be included.</remarks>
+        /// </summary>
+        /// <param name="hullCategory">The hull category.</param>
+        /// <param name="allDeployableDesigns">All designs.</param>
+        /// <returns></returns>
+        public bool TryGetDeployableDesigns(ShipHullCategory hullCategory, out IEnumerable<ShipDesign> allDeployableDesigns) {
+            IList<ShipDesign> designs;
+            _shipDesignsLookupByHull.TryGetValue(hullCategory, out designs);
+            allDeployableDesigns = designs.Where(design => design.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            return allDeployableDesigns.Any();
         }
 
         /// <summary>
@@ -1309,13 +1407,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <param name="upgradeDesign">The upgrade design.</param>
         /// <returns></returns>
+        [Obsolete("Use TryGetUpgradeDesigns")]
         public bool TryGetUpgradeDesign(ShipDesign designToUpgrade, out ShipDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, designToUpgrade.Status);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToUpgrade.Status);
 
-            IList<ShipDesign> hullDesigns;
-            bool areDesignsPresent = TryGetDesigns(designToUpgrade.HullCategory, out hullDesigns);
+            IEnumerable<ShipDesign> hullDesigns;
+            bool areDesignsPresent = TryGetDeployableDesigns(designToUpgrade.HullCategory, out hullDesigns);
             D.Assert(areDesignsPresent);
 
             var candidateDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
@@ -1344,8 +1443,8 @@ namespace CodeEnv.Master.GameContent {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToUpgrade.Status);
 
-            IList<ShipDesign> hullDesigns;
-            bool areDesignsPresent = TryGetDesigns(designToUpgrade.HullCategory, out hullDesigns);
+            IEnumerable<ShipDesign> hullDesigns;
+            bool areDesignsPresent = TryGetDeployableDesigns(designToUpgrade.HullCategory, out hullDesigns);
             D.Assert(areDesignsPresent);
 
             upgradeDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current)
@@ -1391,8 +1490,20 @@ namespace CodeEnv.Master.GameContent {
             return _facilityDesignLookupByName.TryGetValue(designName, out design);
         }
 
-        public bool TryGetDesigns(FacilityHullCategory hullCategory, out IList<FacilityDesign> designs) {
-            return _facilityDesignsLookupByHull.TryGetValue(hullCategory, out designs);
+        /// <summary>
+        /// Returns <c>true</c> if one or more deployable (not the Template) designs of this hullCategory are available. 
+        /// If <c>false</c> it indicates that the Hull has not yet been researched by this player.
+        /// <remarks>If true, all designs, including the single Current version as well as all Obsolete versions are returned.</remarks>
+        /// <remarks>The template design will never be included.</remarks>
+        /// </summary>
+        /// <param name="hullCategory">The hull category.</param>
+        /// <param name="allDeployableDesigns">All designs.</param>
+        /// <returns></returns>
+        public bool TryGetDeployableDesigns(FacilityHullCategory hullCategory, out IEnumerable<FacilityDesign> allDeployableDesigns) {
+            IList<FacilityDesign> designs;
+            _facilityDesignsLookupByHull.TryGetValue(hullCategory, out designs);
+            allDeployableDesigns = designs.Where(design => design.Status != AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            return allDeployableDesigns.Any();
         }
 
         /// <summary>
@@ -1404,13 +1515,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <param name="upgradeDesign">The upgrade design.</param>
         /// <returns></returns>
+        [Obsolete("Use TryGetUpgradeDesigns")]
         public bool TryGetUpgradeDesign(FacilityDesign designToUpgrade, out FacilityDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, designToUpgrade.Status);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToUpgrade.Status);
 
-            IList<FacilityDesign> hullDesigns;
-            bool areDesignsPresent = TryGetDesigns(designToUpgrade.HullCategory, out hullDesigns);
+            IEnumerable<FacilityDesign> hullDesigns;
+            bool areDesignsPresent = TryGetDeployableDesigns(designToUpgrade.HullCategory, out hullDesigns);
             D.Assert(areDesignsPresent);
 
             var candidateDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
@@ -1439,8 +1551,8 @@ namespace CodeEnv.Master.GameContent {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, designToUpgrade.Status);
 
-            IList<FacilityDesign> hullDesigns;
-            bool areDesignsPresent = TryGetDesigns(designToUpgrade.HullCategory, out hullDesigns);
+            IEnumerable<FacilityDesign> hullDesigns;
+            bool areDesignsPresent = TryGetDeployableDesigns(designToUpgrade.HullCategory, out hullDesigns);
             D.Assert(areDesignsPresent);
 
             upgradeDesigns = hullDesigns.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current)
@@ -1479,20 +1591,6 @@ namespace CodeEnv.Master.GameContent {
             return _starbaseCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
         }
 
-        /// <summary>
-        /// Gets the default StarbaseCmdModuleDesign which will always be the cheapest of the lowest level designs available.
-        /// The design returned will typically, but not always, be Obsolete. It will never be a Template design.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Use GetStarbaseCmdModDefaultDesign")]
-        public StarbaseCmdModuleDesign GetDefaultStarbaseCmdModDesign() {
-            var allDesigns = _starbaseCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
-                || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
-            int minLevel = allDesigns.Min(des => des.DesignLevel);
-            D.AssertEqual(Constants.Zero, minLevel);
-            return allDesigns.Where(des => des.DesignLevel == minLevel).MinBy(minLevelDes => minLevelDes.BuyoutCost);
-        }
-
         public bool TryGetDesign(string designName, out StarbaseCmdModuleDesign design) {
             return _starbaseCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
@@ -1506,6 +1604,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <param name="upgradeDesign">The upgrade design.</param>
         /// <returns></returns>
+        [Obsolete("Use TryGetUpgradeDesigns")]
         public bool TryGetUpgradeDesign(StarbaseCmdModuleDesign designToUpgrade, out StarbaseCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, designToUpgrade.Status);
@@ -1573,20 +1672,6 @@ namespace CodeEnv.Master.GameContent {
             return _fleetCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
         }
 
-        /// <summary>
-        /// Gets the default FleetCmdModuleDesign which will always be the cheapest of the lowest level designs available.
-        /// The design returned will typically, but not always, be Obsolete. It will never be a Template design.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Use GetFleetCmdModDefaultDesign")]
-        public FleetCmdModuleDesign GetDefaultFleetCmdModDesign() {
-            var allDesigns = _fleetCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
-                || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
-            int minLevel = allDesigns.Min(des => des.DesignLevel);
-            D.AssertEqual(Constants.Zero, minLevel);
-            return allDesigns.Where(des => des.DesignLevel == minLevel).MinBy(minLevelDes => minLevelDes.BuyoutCost);
-        }
-
         public bool TryGetDesign(string designName, out FleetCmdModuleDesign design) {
             return _fleetCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
@@ -1600,6 +1685,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <param name="upgradeDesign">The upgrade design.</param>
         /// <returns></returns>
+        [Obsolete("Use TryGetUpgradeDesigns")]
         public bool TryGetUpgradeDesign(FleetCmdModuleDesign designToUpgrade, out FleetCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, designToUpgrade.Status);
@@ -1621,7 +1707,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns <c>true</c> if there is one or more upgradeDesigns available for designToUpgrade, independent of designToUpgrade's RootDesignName.
-        /// <remarks>Use TryGetUpgradeDesign() when either the user or the AI wishes to automatically upgrade within the same 
+        /// <remarks>Use TryGetUpgradeDesign() when either the user or the AI wishes to automatically upgrade within the same
         /// RootDesignName series of designs.</remarks>
         /// </summary>
         /// <param name="designToUpgrade">The design to upgrade.</param>
@@ -1667,20 +1753,6 @@ namespace CodeEnv.Master.GameContent {
             return _settlementCmdModDesignLookupByName.Values.Single(design => design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
         }
 
-        /// <summary>
-        /// Gets the default SettlementCmdModuleDesign which will always be the cheapest of the lowest level designs available.
-        /// The design returned will typically, but not always, be Obsolete. It will never be a Template design.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Use GetSettlementCmdModDefaultDesign")]
-        public SettlementCmdModuleDesign GetDefaultSettlementCmdModDesign() {
-            var allDesigns = _settlementCmdModDesignLookupByName.Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current
-                || des.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete);
-            int minLevel = allDesigns.Min(des => des.DesignLevel);
-            D.AssertEqual(Constants.Zero, minLevel);
-            return allDesigns.Where(des => des.DesignLevel == minLevel).MinBy(minLevelDes => minLevelDes.BuyoutCost);
-        }
-
         public bool TryGetDesign(string designName, out SettlementCmdModuleDesign design) {
             return _settlementCmdModDesignLookupByName.TryGetValue(designName, out design);
         }
@@ -1694,6 +1766,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToUpgrade">The design to upgrade.</param>
         /// <param name="upgradeDesign">The upgrade design.</param>
         /// <returns></returns>
+        [Obsolete("Use TryGetUpgradeDesigns")]
         public bool TryGetUpgradeDesign(SettlementCmdModuleDesign designToUpgrade, out SettlementCmdModuleDesign upgradeDesign) {
             D.AssertEqual(_player, designToUpgrade.Player);
             D.AssertNotEqual(AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, designToUpgrade.Status);

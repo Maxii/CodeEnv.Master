@@ -67,6 +67,8 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new PlanetoidPublisher(this); }
         }
 
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
+
         #region Initialization 
 
         /// <summary>
@@ -106,8 +108,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private IntVector3 InitializeSectorID() {
-            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
-            D.AssertNotDefault(sectorID);
+            ////IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
+            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDContaining(Position);
+            ////D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }

@@ -163,27 +163,57 @@ namespace CodeEnv.Master.GameContent {
                                                                     EquipmentCategory.ProjectileWeapon
                                                                 };
 
-        public static ShipHullCategory[] ShipHullCategoriesInUse =  {
-                                                                        ShipHullCategory.Carrier,
-                                                                        ShipHullCategory.Colonizer,
-                                                                        ShipHullCategory.Cruiser,
-                                                                        ShipHullCategory.Destroyer,
-                                                                        ShipHullCategory.Dreadnought,
-                                                                        ShipHullCategory.Frigate,
-                                                                        ShipHullCategory.Investigator,
-                                                                        ShipHullCategory.Support,
-                                                                        ShipHullCategory.Troop
+        public static EquipmentCategory[] ShipHullEquipCats =   {
+                                                                    EquipmentCategory.SHullCarrier,
+                                                                    EquipmentCategory.SHullColonizer,
+                                                                    EquipmentCategory.SHullCruiser,
+                                                                    EquipmentCategory.SHullDestroyer,
+                                                                    EquipmentCategory.SHullDreadnought,
+                                                                    EquipmentCategory.SHullFrigate,
+                                                                    EquipmentCategory.SHullInvestigator,
+                                                                    EquipmentCategory.SHullSupport,
+                                                                    EquipmentCategory.SHullTroop
+                                                                };
+
+        public static EquipmentCategory[] FacilityHullEquipCats =   {
+                                                                        EquipmentCategory.FHullBarracks,
+                                                                        EquipmentCategory.FHullCentralHub,
+                                                                        EquipmentCategory.FHullColonyHab,
+                                                                        EquipmentCategory.FHullDefense,
+                                                                        EquipmentCategory.FHullEconomic,
+                                                                        EquipmentCategory.FHullFactory,
+                                                                        EquipmentCategory.FHullLaboratory
                                                                     };
 
-        public static FacilityHullCategory[] FacilityHullCategoriesInUse =  {
-                                                                                FacilityHullCategory.Barracks,
-                                                                                FacilityHullCategory.CentralHub,
-                                                                                FacilityHullCategory.ColonyHab,
-                                                                                FacilityHullCategory.Defense,
-                                                                                FacilityHullCategory.Economic,
-                                                                                FacilityHullCategory.Factory,
-                                                                                FacilityHullCategory.Laboratory
-                                                                            };
+        /// <summary>
+        /// The hull categories currently used during the game.
+        /// <remarks>For debug purposes. Use PlayerResearchManager.GetDiscoveredXXXHullCats() for the HullCats the player has rights too.</remarks>
+        /// </summary>
+        public static ShipHullCategory[] __ShipHullCategoriesInUse =    {
+                                                                            ShipHullCategory.Carrier,
+                                                                            ShipHullCategory.Colonizer,
+                                                                            ShipHullCategory.Cruiser,
+                                                                            ShipHullCategory.Destroyer,
+                                                                            ShipHullCategory.Dreadnought,
+                                                                            ShipHullCategory.Frigate,
+                                                                            ShipHullCategory.Investigator,
+                                                                            ShipHullCategory.Support,
+                                                                            ShipHullCategory.Troop
+                                                                        };
+
+        /// <summary>
+        /// The hull categories currently used during the game.
+        /// <remarks>For debug purposes. Use PlayerResearchManager.GetDiscoveredXXXHullCats() for the HullCats the player has rights too.</remarks>
+        /// </summary>
+        public static FacilityHullCategory[] __FacilityHullCategoriesInUse =    {
+                                                                                    FacilityHullCategory.Barracks,
+                                                                                    FacilityHullCategory.CentralHub,
+                                                                                    FacilityHullCategory.ColonyHab,
+                                                                                    FacilityHullCategory.Defense,
+                                                                                    FacilityHullCategory.Economic,
+                                                                                    FacilityHullCategory.Factory,
+                                                                                    FacilityHullCategory.Laboratory
+                                                                                };
 
         public static Formation[] AcceptableFleetFormations =   {
                                                                     Formation.Diamond,
@@ -737,6 +767,10 @@ namespace CodeEnv.Master.GameContent {
         public const string MissileIconFilename = "Missile1_12";
         public const string AssaultVehicleIconFilename = "flying_12";
 
+        public const string LargeScienceIconFilename = "microscope23_16";
+        public const string LargeDialogIconFilename = "Persons1_16";    // IMPROVE best I can do is 2 people for now
+        public const string LargeRunIconFilename = "Run1_16";
+        public const string LargePauseIconFilename = "Pause1_16";
 
     }
 }

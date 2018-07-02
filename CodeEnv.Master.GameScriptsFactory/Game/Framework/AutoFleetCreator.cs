@@ -29,8 +29,8 @@ public class AutoFleetCreator : AAutoUnitCreator {
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = "Fleet_AutoConfig";
+    protected override string InitializeRootUnitName() {
+        return "Fleet_AutoConfig";
     }
 
     protected override void MakeElements() {

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         float ClearanceRadius { get; }
 
-        IList<StationaryLocation> LocalAssemblyStations { get; }
+        IEnumerable<StationaryLocation> LocalAssemblyStations { get; }
 
 
     }

@@ -55,8 +55,6 @@ public class MyNguiToggleButton : ATextTooltip {
         get { return _button.isEnabled; }
         set {
             _button.isEnabled = value;  // automatically controls enabled for any collider present
-            //// disabling UIButton auto disables any collider so re-enable to allow tooltips
-            ////_collider.enabled = true;
         }
     }
 
@@ -64,7 +62,6 @@ public class MyNguiToggleButton : ATextTooltip {
 
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    ////private Collider _collider;
     private UIButton _button;
     private UIToggle _toggle;
     private UISprite _icon;
@@ -86,7 +83,6 @@ public class MyNguiToggleButton : ATextTooltip {
 
     private void InitializeValuesAndReferences() {
         _button = GetComponent<UIButton>();
-        ////_button.isEnabled = false;
         _toggle = GetComponent<UIToggle>();
         if (_toggle.startsActive) {
             D.Warn("{0} startsActive is being reset to false.", DebugName);
@@ -97,8 +93,6 @@ public class MyNguiToggleButton : ATextTooltip {
             _toggle.group = Constants.Zero;
         }
         _icon = gameObject.GetComponentsInImmediateChildren<UISprite>().MaxBy(s => s.depth);
-        ////_collider = gameObject.GetSingleComponentInChildren<Collider>();
-        ////_collider.enabled = true;   // disabling button above will disable the collider
     }
 
     private void Subscribe() {

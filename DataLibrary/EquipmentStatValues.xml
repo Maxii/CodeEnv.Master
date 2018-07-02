@@ -436,8 +436,8 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <MaxCmdEffect>1.0</MaxCmdEffect>
-      <StartPop>100</StartPop>
-      <StartApproval>1.0</StartApproval>
+      <!--<StartPop>100</StartPop>-->
+      <!--<StartApproval>1.0</StartApproval>-->
     </Level>
     <Level LevelName="Two">
       <Name>CmdModule+</Name>
@@ -451,8 +451,8 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <MaxCmdEffect>1.0</MaxCmdEffect>
-      <StartPop>200</StartPop>
-      <StartApproval>1.0</StartApproval>
+      <!--<StartPop>200</StartPop>-->
+      <!--<StartApproval>1.0</StartApproval>-->
     </Level>
   </EquipmentCategory>
   <EquipmentCategory EquipmentCategoryName="SettlementCmdModule">
@@ -468,8 +468,8 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <MaxCmdEffect>1.0</MaxCmdEffect>
-      <StartPop>1000</StartPop>
-      <StartApproval>1.0</StartApproval>
+      <!--<StartPop>1000</StartPop>-->
+      <!--<StartApproval>1.0</StartApproval>-->
     </Level>
     <Level LevelName="Two">
       <Name>CmdModule+</Name>
@@ -483,8 +483,8 @@
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
       <MaxCmdEffect>1.0</MaxCmdEffect>
-      <StartPop>2000</StartPop>
-      <StartApproval>1.0</StartApproval>
+      <!--<StartPop>2000</StartPop>-->
+      <!--<StartApproval>1.0</StartApproval>-->
     </Level>
   </EquipmentCategory>
   <EquipmentCategory EquipmentCategoryName="FleetCmdModule">

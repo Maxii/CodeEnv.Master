@@ -84,8 +84,8 @@ public abstract class ABaseUnitHudForm : AForm {
 
     protected HashSet<FacilityIconGuiElement> _pickedFacilityIcons;
     protected GameManager _gameMgr;
+    protected PlayerAIManager _playerAiMgr;
 
-    private PlayerAIManager _playerAiMgr;
     private HashSet<MyNguiToggleButton> _toggleButtonsUsedThisSession;
     private IList<Transform> _sortedFacilityIconTransforms;
     private IList<Transform> _sortedHangerShipIconTransforms;
@@ -550,26 +550,30 @@ public abstract class ABaseUnitHudForm : AForm {
     private void HandleFacilityRefitButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedFacilityIcons.Count);
         _toggleButtonsUsedThisSession.Add(_facilityRefitButton);
-        var pickedFacility = _pickedFacilityIcons.First().Element;
-        FacilityOrder order;
+        var pickedFacility = _pickedFacilityIcons.Single().Element;
         if (_facilityRefitButton.IsToggledIn) {
-            FacilityDesign designToBeRefit = pickedFacility.Data.Design;
-            FacilityDesign refitDesign;
-            bool isRefitDesignAvailable = _playerAiMgr.Designs.TryGetUpgradeDesign(designToBeRefit, out refitDesign);
-            D.Assert(isRefitDesignAvailable);
-            order = new FacilityRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
+            ChooseDesignAndIssueRefitOrderFor(pickedFacility);
         }
         else {
-            order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
+            var cancelOrder = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
+            pickedFacility.CurrentOrder = cancelOrder;
         }
-        pickedFacility.CurrentOrder = order;
         // buttons already assessed
+    }
+
+    protected virtual void ChooseDesignAndIssueRefitOrderFor(FacilityItem facility) {
+        var chosenDesign = _playerAiMgr.ChooseRefitDesign(facility.Data.Design);
+        IssueRefitOrderTo(facility, chosenDesign);
+    }
+
+    protected void IssueRefitOrderTo(FacilityItem facility, FacilityDesign refitDesign) {
+        facility.CurrentOrder = new FacilityRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
     }
 
     private void HandleFacilityDisbandButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedFacilityIcons.Count);
         _toggleButtonsUsedThisSession.Add(_facilityDisbandButton);
-        var pickedFacility = _pickedFacilityIcons.First().Element;
+        var pickedFacility = _pickedFacilityIcons.Single().Element;
         FacilityOrder order;
         if (_facilityDisbandButton.IsToggledIn) {
             order = new FacilityOrder(FacilityDirective.Disband, OrderSource.User, SelectedUnit);
@@ -592,7 +596,6 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     protected virtual void AssessUnitCompositionButtons() {
-
         bool isFacilityScuttleButtonEnabled = false;
         if (_pickedFacilityIcons.Any()) {
             isFacilityScuttleButtonEnabled = _pickedFacilityIcons.Select(icon => icon.Element).All(e => e.IsAuthorizedForNewOrder(FacilityDirective.Scuttle));
@@ -601,7 +604,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
         if (_pickedFacilityIcons.Count == Constants.One) {
             // 11.18.17 picked elements are limited to one to make cancel order practical to implement
-            var pickedFacility = _pickedFacilityIcons.First().Element;
+            var pickedFacility = _pickedFacilityIcons.Single().Element;
 
             bool isOrderedToRepair = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Repair);
             GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
@@ -756,20 +759,61 @@ public abstract class ABaseUnitHudForm : AForm {
         AssessHangerButtons();
     }
 
+    #region Ship CreateFleetButton Clicked
+
     private void HandleShipCreateHangerFleetButtonClicked() {
-        D.Log("{0} is about to create a fleet from a hanger.", DebugName);
+        ////var chosenDesign = _playerAiMgr.ChooseFleetCmdModDesign();
+        ////HandleCmdModDesignChosen(chosenDesign);
+        ChooseCmdModuleDesignAndFormFleet();
+    }
+
+    protected virtual void ChooseCmdModuleDesignAndFormFleet() {
+        var chosenDesign = _playerAiMgr.ChooseFleetCmdModDesign();
+        FormFleetFrom(chosenDesign);
+    }
+
+    ////[Obsolete]
+    ////protected void HaveUserPickCmdModDesign() {
+    ////    D.Assert(SelectedUnit.Owner.IsUser);
+    ////    var acceptDelegate = new EventDelegate(this, "HandleUserPickedCmdModDesign");
+    ////    var cancelDelegate = new EventDelegate(() => {
+    ////        DialogWindow.Instance.Hide();
+    ////        // Button is ignored. Creation of fleet will not occur
+    ////    });
+
+    ////    var dialogSettings = new APopupDialogForm.DialogSettings(SelectedUnit.Owner, acceptDelegate, cancelDelegate) {
+    ////        Text = "Pick the CmdModuleDesign to create this new Fleet from Hanger ships. \nCancel to not create the Fleet.",
+    ////        OptionalParameter = null    // 5.30.18 this is an initial CmdModuleDesign selection, not a refit
+    ////    };
+    ////    DialogWindow.Instance.Show(FormID.SelectFleetCmdModDesignDialog, dialogSettings);
+    ////}
+
+    ////[Obsolete]
+    ////private void HandleUserPickedCmdModDesign(FleetCmdModuleDesign pickedDesign) {
+    ////    FormFleetFrom(pickedDesign);
+    ////    DialogWindow.Instance.Hide();
+    ////}
+
+    /// <summary>
+    /// Called when the player has selected a CmdModuleDesign to apply to the fleet being formed.
+    /// </summary>
+    /// <param name="chosenDesign">The command mod design.</param>
+    protected void FormFleetFrom(FleetCmdModuleDesign chosenDesign) {
+        D.Log("{0} is about to create a fleet from hanger ships.", DebugName);
         var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
         var createFleetShips = pickedShips.Where(ship => ship.Availability != NewOrderAvailability.Unavailable);
         D.Assert(createFleetShips.Any());
 
-        SelectedUnit.Hanger.FormFleetFrom("HangerFleet", Formation.Globe, createFleetShips);
+        SelectedUnit.Hanger.FormFleetFrom("HangerFleet", chosenDesign, Formation.Globe, createFleetShips);
         BuildHangerShipIcons();
     }
+
+    #endregion
 
     private void HandleShipRepairButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
         _toggleButtonsUsedThisSession.Add(_shipRepairButton);
-        var pickedShip = _pickedHangerShipIcons.First().Element;
+        var pickedShip = _pickedHangerShipIcons.Single().Element;
         ShipOrder order;
         if (_shipRepairButton.IsToggledIn) {
             order = new ShipOrder(ShipDirective.Repair, OrderSource.User, SelectedUnit);
@@ -783,27 +827,32 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void HandleShipRefitButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
+
         _toggleButtonsUsedThisSession.Add(_shipRefitButton);
-        var pickedShip = _pickedHangerShipIcons.First().Element;
-        ShipOrder order;
+        var pickedShip = _pickedHangerShipIcons.Single().Element;
         if (_shipRefitButton.IsToggledIn) {
-            ShipDesign designToBeRefit = pickedShip.Data.Design;
-            ShipDesign refitDesign;
-            bool isRefitDesignAvailable = _playerAiMgr.Designs.TryGetUpgradeDesign(designToBeRefit, out refitDesign);
-            D.Assert(isRefitDesignAvailable);
-            order = new ShipRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
+            ChooseDesignAndIssueRefitOrderFor(pickedShip);
         }
         else {
-            order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
+            var cancelOrder = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
+            pickedShip.CurrentOrder = cancelOrder;
         }
-        pickedShip.CurrentOrder = order;
         // buttons already assessed
+    }
+
+    protected virtual void ChooseDesignAndIssueRefitOrderFor(ShipItem ship) {
+        var chosenDesign = _playerAiMgr.ChooseRefitDesign(ship.Data.Design);
+        IssueRefitOrderTo(ship, chosenDesign);
+    }
+
+    protected void IssueRefitOrderTo(ShipItem ship, ShipDesign refitDesign) {
+        ship.CurrentOrder = new ShipRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
     }
 
     private void HandleShipDisbandButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
         _toggleButtonsUsedThisSession.Add(_shipDisbandButton);
-        var pickedShip = _pickedHangerShipIcons.First().Element;
+        var pickedShip = _pickedHangerShipIcons.Single().Element;
         ShipOrder order;
         if (_shipDisbandButton.IsToggledIn) {
             order = new ShipOrder(ShipDirective.Disband, OrderSource.User, SelectedUnit);
@@ -834,7 +883,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
         if (_pickedHangerShipIcons.Count == Constants.One) {
             // 11.18.17 picked elements are limited to one to make cancel order practical to implement
-            var pickedShip = _pickedHangerShipIcons.First().Element;
+            var pickedShip = _pickedHangerShipIcons.Single().Element;
 
             bool isOrderedToRepair = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Repair);
             GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;

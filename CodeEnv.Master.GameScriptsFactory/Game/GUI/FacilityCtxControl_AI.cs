@@ -32,6 +32,8 @@ public class FacilityCtxControl_AI : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _facilityMenuOperator.IsFocus; } }
 
+    protected override bool SelectedItemMenuHasContent { get { return true; } } // TEMP allows '__ChgOwner'
+
     private FacilityItem _facilityMenuOperator;
 
     public FacilityCtxControl_AI(FacilityItem facility)

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Holds the current knowledge of a player about items in the universe.
     /// What is known by the player about each item is available through the item from Reports.
+    /// <remarks>OPTIMIZE Sectors, Systems and Stars can simply reuse AllKnowledge's collections as all players have
+    /// at least IntelCoverage.Basic knowledge of them.</remarks>
     /// </summary>
     public class PlayerKnowledge : APropertyChangeTracking, IDisposable {
 
@@ -66,6 +68,20 @@ namespace CodeEnv.Master.GameContent {
         #region Universe Awareness
 
         public IUniverseCenter_Ltd UniverseCenter { get; private set; }
+
+        public IEnumerable<ISector> OwnerSectors {
+            get {
+                var ownerSectors = new List<ISector>();
+                Player sectorOwner;
+                var coreSectors = GameReferences.SectorGrid.CoreSectors;
+                coreSectors.ForAll(cs => {
+                    if (cs.TryGetOwner(Owner, out sectorOwner) && sectorOwner == Owner) {
+                        ownerSectors.Add(cs);
+                    }
+                });
+                return ownerSectors;
+            }
+        }
 
         public IEnumerable<IMoon> OwnerMoons {
             get {
@@ -245,6 +261,24 @@ namespace CodeEnv.Master.GameContent {
             get { return OwnerItems.Where(myItem => (myItem is ISensorDetectable)).Cast<ISensorDetectable>(); }
         }
 
+        public bool CanAnySystemsFoundOwnerSettlements { get { return SystemsThatCanFoundOwnerSettlements.Any(); } }   // OPTIMIZE return true on first found
+
+        public bool CanAnySectorsFoundOwnerStarbases { get { return SectorsThatCanFoundOwnerStarbases.Any(); } }
+
+        public IEnumerable<ISystem_Ltd> SystemsThatCanFoundOwnerSettlements {
+            get { return Systems.Where(sys => sys.IsFoundingSettlementAllowedBy(Owner)); }
+        }
+
+        public IEnumerable<ISector_Ltd> SectorsThatCanFoundOwnerStarbases {
+            get {
+                IEnumerable<ISector_Ltd> sectorsThatCanFoundOwnerStarbases;
+                if (TryGetSectorsThatCanFoundStarbases(out sectorsThatCanFoundOwnerStarbases)) {
+                    return sectorsThatCanFoundOwnerStarbases;
+                }
+                return Enumerable.Empty<ISector_Ltd>();
+            }
+        }
+
         public bool AreAnyKnownItemsGuardableByOwner { get { return KnownItemsGuardableByOwner.Any(); } }
 
         public IEnumerable<IGuardable> KnownBasesGuardableByOwner {
@@ -383,6 +417,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private IEnumerable<ISector_Ltd> _coreSectors;
+        public IEnumerable<ISector_Ltd> CoreSectors {
+            get {
+                _coreSectors = _coreSectors ?? GameReferences.SectorGrid.CoreSectors.Cast<ISector_Ltd>();
+                return _coreSectors;
+            }
+        }
+
         /// <summary>
         /// The Moons this player has knowledge of.
         /// </summary>
@@ -465,14 +507,14 @@ namespace CodeEnv.Master.GameContent {
         // Note: Other players this Player has met is held by the Player
 
         private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorID;
-        private IDictionary<IntVector3, IList<IStarbaseCmd_Ltd>> _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd_Ltd>>();
-        private IDictionary<IntVector3, ISettlementCmd_Ltd> _settlementLookupBySectorID = new Dictionary<IntVector3, ISettlementCmd_Ltd>();
+        private IDictionary<IntVector3, IList<IStarbaseCmd_Ltd>> _starbasesLookupBySectorID;
+        private IDictionary<IntVector3, ISettlementCmd_Ltd> _settlementLookupBySectorID;
 
-        private HashSet<IPlanetoid_Ltd> _planetoids = new HashSet<IPlanetoid_Ltd>();
-        private IList<IStar_Ltd> _stars = new List<IStar_Ltd>();
-        private HashSet<IUnitElement_Ltd> _elements = new HashSet<IUnitElement_Ltd>();
-        private HashSet<IUnitCmd_Ltd> _commands = new HashSet<IUnitCmd_Ltd>();
-        private HashSet<IOwnerItem_Ltd> _items = new HashSet<IOwnerItem_Ltd>();
+        private IList<IStar_Ltd> _stars;
+        private HashSet<IPlanetoid_Ltd> _planetoids;
+        private HashSet<IUnitElement_Ltd> _elements;
+        private HashSet<IUnitCmd_Ltd> _commands;
+        private HashSet<IOwnerItem_Ltd> _items;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayerKnowledge" /> class.
@@ -488,7 +530,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlayerKnowledge"/> class.
+        /// Initializes a new instance of the <see cref="PlayerKnowledge" /> class.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <param name="uCenter">The UniverseCenter.</param>
@@ -501,10 +543,20 @@ namespace CodeEnv.Master.GameContent {
             AddUniverseCenter(uCenter);
             allStars.ForAll(star => AddStar(star));
             AddAllSystems(allStars);
+            AddAllSectors();
             __InitializeValidatePlayerKnowledge();
         }
 
-        private void InitializeValuesAndReferences() { }
+        private void InitializeValuesAndReferences() {
+            _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd_Ltd>>();
+            _settlementLookupBySectorID = new Dictionary<IntVector3, ISettlementCmd_Ltd>();
+
+            _stars = new List<IStar_Ltd>();
+            _planetoids = new HashSet<IPlanetoid_Ltd>();
+            _elements = new HashSet<IUnitElement_Ltd>();
+            _commands = new HashSet<IUnitCmd_Ltd>();
+            _items = new HashSet<IOwnerItem_Ltd>();
+        }
 
         internal void CommenceOperations() {
             IsOperational = true;
@@ -558,6 +610,16 @@ namespace CodeEnv.Master.GameContent {
             }
             starbasesInSector = Enumerable.Empty<IStarbaseCmd_Ltd>();
             return false;
+        }
+
+        public bool TryGetSectorsThatCanFoundStarbases(out IEnumerable<ISector_Ltd> starbaseFoundableSectors) {
+            starbaseFoundableSectors = CoreSectors.Where(sector => sector.IsFoundingStarbaseAllowedBy(Owner));
+            return starbaseFoundableSectors.Any();
+        }
+
+        public bool TryGetSystemsThatCanFoundSettlements(out IEnumerable<ISystem_Ltd> settlementFoundableSystems) {
+            settlementFoundableSystems = _systemLookupBySectorID.Values.Where(sys => sys.IsFoundingSettlementAllowedBy(Owner));
+            return settlementFoundableSystems.Any();
         }
 
         /// <summary>
@@ -662,12 +724,16 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0}: unnecessary check for knowledge of {1}.", DebugName, item.DebugName);
                 return true;
             }
+            if (item is ISector_Ltd) {
+                D.Assert(GameReferences.SectorGrid.Sectors.Contains(item as ISector));
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", DebugName, item.DebugName);
+                return true;
+            }
             return false;
         }
 
         /// <summary>
-        /// Returns the items that we know about and to which we have 
-        /// owner access that are owned by player.
+        /// Returns the items that we know about and to which we have owner access that are owned by player.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
@@ -699,6 +765,13 @@ namespace CodeEnv.Master.GameContent {
         private void AddAllSystems(IEnumerable<IStar_Ltd> allStars) {   // properly sizes the dictionary
             _systemLookupBySectorID = allStars.ToDictionary(star => star.SectorID, star => star.ParentSystem);
             allStars.ForAll(star => _items.Add(star.ParentSystem));
+        }
+
+        private void AddAllSectors() {
+            var allSectors = GameReferences.SectorGrid.Sectors;
+            foreach (var sector in allSectors) {
+                _items.Add(sector as ISector_Ltd);
+            }
         }
 
         internal bool AddPlanetoid(IPlanetoid_Ltd planetoid) {
@@ -877,7 +950,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (!command.IsDead) {
                 if (command.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-                    if (!command.IsOwnerChangeUnderway) {
+                    if (!command.__IsOwnerChgUnderway) {
                         D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, command.DebugName);
                     }
                     else {
@@ -918,11 +991,11 @@ namespace CodeEnv.Master.GameContent {
 
             if (!element.IsDead) {
                 if (element.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-                    if (!element.IsOwnerChangeUnderway) {
-                        D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
+                    if (!element.__IsOwnerChgUnderway) {
+                        D.Error("{0}: {1} is alive and being removed while in Alliance?", DebugName, element.DebugName);
                     }
                     else {
-                        D.Log("{0} had to rely on testing {1}.IsOwnerChangeUnderway to accept it.", DebugName, element.DebugName);
+                        D.LogBold("{0} had to rely on testing {1}.IsOwnerChangeUnderway to accept Removal.", DebugName, element.DebugName);
                     }
                 }
             }
@@ -1006,7 +1079,6 @@ namespace CodeEnv.Master.GameContent {
             }
             //D.Log("{0}: All Unit Items owned: {1}.", DebugName, OwnerItems.Where(i => i is IUnitCmd || i is IUnitElement).Select(i => i.DebugName).Concatenate());
 
-            bool isAllIntelCoverageComprehensive = GameReferences.DebugControls.IsAllIntelCoverageComprehensive;
             foreach (var item in _items) {
                 var mortalItem = item as IMortalItem;
                 if (mortalItem != null) {

@@ -46,6 +46,8 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _universeCenterMenuOperator.IsFocus; } }
 
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
+
     private UniverseCenterItem _universeCenterMenuOperator;
 
     public UniverseCenterCtxControl(UniverseCenterItem universeCenter)

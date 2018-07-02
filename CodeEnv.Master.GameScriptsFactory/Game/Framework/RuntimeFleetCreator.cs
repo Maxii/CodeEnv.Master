@@ -5,9 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetCreator.cs
-// Unit Creator that immediately deploys and commences operations of a fleet from the operational ships provided 
-/// at its current location in the scene.
+// File: RuntimeFleetCreator.cs
+// ARuntimeUnitCreator that immediately deploys and commences operations of a fleet from the operational ships provided 
+// at its current location in the scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,47 +21,43 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Unit Creator that immediately deploys and commences operations of a fleet from the operational ships provided 
+/// ARuntimeUnitCreator that immediately deploys and commences operations of a fleet from the operational ships provided 
 /// at its current location in the scene.
 /// </summary>
-public class FleetCreator : AUnitCreator {
-
-    public override GameDate DeployDate { get { return GameTime.Instance.CurrentDate; } }
+public class RuntimeFleetCreator : ARuntimeUnitCreator {
 
     public IEnumerable<ShipItem> Elements { get; set; }
 
-    [Obsolete]
-    public string CmdModDesignName { get; set; }
-
     public FleetCmdModuleDesign CmdModDesign { get; set; }
 
-    protected override Player Owner { get { return Elements.First().Owner; } }
+    protected override Player Owner { get { return CmdModDesign.Player; } }
 
     private FleetCmdItem _command;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = "FleetFromShips";
+    protected override string InitializeRootUnitName() {
+        return "RuntimeFleet";
     }
 
-    protected override void AttemptToAuthorizeDeploymentOnStart() {
-        // The user of this creator always immediately authorizes deployment 
+    protected override void MakeCommand() {
+        _command = _factory.MakeFleetCmdInstance(Owner, CmdModDesign, gameObject, UnitName);
     }
 
-    public override void PrepareUnitForDeployment() {
-        _command = MakeCommand();
+    protected override void AddElementsToCommand() {
         foreach (var element in Elements) {
-            _command.AddElement(element);
+            _command.AddElement(element);   // Validates owners haven't changed
         }
+    }
+
+    protected override void AssignHQElement() {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    private FleetCmdItem MakeCommand() {
-        return _factory.MakeFleetCmdInstance(Owner, CmdModDesign, gameObject, UnitName);
+    protected override void PositionUnit() {
+        // Fleets are initially positioned where this creator is located
     }
 
     protected override void CompleteUnitInitialization() {
@@ -81,11 +77,12 @@ public class FleetCreator : AUnitCreator {
     }
 
     protected override bool BeginCommandOperations() {
-        if (_command.IsOwnerChangeUnderway) {
-            D.Warn("{0}: {1}.CommenceOperations() called while an owner change is underway.", DebugName, _command.DebugName);
+        if (_command.__IsOwnerChgUnderway) {
+            D.Warn("FYI. {0}: {1}.CommenceOperations() called while an owner change is underway.", DebugName, _command.DebugName);
             // 11.18.17 Added to see if this is still an issue. UNCLEAR what I did with LoneFleetCreator if owner change was underway?
         }
         _command.CommenceOperations();
+        D.LogBold("{0} has been created in {1}! Frame = {2}.", DebugName, SectorGrid.Instance.GetSector(SectorID).DebugName, Time.frameCount);
         return true;
     }
 
@@ -93,14 +90,6 @@ public class FleetCreator : AUnitCreator {
         Elements = null;
     }
 
-    #region Debug
-
-    protected override void __ValidateNotDuplicateDeployment() {
-        // not needed as this derived class overrides AttemptToAuthorizeDeploymentOnStart
-        throw new NotImplementedException();
-    }
-
-    #endregion
 
 }
 

@@ -205,8 +205,6 @@ namespace CodeEnv.Master.GameContent {
             set { _gamePoolManager = value; }
         }
 
-        // A 'defacto' Singleton as there is only 1 per scene
-        // I could make it a singleton, but it would take work as it : AGuiLabelReadout
         private static IFpsReadout _fpsReadout;
         public static IFpsReadout FpsReadout {
             get {
@@ -214,6 +212,15 @@ namespace CodeEnv.Master.GameContent {
                 return _fpsReadout;
             }
             set { _fpsReadout = value; }
+        }
+
+        private static IUserActionButton _userActionButton;
+        public static IUserActionButton UserActionButton {
+            get {
+                D.AssertNotNull(_userActionButton);
+                return _userActionButton;
+            }
+            set { _userActionButton = value; }
         }
 
         #endregion

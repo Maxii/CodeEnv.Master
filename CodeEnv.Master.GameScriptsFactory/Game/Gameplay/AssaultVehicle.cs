@@ -436,9 +436,9 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
         //D.Log(ShowDebugLog, "{0}.LaunchChangeHeadingJob() called.", DebugName);
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
         if (_chgHeadingJob != null) {
-            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running. FPS = {1:0.#}.",
-                DebugName, FpsReadout.Instance.FramesPerSecond);
-            // -> course update freq is too high or turnRate too low as missile should be able to complete a turn between course updates
+            // 6.21.18 Occurs when FPS is very low
+            // D.Log("{0}.LaunchChangeHeadingJob() called while another already running. FPS = {1:0.#}.", DebugName, FpsReadout.Instance.FramesPerSecond);
+            // -> course update freq is too high or turnRate too low as should be able to complete a turn between course updates
             KillChangeHeadingJob();
         }
         HandleTurnBeginning();

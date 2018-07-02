@@ -84,6 +84,8 @@ public class AiStarbaseUnitHudForm : ABaseUnitHudForm {
         }
     }
 
+    // 6.5.18 AI HudForm no longer uses SelectCmdModuleDesign DialogWindow
+
     protected override void AssessInteractibleHud() {
         if (_pickedFacilityIcons.Count == Constants.One) {
             InteractibleHudWindow.Instance.Show(FormID.AiFacility, _pickedFacilityIcons.First().Element.UserReport);

@@ -50,14 +50,8 @@ public class DesignScreensManager : AMonoBase {
 
     protected sealed override void Awake() {
         base.Awake();
-        ValidatePrefabs();
+        __ValidatePrefabs();
         InitializeValuesAndReferences();
-    }
-
-    private void ValidatePrefabs() {
-        D.AssertNotNull(_designIconPrefab);
-        D.AssertNotNull(_equipmentIconPrefab);
-        D.AssertNotNull(_threeDModelStagePrefab);
     }
 
     private void InitializeValuesAndReferences() {
@@ -243,6 +237,16 @@ public class DesignScreensManager : AMonoBase {
     public override string ToString() {
         return DebugName;
     }
+
+    #region Debug
+
+    private void __ValidatePrefabs() {
+        D.AssertNotNull(_designIconPrefab);
+        D.AssertNotNull(_equipmentIconPrefab);
+        D.AssertNotNull(_threeDModelStagePrefab);
+    }
+
+    #endregion
 
     #region Screen Choice implementation using DialogWindow
 

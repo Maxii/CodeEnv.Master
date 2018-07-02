@@ -24,15 +24,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipMoveOrder : ShipOrder {
 
-        private const string DebugNameFormat = @"[{0}: Directive = {1}, Source = {2}, Target = {3}, Speed = {4}, Fleetwide = {5}, 
-            FollowonOrder = {6}, Standoff = {7:0.#}]";
+        private const string DebugNameFormat = @"[{0}: Directive = {1}, Source = {2}, \nTarget = {3}, \nSpeed = {4}, Fleetwide = {5}, 
+            CmdOrderID = {6}, \nFollowonOrder = {7}, \nStandoff = {8:0.#}]";
 
         public override string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
+                string cmdOrderIdText = CmdOrderID != default(Guid) ? CmdOrderID.ToShortText() : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
                 return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(),
-                    IsFleetwide, followonOrderText, TargetStandoffDistance);
+                    IsFleetwide, cmdOrderIdText, followonOrderText, TargetStandoffDistance);
             }
         }
 

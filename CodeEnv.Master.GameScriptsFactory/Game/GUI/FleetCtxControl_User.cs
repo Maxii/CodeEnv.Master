@@ -43,7 +43,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                             FleetDirective.Withdraw,
                                                                                             FleetDirective.Retreat,
                                                                                             FleetDirective.Scuttle,
-                                                                                            FleetDirective.ChangeHQ
+                                                                                            FleetDirective.ChangeHQ,
+                                                                                            FleetDirective.FoundSettlement,
+                                                                                            FleetDirective.FoundStarbase
                                                                                         };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
@@ -69,7 +71,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 10, menuPosition: MenuPositionMode.Over) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 12, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -113,6 +115,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
+            case FleetDirective.FoundSettlement:
+            case FleetDirective.FoundStarbase:
             case FleetDirective.Withdraw:
             // TODO should be in battle
             case FleetDirective.Retreat:
@@ -133,8 +137,6 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
     /// in the submenu?" so don't return targets.Any()!</remarks>
-    /// <remarks>12.13.17 Avoid asserting anything here based off of the assumption that IsUserMenuOperatorMenuItemDisabledFor will 
-    /// have already disabled the selection if the assert would fail. This method is also used to count the number of reqd submenus.</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
@@ -177,9 +179,21 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
+            case FleetDirective.FoundSettlement:
+                IEnumerable<ISystem_Ltd> closeSystemsThatCanFoundUserSettlements;
+                TryGetCloseSystemsThatCanFoundSettlements(20, out closeSystemsThatCanFoundUserSettlements);
+                targets = closeSystemsThatCanFoundUserSettlements.Cast<INavigableDestination>();
+                doesDirectiveSupportSubmenus = true;
+                break;
+            case FleetDirective.FoundStarbase:
+                IEnumerable<ISector_Ltd> closeSectorsThatCanFoundUserStarbases;
+                TryGetCloseSectorsThatCanFoundStarbases(20, out closeSectorsThatCanFoundUserStarbases);
+                targets = closeSectorsThatCanFoundUserStarbases.Cast<INavigableDestination>();
+                doesDirectiveSupportSubmenus = true;
+                break;
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-                // Insufficient hanger capacity handled by fleet when trying to transfer to hanger
+                // Insufficient hanger capacity to Disband handled by fleet when trying to transfer to hanger
                 targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
@@ -197,6 +211,18 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
         return doesDirectiveSupportSubmenus;
+    }
+
+    protected override string GetTargetNameTextForSubmenuItem(FleetDirective directive, INavigableDestination target) {
+        if (directive == FleetDirective.FoundSettlement) {
+            GameColor tgtAttractivenessColor = (target as SystemItem).__GetFoundUserSettlementAttractivenessColor();
+            return target.Name.SurroundWith(tgtAttractivenessColor);
+        }
+        if (directive == FleetDirective.FoundStarbase) {
+            GameColor tgtAttractivenessColor = (target as Sector).__GetFoundUserStarbaseAttractivenessColor();
+            return target.Name.SurroundWith(tgtAttractivenessColor);
+        }
+        return base.GetTargetNameTextForSubmenuItem(directive, target);
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
@@ -245,6 +271,52 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         var order = new FleetOrder(directive, OrderSource.User, target);
         remoteFleet.CurrentOrder = order;
     }
+
+    private bool TryGetCloseSystemsThatCanFoundSettlements(int qty, out IEnumerable<ISystem_Ltd> closeSystemsThatCanFoundSettlements) {
+        IEnumerable<ISystem_Ltd> systemsThatCanFoundUserSettlements;
+        _userKnowledge.TryGetSystemsThatCanFoundSettlements(out systemsThatCanFoundUserSettlements);
+        var orderedSystems = systemsThatCanFoundUserSettlements.OrderBy(sys => Vector3.SqrMagnitude(sys.Position - PositionForDistanceMeasurements));
+        closeSystemsThatCanFoundSettlements = orderedSystems.Take(qty);
+        return closeSystemsThatCanFoundSettlements.Any();
+    }
+
+    private bool TryGetCloseSectorsThatCanFoundStarbases(int qty, out IEnumerable<ISector_Ltd> closeSectorsThatCanFoundStarbases) {
+        IEnumerable<ISector_Ltd> sectorsThatCanFoundUserStarbases;
+        _userKnowledge.TryGetSectorsThatCanFoundStarbases(out sectorsThatCanFoundUserStarbases);
+        var orderedSectors = sectorsThatCanFoundUserStarbases.OrderBy(sector => Vector3.SqrMagnitude(sector.Position - PositionForDistanceMeasurements));
+        closeSectorsThatCanFoundStarbases = orderedSectors.Take(qty);
+        return closeSectorsThatCanFoundStarbases.Any();
+    }
+
+    #region Debug
+
+    protected override bool __IsSubmenuSupportedFor(FleetDirective directive) {
+        switch (directive) {
+            case FleetDirective.JoinFleet:
+            case FleetDirective.JoinHanger:
+            case FleetDirective.Patrol:
+            case FleetDirective.Guard:
+            case FleetDirective.Explore:
+            case FleetDirective.Attack:
+            case FleetDirective.Repair:
+            case FleetDirective.FoundSettlement:
+            case FleetDirective.FoundStarbase:
+            case FleetDirective.Refit:
+            case FleetDirective.Disband:
+            case FleetDirective.ChangeHQ:
+                return true;
+            case FleetDirective.Withdraw:
+            case FleetDirective.Retreat:
+            case FleetDirective.Scuttle:
+            case FleetDirective.AssumeFormation:
+                return false;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
+    }
+
+    #endregion
+
 
     #region Archive
 

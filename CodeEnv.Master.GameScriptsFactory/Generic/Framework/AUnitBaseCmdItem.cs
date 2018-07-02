@@ -88,7 +88,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         InitializeConstructionManager();
     }
 
-    protected override bool InitializeDebugLog() {
+    protected override bool __InitializeDebugLog() {
         return DebugControls.Instance.ShowBaseCmdDebugLogs;
     }
 
@@ -102,7 +102,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
     }
 
-    private IList<StationaryLocation> InitializePatrolStations() {
+    private IEnumerable<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
@@ -112,7 +112,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return patrolStations;
     }
 
-    private IList<StationaryLocation> InitializeGuardStations() {
+    private IEnumerable<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
         float distanceFromPosition = CloseOrbitOuterRadius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
@@ -189,7 +189,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         UnifiedSRSensorMonitor.Add(refittedElement.SRSensorMonitor);
 
         refittedElement.subordinateDeathOneShot += SubordinateDeathEventHandler;
-        refittedElement.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
         refittedElement.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
         refittedElement.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
         refittedElement.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
@@ -202,7 +201,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         UnifiedSRSensorMonitor.Remove(elementToReplace.SRSensorMonitor);
 
         elementToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
-        elementToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
         elementToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
         elementToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
         elementToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
@@ -229,37 +227,42 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     /// <summary>
     /// Convenience method that initiates the (initial) construction of an element from the provided design.
+    /// <remarks>6.3.18 Intended for use in existing BaseCmds. Will throw an error if not fully initialized 
+    /// and operational with one or more existing facilities already present.</remarks>
     /// <remarks>12.1.17 This method instantiates an element from the design, launches a Construction in this Base's
-    /// BaseConstructionManager and issues a Construct order to the element.</remarks>
-    /// <remarks>12.1.17 The presence of their Construction in the BaseConstructionManager prior to issuing this order is done to
-    /// allow the UnitHud to 'show' the construction in the queue when the design icon is clicked to initiate construction. This is
-    /// necessary as the issued order will not actually be processed until unpaused.</remarks>
-    /// <remarks>12.1.17 Currently my intention is to only allow the User or PlayerAI to initiate construction of an element.</remarks>
+    /// ConstructionManager and issues a Construct order to the element. The presence of the Construction in the 
+    /// ConstructionManager prior to issuing the Construct order is done to allow the UnitHud to 'show' the construction 
+    /// in the queue when the design icon is clicked to initiate construction. This is necessary as the issued order 
+    /// will not actually be processed until unpaused.</remarks>
+    /// <remarks>12.1.17 Handled here to allow future PlayerAIMgr access. Currently only used by ABaseUnitHudForm's 
+    /// ConstructionGuiModule. Will throw an error if source is other than the User or PlayerAI.</remarks>
     /// </summary>
     /// <param name="design">The design.</param>
     /// <param name="source">The source.</param>
-    public void InitiateConstructionOf(AUnitElementDesign design, OrderSource source) {
+    /// <returns></returns>
+    public AUnitElementItem InitiateConstructionOf(AUnitElementDesign design, OrderSource source) {
         D.Assert(source == OrderSource.User || source == OrderSource.PlayerAI);
+        D.Assert(IsOperational);
+        D.AssertNotEqual(Constants.Zero, ElementCount);
+
         FacilityDesign fDesign = design as FacilityDesign;
         if (fDesign != null) {
-            InitiateConstructionOf(fDesign, source);
+            return InitiateConstructionOf(fDesign, source);
         }
-        else {
-            ShipDesign sDesign = design as ShipDesign;
-            D.AssertNotNull(sDesign);
-            InitiateConstructionOf(sDesign, source);
-        }
+        ShipDesign sDesign = design as ShipDesign;
+        D.AssertNotNull(sDesign);
+        return InitiateConstructionOf(sDesign, source);
     }
 
-    private void InitiateConstructionOf(FacilityDesign design, OrderSource source) {
+    private FacilityItem InitiateConstructionOf(FacilityDesign design, OrderSource source) {
         var unitFactory = UnitFactory.Instance;
         string name = unitFactory.__GetUniqueFacilityName(design.DesignName);
         FacilityItem facilityToConstruct = unitFactory.MakeFacilityInstance(Owner, Data.Topography, design, name, UnitContainer.gameObject);
 
+        // 4.29.18 Must be added BEFORE adding to Queue so UnitHud will find facility as part of Base when it receives QueueChanged event
         AddElement(facilityToConstruct);
 
         // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud
-        // 4.29.18 Must be added AFTER addition to Base so UnitHud will find facility as part of Base when it receives the QueueChanged event
         ConstructionMgr.AddToQueue(design, facilityToConstruct);
 
         facilityToConstruct.FinalInitialize();
@@ -268,17 +271,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         FacilityOrder initialConstructionOrder = new FacilityOrder(FacilityDirective.Construct, source);
         facilityToConstruct.CurrentOrder = initialConstructionOrder;
+        return facilityToConstruct;
     }
 
-    private void InitiateConstructionOf(ShipDesign design, OrderSource source) {
+    private ShipItem InitiateConstructionOf(ShipDesign design, OrderSource source) {
         var unitFactory = UnitFactory.Instance;
         string name = unitFactory.__GetUniqueShipName(design.DesignName);
         ShipItem shipToConstruct = unitFactory.MakeShipInstance(Owner, design, name, UnitContainer.gameObject);
 
+        // 4.29.18 Must be added BEFORE adding to Queue so UnitHud will find ship in Hanger when it receives QueueChanged event
         Hanger.AddShip(shipToConstruct);
 
         // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud.
-        // 4.29.18 Must be added AFTER addition to Hanger so UnitHud will find ship in Hanger when it receives the QueueChanged event
         ConstructionMgr.AddToQueue(design, shipToConstruct);
 
         shipToConstruct.FinalInitialize();
@@ -287,6 +291,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         ShipOrder initialConstructionOrder = new ShipOrder(ShipDirective.Construct, source);
         shipToConstruct.CurrentOrder = initialConstructionOrder;
+        return shipToConstruct;
     }
 
     /// <summary>
@@ -418,8 +423,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Hanger.HandleAlertStatusChange(Data.AlertStatus);
     }
 
-    protected sealed override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
+    protected override void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
         ConstructionMgr.HandleLosingOwnership();
         Hanger.HandleLosingOwnership();
     }
@@ -662,7 +667,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void FinalInitialize_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
     }
 
     protected void FinalInitialize_EnterState() {
@@ -683,7 +688,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void FinalInitialize_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -692,10 +697,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
-        if (Availability == NewOrderAvailability.Unavailable) {  // 1.13.18 follow-on or repair order likely to be unauthorized if Unavailable
-            ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
-        }
+        __ValidateCommonNonCallableEnterStateValues();
         // 12.4.17 Can't ChangeAvailabilityTo(Available) here as can atomically cause a new order to be received 
         // which would violate FSM rule: no state change in void EnterStates
     }
@@ -706,6 +708,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (CurrentOrder != null) {
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+
+                if (Availability == NewOrderAvailability.Unavailable) {
+                    // Resulting state may throw an error if it doesn't expect Unavailable
+                    D.Warn("FYI. {0} is about to execute FollowonOrder {1} while still {2}. Fixing.", DebugName, CurrentOrder.FollowonOrder.DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                    ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+                }
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
                 D.AssertEqual(OrderSource.CmdStaff, followonOrderSource, CurrentOrder.ToString());
@@ -719,6 +727,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
 
         if (AssessNeedForRepair()) {
+            if (Availability == NewOrderAvailability.Unavailable) {
+                // ExecuteRepairOrder state may throw an error if it doesn't expect Unavailable
+                D.Warn("FYI. {0} is about to execute a Repair Order while still {1}. Fixing.", DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+            }
             IssueCmdStaffsRepairOrder();
             yield return null;
             D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
@@ -802,7 +815,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -813,7 +826,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.AssertNotNull(unitAttackTgt);
@@ -846,6 +859,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Warn("FYI. {0}.ExecuteAttackOrder_UponOrderOutcomeCallback() called!", DebugName);
         // TODO 9.21.17 Once the attack on the UnitAttackTarget has been naturally completed -> Idle
     }
@@ -962,9 +976,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
-        var attackOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(attackOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -987,7 +1000,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
         D.AssertNotEqual(Constants.OneHundredPercent, Data.UnitHealth);
 
@@ -1004,7 +1017,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Call(BaseState.Repairing);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
+        if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
             yield return null;
             D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
@@ -1014,6 +1027,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Warn("FYI. {0}.ExecuteRepairOrder_UponOrderOutcomeCallback() called!", DebugName);
     }
 
@@ -1083,8 +1097,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
-        // 1.11.18 No reason to clear Facility Repair Orders if exiting without completing
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -1110,7 +1124,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
         IRepairCapable thisRepairCapableBase = _fsmTgt as IRepairCapable;
         D.Assert(thisRepairCapableBase.IsRepairingAllowedBy(Owner));
 
@@ -1229,7 +1243,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Repairing_ExitState() {
         LogEvent();
-        ResetCommonCallableStateValues();
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -1237,6 +1251,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region ExecuteRefitOrder
 
     #region ExecuteRefitOrder Support Members
+
+    private void HaveUserPickRefitDesign(FacilityItem facility) {
+        string dialogText = "Pick the Design you wish to use to refit {0}. \nCancel to not refit.".Inject(facility.Name);
+        var cancelDelegate = new EventDelegate(() => {
+            var existingDesignIndicatingRefitCanceled = facility.Data.Design;
+            HandleElementRefitDesignChosen(existingDesignIndicatingRefitCanceled);  // canceling dialog means don't refit facility
+            DialogWindow.Instance.Hide();
+        });
+
+        var existingDesign = facility.Data.Design;
+        DialogWindow.Instance.HaveUserPickElementRefitDesign(FormID.SelectFacilityDesignDialog, dialogText, cancelDelegate, existingDesign,
+            (chosenRefitDesign) => HandleElementRefitDesignChosen(chosenRefitDesign), useUserActionButton: false);
+    }
 
     private void DetermineFacilitiesToReceiveRefitOrder() {
         foreach (var e in Elements) {
@@ -1262,8 +1289,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
+        D.AssertNull(_chosenElementRefitDesign);
 
         _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target;
@@ -1274,24 +1302,42 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
+        int plannedRefitQty = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count;
 
-        int refitQty = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count;
+        // First choose the refit designs and record them allowing the User to cancel 
+        // OPTIMIZE if User isn't going to manually choose and potentially cancel, no need for copy or lookup
+        IDictionary<FacilityItem, FacilityDesign> facilityDesignLookup = new Dictionary<FacilityItem, FacilityDesign>(plannedRefitQty);
+        var facilitiesToRefitCopy = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.ToArray();
+        //D.Log("{0} has planned refit of {1} facilities: {2}.", DebugName, plannedRefitQty, facilitiesToRefitCopy.Select(f => f.DebugName).Concatenate());
+        foreach (var facility in facilitiesToRefitCopy) {
+            D.AssertNull(_chosenElementRefitDesign);
+            var existingDesign = facility.Data.Design;
 
-        FacilityItem facilityToRefitCmdModule;
-        bool toRefitCmdModule = TryPickFacilityToRefitCmdModule(_fsmFacilitiesExpectedToCallbackWithOrderOutcome, out facilityToRefitCmdModule);
+            if (Owner.IsUser && !__debugCntls.AiChoosesUserElementRefitDesigns) {
+                HaveUserPickRefitDesign(facility);
 
-        D.Log(ShowDebugLog, "{0} is issuing a RefitOrder to {1} Facilities: {2}.", DebugName, refitQty,
-            _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
-        foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
-            FacilityDesign refitDesign;
-            bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
-            D.Assert(isDesignAvailable);
+                while (_chosenElementRefitDesign == null) {
+                    // Wait until User makes refit design choice
+                    yield return null;
+                }
 
-            bool toIncludeCmdModuleInThisFacilityRefit = facility == facilityToRefitCmdModule;
+                if (_chosenElementRefitDesign == existingDesign) {
+                    // User has canceled refit of this facility
+                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                    D.Assert(isRemoved);
+                    D.Log("{0}: {1} removed from refit plan as User canceled dialog.", DebugName, facility.DebugName);
+                    _chosenElementRefitDesign = null;
+                    continue;
+                }
+            }
+            else {
+                FacilityDesign refitDesign = OwnerAiMgr.ChooseRefitDesign(existingDesign);
+                HandleElementRefitDesignChosen(refitDesign);
+            }
+            D.AssertNotNull(_chosenElementRefitDesign);
 
-            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination,
-                toIncludeCmdModuleInThisFacilityRefit);
-            facility.CurrentOrder = refitOrder;
+            facilityDesignLookup.Add(facility, _chosenElementRefitDesign as FacilityDesign);
+            _chosenElementRefitDesign = null;
         }
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
@@ -1299,26 +1345,50 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        if (toRefitCmdModule) {
-            StartEffectSequence(EffectSequenceID.Refitting);
-        }
+        if (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
+            int actualRefitQty = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count;
+            FacilityItem facilityToRefitCmdModule;
+            bool toRefitCmdModule = TryPickFacilityToRefitCmdModule(_fsmFacilitiesExpectedToCallbackWithOrderOutcome, out facilityToRefitCmdModule);
 
-        while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
-            // Wait here until facilities are all refitted
-            yield return null;
-        }
+            // order the facilities that can refit to do so
+            foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
+                var refitDesign = facilityDesignLookup[facility];
 
-        string cmdModuleMsg = string.Empty;
-        if (toRefitCmdModule) {
-            StopEffectSequence(EffectSequenceID.Refitting);
-            cmdModuleMsg = ", including the CmdModule";
+                bool toIncludeCmdModuleInThisFacilitiesRefit = facility == facilityToRefitCmdModule;
+                if (toIncludeCmdModuleInThisFacilitiesRefit) {
+                    D.Assert(toRefitCmdModule);
+                }
+
+                var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination,
+                    toIncludeCmdModuleInThisFacilitiesRefit);
+                facility.CurrentOrder = refitOrder;
+            }
+
+            if (toRefitCmdModule) {
+                StartEffectSequence(EffectSequenceID.Refitting);
+            }
+
+            while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
+                // Wait here until all refitable facilities have completed their refit
+                yield return null;
+            }
+
+            string cmdModuleMsg = string.Empty;
+            if (toRefitCmdModule) {
+                StopEffectSequence(EffectSequenceID.Refitting);
+                cmdModuleMsg = ", including the CmdModule";
+            }
+            D.Log("{0} has completed refit of {1} facilities{2}.", DebugName, actualRefitQty, cmdModuleMsg);
         }
-        D.LogBold("{0} has completed refit of {1} facilities{2}.", DebugName, refitQty, cmdModuleMsg);
+        else {
+            D.Warn("FYI. {0} had all facility refits canceled resulting in cancellation of the Base refit.", DebugName);
+        }
         CurrentState = BaseState.Idling;
     }
 
     protected void ExecuteRefitOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
             DebugName, facility.DebugName, outcome.GetValueName(), Time.frameCount);
 
@@ -1368,32 +1438,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
-        if (subordinateElement.Availability == NewOrderAvailability.Available) {
-            // newly available
-            // 12.11.17 OPTIMIZE confirms availability changed after reworking changed
-            D.Assert(!subordinateElement.IsReworkUnderwayAnyOf(ReworkingMode.Constructing, ReworkingMode.Refitting, ReworkingMode.Disbanding));
-
-            var facility = subordinateElement as FacilityItem;
-            if (facility.IsAuthorizedForNewOrder(FacilityDirective.Refit)) {
-                // facility could use refit
-                if (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
-                    // elements refit is still underway so issue order to refit
-                    bool isAdded = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(facility);
-                    D.Assert(isAdded);
-
-                    FacilityDesign refitDesign;
-                    bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
-                    D.Assert(isDesignAvailable);
-                    bool includeCmdModuleInRefit = false;
-
-                    D.LogBold("{0} will {1} after becoming available to {2} during state {3}.", facility.DebugName,
-                        FacilityDirective.Refit.GetValueName(), DebugName, CurrentState.GetValueName());
-                    FacilityRefitOrder facilityRefitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign,
-                        _fsmTgt as IElementNavigableDestination, includeCmdModuleInRefit);
-                    facility.CurrentOrder = facilityRefitOrder;
-                }
-            }
-        }
+        // 6.8.18 Eliminated issuing refit order to subordinateElement. New User select design system 
+        // makes this difficult and of little value add
     }
 
     protected void ExecuteRefitOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
@@ -1450,10 +1496,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_ExitState() {
         LogEvent();
-        var refitOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(refitOrderID);
         StopEffectSequence(EffectSequenceID.Refitting);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
+        _chosenElementRefitDesign = null;
     }
 
     #endregion
@@ -1477,7 +1523,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
 
         _executingOrderID = CurrentOrder.OrderID;
@@ -1519,6 +1565,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
+        D.Assert(!_isWaitingToProcessReturn, "A leaked callback?");
         D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
             DebugName, facility.DebugName, outcome.GetValueName(), Time.frameCount);
 
@@ -1628,9 +1675,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_ExitState() {
         LogEvent();
-        var disbandOrderID = _executingOrderID;
-        ResetCommonNonCallableStateValues();
-        ClearAnyRemainingElementOrdersIssuedBy(disbandOrderID);
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -1745,27 +1791,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
-    protected override void ValidateCommonCallableStateValues(string calledStateName) {
-        base.ValidateCommonCallableStateValues(calledStateName);
-        D.AssertNotNull(_fsmTgt);
-        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
-    }
-
-    protected override void ValidateCommonNonCallableStateValues() {
-        base.ValidateCommonNonCallableStateValues();
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
-    }
-
-    protected override void ResetCommonCallableStateValues() {
-        base.ResetCommonCallableStateValues();
+    protected override void ResetAndValidateCommonCallableExitStateValues() {
+        base.ResetAndValidateCommonCallableExitStateValues();
         _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Clear();
     }
 
-    protected override void ResetCommonNonCallableStateValues() {
-        base.ResetCommonNonCallableStateValues();
+    protected override void ResetAndValidateCommonNonCallableExitStateValues() {
+        base.ResetAndValidateCommonNonCallableExitStateValues();
         _fsmTgt = null;
         _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Clear();
     }
@@ -1869,6 +1901,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region Debug
+
+    protected override void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
+        base.__ValidateCommonCallableEnterStateValues(calledStateName, includeFsmTgt);
+        if (includeFsmTgt) {
+            D.AssertNotNull(_fsmTgt);
+        }
+        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
+    }
+
+    protected override void __ValidateCommonNonCallableEnterStateValues() {
+        base.__ValidateCommonNonCallableEnterStateValues();
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
+        }
+        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
+    }
 
     protected sealed override void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair() {
         D.AssertEqual(BaseState.ExecuteRepairOrder, CurrentState);
@@ -2074,7 +2122,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+    public IEnumerable<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
@@ -2220,13 +2268,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IPatrollable Members
 
-    private IList<StationaryLocation> _patrolStations;
-    public IList<StationaryLocation> PatrolStations {
+    private IEnumerable<StationaryLocation> _patrolStations;
+    public IEnumerable<StationaryLocation> PatrolStations {
         get {
-            if (_patrolStations == null) {
-                _patrolStations = InitializePatrolStations();
-            }
-            return new List<StationaryLocation>(_patrolStations);
+            _patrolStations = _patrolStations ?? InitializePatrolStations();
+            return _patrolStations;
         }
     }
 
@@ -2243,13 +2289,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IGuardable
 
-    private IList<StationaryLocation> _guardStations;
-    public IList<StationaryLocation> GuardStations {
+    private IEnumerable<StationaryLocation> _guardStations;
+    public IEnumerable<StationaryLocation> GuardStations {
         get {
-            if (_guardStations == null) {
-                _guardStations = InitializeGuardStations();
-            }
-            return new List<StationaryLocation>(_guardStations);
+            _guardStations = _guardStations ?? InitializeGuardStations();
+            return _guardStations;
         }
     }
 

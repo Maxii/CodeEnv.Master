@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, \nTarget = {3}, \nCmdOrderID = {4}, \nFollowonOrder = {5}]";
 
         private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[]  {
                                                                                                             FacilityDirective.Cancel,
@@ -42,8 +42,9 @@ namespace CodeEnv.Master.GameContent {
         public virtual string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
+                string cmdOrderIdText = CmdOrderID != default(Guid) ? CmdOrderID.ToShortText() : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, cmdOrderIdText, followonOrderText);
             }
         }
 

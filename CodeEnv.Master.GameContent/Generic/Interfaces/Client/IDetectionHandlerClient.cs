@@ -34,17 +34,14 @@ namespace CodeEnv.Master.GameContent {
         void SetIntelCoverage(Player player, IntelCoverage newCoverage);
 
         /// <summary>
-        /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
-        /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
-        /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
+        /// Attempts to change the IntelCoverage of this Item to newCoverage. Returns <c>true</c> if the coverage
+        /// was changed, false if not. In both cases, resultingCoverage will reflect the currentCoverage, changed or not.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <param name="newCoverage">The new coverage.</param>
         /// <param name="resultingCoverage">The resulting coverage.</param>
         /// <returns></returns>
-        bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage);
-
-
+        bool TryChangeIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage);
     }
 }
 

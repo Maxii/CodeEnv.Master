@@ -30,7 +30,12 @@ namespace CodeEnv.Master.Common {
 
         public static float SqrtOfThree = Mathf.Sqrt(3.0F);
 
-        public static Vector3[] FaceCenterOffsetsAroundPoint = {
+        /// <summary>
+        /// The cube face normals in order:
+        /// right, left, top, bottom, front, back.
+        /// <remarks>Cube must be axis aligned.</remarks>
+        /// </summary>
+        public static Vector3[] CubeFaceNormals = {
             new Vector3(1F, 0F, 0F),
             new Vector3(-1F, 0F, 0F),
             new Vector3(0F, 1F, 0F),
@@ -89,17 +94,36 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Determines whether one sphere is completely contained by another.
+        /// </summary>
+        /// <param name="containedCenter">The contained center.</param>
+        /// <param name="containedRadius">The contained radius.</param>
+        /// <param name="containingCenter">The containing center.</param>
+        /// <param name="containingRadius">The containing radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereCompletelyContainedWithinSphere(Vector3 containedCenter, float containedRadius, Vector3 containingCenter, float containingRadius) {
+            // isContained = containingRadius >= distanceBetweenCenters + containedRadius ->
+            // isContained = containingRadius - containedRadius >= distanceBetweenCenters
+            float sqrDistanceBetweenCenters = Vector3.SqrMagnitude(containingCenter - containedCenter);
+            float containingRadiusSqrd = containingRadius * containingRadius;
+            float containedRadiusSqrd = containedRadius * containedRadius;
+            return containingRadiusSqrd - containedRadiusSqrd >= sqrDistanceBetweenCenters;
+        }
+
+        /// <summary>
         /// Calculates the location in world space of 8 vertices of a cube surrounding a point.
         /// The distance from this 'center' point to any side of the cube is faceDistance.
+        /// <remarks>Index order returned: left/bottom/back, left/bottom/fwd, left/top/back, left/top/fwd,
+        /// right/bottom/back, right/bottom/fwd, right/top/back, right/top/fwd.</remarks>
         /// </summary>
-        /// <param name="point">The point.</param>
+        /// <param name="cubeCenter">The point.</param>
         /// <param name="faceDistance">The distance from point to any face of the cube.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcCubeVerticesAroundPoint(Vector3 point, float faceDistance) {
+        public static IList<Vector3> CalcCubeVertices(Vector3 cubeCenter, float faceDistance) {
             IList<Vector3> vertices = new List<Vector3>(8);
-            var xPair = new float[2] { point.x - faceDistance, point.x + faceDistance };
-            var yPair = new float[2] { point.y - faceDistance, point.y + faceDistance };
-            var zPair = new float[2] { point.z - faceDistance, point.z + faceDistance };
+            var xPair = new float[2] { cubeCenter.x - faceDistance, cubeCenter.x + faceDistance };
+            var yPair = new float[2] { cubeCenter.y - faceDistance, cubeCenter.y + faceDistance };
+            var zPair = new float[2] { cubeCenter.z - faceDistance, cubeCenter.z + faceDistance };
             foreach (var x in xPair) {
                 foreach (var y in yPair) {
                     foreach (var z in zPair) {
@@ -114,18 +138,39 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Returns the center point of each of the 6 faces of a cube around a central point.
         /// </summary>
-        /// <param name="center">The center point.</param>
+        /// <param name="cubeCenter">The center point.</param>
         /// <param name="faceDistance">The distance of all faces from the center.</param>
         /// <returns></returns>
-        public static Vector3[] CalcCubeFaceCentersAroundPoint(Vector3 center, float faceDistance) {
+        public static Vector3[] CalcCubeFaceCenters(Vector3 cubeCenter, float faceDistance) {
             return new Vector3[] {
-                center + FaceCenterOffsetsAroundPoint[0] * faceDistance,
-                center + FaceCenterOffsetsAroundPoint[1] * faceDistance,
-                center + FaceCenterOffsetsAroundPoint[2] * faceDistance,
-                center + FaceCenterOffsetsAroundPoint[3] * faceDistance,
-                center + FaceCenterOffsetsAroundPoint[4] * faceDistance,
-                center + FaceCenterOffsetsAroundPoint[5] * faceDistance
+                cubeCenter + CubeFaceNormals[0] * faceDistance,
+                cubeCenter + CubeFaceNormals[1] * faceDistance,
+                cubeCenter + CubeFaceNormals[2] * faceDistance,
+                cubeCenter + CubeFaceNormals[3] * faceDistance,
+                cubeCenter + CubeFaceNormals[4] * faceDistance,
+                cubeCenter + CubeFaceNormals[5] * faceDistance
             };
+        }
+
+        /// <summary>
+        /// Returns the center point of each of the 6 faces of a cube along with the normal for each face.
+        /// </summary>
+        /// <param name="cubeCenter">The center point.</param>
+        /// <param name="faceDistance">The distance of all faces from the center.</param>
+        /// <param name="faceNormals">The face normals.</param>
+        /// <returns></returns>
+        public static Vector3[] CalcCubeFaces(Vector3 cubeCenter, float faceDistance, out Vector3[] faceNormals) {
+            faceNormals = new Vector3[] {
+                CubeFaceNormals[0],
+                CubeFaceNormals[1],
+                CubeFaceNormals[2],
+                CubeFaceNormals[3],
+                CubeFaceNormals[4],
+                CubeFaceNormals[5]
+            };
+            CubeFaceNormals[0].ValidateNormalized();
+
+            return CalcCubeFaceCenters(cubeCenter, faceDistance);
         }
 
         /// <summary>
@@ -203,6 +248,209 @@ namespace CodeEnv.Master.Common {
         public static bool DoesLineSegmentIntersectSphere(Vector3 linePt1, Vector3 linePt2, Vector3 sphereCenter, float sphereRadius) {
             Vector3 closestPtOnLineSegmentToSphereCenter = Math3D.ProjectPointOnLineSegment(linePt1, linePt2, sphereCenter);
             return IsPointOnOrInsideSphere(sphereCenter, sphereRadius, closestPtOnLineSegmentToSphereCenter);
+        }
+
+        public static bool IsSphereCompletelyContainedWithinCube(Vector3 cubeCenter, float faceDistance, Vector3 sphereCenter, float sphereRadius) {
+            Vector3[] faceNormals;
+            var cubeFaceCenters = CalcCubeFaces(cubeCenter, faceDistance, out faceNormals);
+
+            for (int i = 0; i < 6; i++) {
+                Vector3 cubeFaceCenter = cubeFaceCenters[i];
+                Vector3 cubeFaceNormal = faceNormals[i];
+                if (!IsSphereInsidePlane(cubeFaceNormal, cubeFaceCenter, sphereCenter, sphereRadius)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool IsPointOnOrInsideCube(Vector3 cubeCenter, float faceDistance, Vector3 point) {
+            var cubeVertices = CalcCubeVertices(cubeCenter, faceDistance);
+            var minVertex = cubeVertices[0];    // left/bottom/back
+            var maxVertex = cubeVertices[7];    // right/top/front
+            return point.x >= minVertex.x && point.x <= maxVertex.x && point.y >= minVertex.y && point.y <= maxVertex.y
+                && point.z >= minVertex.z && point.z <= maxVertex.z;
+        }
+
+        /// <summary>
+        /// Determines whether a sphere is inside a plane.
+        /// <remarks>Returns true if the entire sphere is located on the opposite side of the plane indicated
+        /// by the plane's normal, aka behind the plane.</remarks>
+        /// <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/>
+        /// </summary>
+        /// <param name="planeNormal">The plane normal.</param>
+        /// <param name="planePoint">The plane point.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereInsidePlane(Vector3 planeNormal, Vector3 planePoint, Vector3 sphereCenter, float sphereRadius) {
+            return -Math3D.SignedDistancePlanePoint(planeNormal, planePoint, sphereCenter) > sphereRadius;
+        }
+
+        /// <summary>
+        /// Determines whether a sphere is outside a plane.
+        /// <remarks>Returns true if the entire sphere is located on the side of the plane indicated
+        /// by the plane's normal, aka in front of the plane.</remarks>
+        /// <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/>
+        /// </summary>
+        /// <param name="planeNormal">The plane normal.</param>
+        /// <param name="planePoint">The plane point.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereOutsidePlane(Vector3 planeNormal, Vector3 planePoint, Vector3 sphereCenter, float sphereRadius) {
+            return Math3D.SignedDistancePlanePoint(planeNormal, planePoint, sphereCenter) > sphereRadius;
+        }
+
+        /// <summary>
+        /// Determines whether a sphere intersects a plane.
+        /// <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/>
+        /// </summary>
+        /// <param name="planeNormal">The plane normal.</param>
+        /// <param name="planePoint">The plane point.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereIntersectingPlane(Vector3 planeNormal, Vector3 planePoint, Vector3 sphereCenter, float sphereRadius) {
+            return Mathf.Abs(Math3D.SignedDistancePlanePoint(planeNormal, planePoint, sphereCenter)) <= sphereRadius;
+        }
+
+        /// <summary>
+        /// Determines whether a sphere intersects an axis aligned cube.
+        /// <remarks>Can be reworked to also apply to non-axis aligned boxes.
+        /// <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/></remarks>
+        /// </summary>
+        /// <param name="cubeCenter">The cube center.</param>
+        /// <param name="faceDistance">The face distance.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereIntersectingCube(Vector3 cubeCenter, float faceDistance, Vector3 sphereCenter, float sphereRadius) {
+            // right, left, top, bottom, front, back
+            Vector3[] cubeFaceNormals;
+            Vector3[] cubeFaceCenters = CalcCubeFaces(cubeCenter, faceDistance, out cubeFaceNormals);
+
+            Vector3 leftFaceNormal = cubeFaceNormals[1];
+            Vector3 leftFaceCenter = cubeFaceCenters[1];
+            Vector3 rightFaceNormal = cubeFaceNormals[0];
+            Vector3 rightFaceCenter = cubeFaceCenters[0];
+            Vector3 frontFaceNormal = cubeFaceNormals[4];
+            Vector3 frontFaceCenter = cubeFaceCenters[4];
+            Vector3 backFaceNormal = cubeFaceNormals[5];
+            Vector3 backFaceCenter = cubeFaceCenters[5];
+            Vector3 topFaceNormal = cubeFaceNormals[2];
+            Vector3 topFaceCenter = cubeFaceCenters[2];
+            Vector3 bottomFaceNormal = cubeFaceNormals[3];
+            Vector3 bottomFaceCenter = cubeFaceCenters[3];
+
+            bool outLeft = IsSphereOutsidePlane(leftFaceNormal, leftFaceCenter, sphereCenter, sphereRadius); // completely outside left face
+            bool outRight = IsSphereOutsidePlane(rightFaceNormal, rightFaceCenter, sphereCenter, sphereRadius);
+            bool outFront = IsSphereOutsidePlane(frontFaceNormal, frontFaceCenter, sphereCenter, sphereRadius);
+            bool outBack = IsSphereOutsidePlane(backFaceNormal, backFaceCenter, sphereCenter, sphereRadius);
+            bool outTop = IsSphereOutsidePlane(topFaceNormal, topFaceCenter, sphereCenter, sphereRadius);
+            bool outBottom = IsSphereOutsidePlane(bottomFaceNormal, bottomFaceCenter, sphereCenter, sphereRadius);
+
+            if (IsSphereIntersectingPlane(topFaceNormal, topFaceCenter, sphereCenter, sphereRadius) && !outLeft && !outRight && !outFront && !outBack) {
+                return true;
+            }
+
+            if (IsSphereIntersectingPlane(bottomFaceNormal, bottomFaceCenter, sphereCenter, sphereRadius) && !outLeft && !outRight && !outFront && !outBack) {
+                return true;
+            }
+
+            if (IsSphereIntersectingPlane(leftFaceNormal, leftFaceCenter, sphereCenter, sphereRadius) && !outTop && !outBottom && !outFront && !outBack) {
+                return true;
+            }
+
+            if (IsSphereIntersectingPlane(rightFaceNormal, rightFaceCenter, sphereCenter, sphereRadius) && !outTop && !outBottom && !outFront && !outBack) {
+                return true;
+            }
+
+            if (IsSphereIntersectingPlane(frontFaceNormal, frontFaceCenter, sphereCenter, sphereRadius) && !outTop && !outBottom && !outLeft && !outRight) {
+                return true;
+            }
+
+            if (IsSphereIntersectingPlane(backFaceNormal, backFaceCenter, sphereCenter, sphereRadius) && !outTop && !outBottom && !outLeft && !outRight) {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether a sphere is completely outside an axis aligned cube.
+        /// <remarks>Can be reworked to also apply to non-axis aligned boxes.
+        /// <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/></remarks>
+        /// </summary>
+        /// <param name="cubeCenter">The cube center.</param>
+        /// <param name="faceDistance">The face distance.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static bool IsSphereOutsideCube(Vector3 cubeCenter, float faceDistance, Vector3 sphereCenter, float sphereRadius) {
+            return !IsSphereCompletelyContainedWithinCube(cubeCenter, faceDistance, sphereCenter, sphereRadius)
+                && !IsSphereIntersectingCube(cubeCenter, faceDistance, sphereCenter, sphereRadius);
+        }
+
+        [Obsolete("Not currently used")]
+        private static Vector3[][] CalcCubeEdges(Vector3 center, float faceDistance) {
+            var vertices = CalcCubeVertices(center, faceDistance);
+            // Vertex index order returned: left/bottom/back, left/bottom/fwd, left/top/back, left/top/fwd,
+            // right/bottom/back, right/bottom/fwd, right/top/back, right/top/fwd
+            Vector3[][] edges = {
+                new Vector3[] { vertices[0], vertices[1] },
+                new Vector3[] { vertices[0], vertices[4] },
+                new Vector3[] { vertices[0], vertices[2] },
+                new Vector3[] { vertices[5], vertices[1] },
+                new Vector3[] { vertices[5], vertices[4] },
+                new Vector3[] { vertices[5], vertices[7] },
+                new Vector3[] { vertices[3], vertices[7] },
+                new Vector3[] { vertices[3], vertices[2] },
+                new Vector3[] { vertices[3], vertices[1] },
+                new Vector3[] { vertices[6], vertices[2] },
+                new Vector3[] { vertices[6], vertices[7] },
+                new Vector3[] { vertices[6], vertices[4] }
+            };
+            return edges;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if any part of the cube defined by the 2 provided opposing vertexes 
+        /// intersects the sphere defined by its center and radius.
+        /// <remarks>The cube must be axis aligned and both the cube and sphere solid.</remarks>
+        /// <remarks>The requirement to be solid means if either shape is completely contained by the other, 
+        /// they will intersect. This is not a boundary intersection algorithm.</remarks>
+        /// </summary>
+        /// <see cref="https://stackoverflow.com/questions/4578967/cube-sphere-intersection-test"/>
+        /// <remarks>For potentially erroneous <see cref="http://theorangeduck.com/page/correct-box-sphere-intersection"/></remarks>
+        /// <param name="aCubeCornerVertex">a cube corner vertex.</param>
+        /// <param name="aCubeCornerOpposingVertex">a cube corner opposing vertex.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        [Obsolete("Not tested and potentially erroneous. Use IsSphereIntersectingCube")]
+        public static bool DoesCubeIntersectSphere(Vector3 aCubeCornerVertex, Vector3 aCubeCornerOpposingVertex, Vector3 sphereCenter, float sphereRadius) {
+            float sphereRadiusSqrd = sphereRadius * sphereRadius;
+            // assume C1 and C2 are element-wise sorted, if not, do that now ???
+            if (sphereCenter.x < aCubeCornerVertex.x) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.x - aCubeCornerVertex.x, 2F);
+            }
+            else if (sphereCenter.x > aCubeCornerOpposingVertex.x) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.x - aCubeCornerOpposingVertex.x, 2F);
+            }
+
+            if (sphereCenter.y < aCubeCornerVertex.y) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.y - aCubeCornerVertex.y, 2F);
+            }
+            else if (sphereCenter.y > aCubeCornerOpposingVertex.y) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.y - aCubeCornerOpposingVertex.y, 2F);
+            }
+            if (sphereCenter.z < aCubeCornerVertex.z) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.z - aCubeCornerVertex.z, 2F);
+            }
+            else if (sphereCenter.z > aCubeCornerOpposingVertex.z) {
+                sphereRadiusSqrd -= Mathf.Pow(sphereCenter.z - aCubeCornerOpposingVertex.z, 2F);
+            }
+            return sphereRadiusSqrd > 0F;
         }
 
         /// <summary>

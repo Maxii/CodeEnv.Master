@@ -180,7 +180,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
+        public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDContaining(Position); } }
+        ////public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
 
         public new ShipDesign Design { get { return base.Design as ShipDesign; } }
 

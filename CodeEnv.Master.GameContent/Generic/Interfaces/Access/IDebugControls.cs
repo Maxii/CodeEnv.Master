@@ -74,13 +74,6 @@ namespace CodeEnv.Master.GameContent {
         bool ShowDeploymentDebugLogs { get; }
 
         /// <summary>
-        /// Indicates whether fleets should automatically explore without countervailing orders.
-        /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
-        /// on DebugFleetCreators.</remarks>
-        /// </summary>
-        bool FleetsAutoExploreAsDefault { get; }
-
-        /// <summary>
         /// Indicates whether fleets should automatically attack all war enemies. All players, when they first
         /// meet will have their relationship set to War.
         /// <remarks>2.14.17 User Relationship Settings and existing orders for DebugUnitCreators will be ignored
@@ -94,6 +87,17 @@ namespace CodeEnv.Master.GameContent {
         int MaxAttackingFleetsPerPlayer { get; }
 
         /// <summary>
+        /// Indicates whether fleets should automatically explore without countervailing orders.
+        /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
+        /// on DebugFleetCreators.</remarks>
+        /// </summary>
+        bool FleetsAutoExploreAsDefault { get; }
+
+        bool FleetsAutoFoundSettlements { get; }
+
+        bool FleetsAutoFoundStarbases { get; }
+
+        /// <summary>
         /// If <c>true</c> every player knows everything about every item they detect. 
         /// It DOES NOT MEAN that they have detected everything or that players have met yet.
         /// Players meet when they first detect a HQ Element owned by another player.
@@ -101,6 +105,15 @@ namespace CodeEnv.Master.GameContent {
         bool IsAllIntelCoverageComprehensive { get; }
 
         bool AreAssaultsAlwaysSuccessful { get; }
+
+
+        bool AiChoosesUserCmdModInitialDesigns { get; }
+
+        bool AiChoosesUserCmdModRefitDesigns { get; }
+
+        bool AiChoosesUserCentralHubInitialDesigns { get; }
+
+        bool AiChoosesUserElementRefitDesigns { get; }
 
 
         bool DeactivateMRSensors { get; }

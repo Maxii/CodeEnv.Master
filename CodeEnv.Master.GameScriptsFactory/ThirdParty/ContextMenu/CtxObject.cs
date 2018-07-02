@@ -25,8 +25,14 @@ using UnityEngine;
 
 /// <summary>
 /// A component class that can be used to attach a context menu to any object.
-/// </summary>
+/// <remarks>6.20.18 Menu hiding and pause/resume behaviour. A CtxMenu hides itself when something besides a menu item is clicked. 
+/// This is implemented in CtxMenu.LateUpdate where it detects that UICamera.selectedObject is no longer the CtxMenu
+/// and therefore hides the menu. ACtxControl detects the completion of the hide and requests an unpause. InputManager
+/// does not detect the 'unconsumed click' when a CtxMenu is showing as ACtxControl has changed InputManager's InputMode to PartialPopup
+/// which doesn't listen to 3DWorld events. Accordingly, SelectionManager doesn't receive an unconsumedPress event and therefore
+/// doesn't undesirably deselect the SelectedItem and request an additional unpause.</remarks>
 /// <remarks>Derived from Troy Heere's Contextual with permission.</remarks>
+/// </summary>
 public class CtxObject : AMonoBase {
 
     /// <summary>
@@ -125,7 +131,7 @@ public class CtxObject : AMonoBase {
             }
             if (toOffsetMenu) {
                 // not a pie and user wants to offset the menu
-                var collider = GetComponent<Collider>();
+                var collider = GetComponentInChildren<Collider>();
                 if (collider == null) {
                     D.WarnContext(gameObject, "No collider present to enable {0}.{1}.offsetMenu functionality.", name, GetType().Name);
                     return Camera.main.WorldToScreenPoint(transform.position);

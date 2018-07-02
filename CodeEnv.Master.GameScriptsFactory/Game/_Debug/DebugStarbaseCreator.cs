@@ -63,8 +63,8 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
     private StarbaseCmdItem _command;
     private IList<FacilityItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = !transform.name.IsNullOrEmpty() ? transform.name : "DebugStarbase";
+    protected override string InitializeRootUnitName() {
+        return !transform.name.IsNullOrEmpty() ? transform.name : "DebugStarbase";
     }
 
     protected override void MakeElements() {
@@ -142,11 +142,18 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
     protected override void PositionUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
+    }
+
+    protected override void HandleUnitPositioned() {
+        base.HandleUnitPositioned();
         PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
+        ////SectorGrid.Instance.GetSector(SectorID).RecordStarbaseStationAsOccupied(_command);
+        SectorGrid.Instance.GetSector(SectorID).Add(_command);
     }
 
     protected override void CompleteUnitInitialization() {
         LogEvent();
+        PopulateCmdWithColonists();
         _elements.ForAll(e => e.FinalInitialize());
         _command.FinalInitialize();
     }
@@ -174,6 +181,11 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
 
     protected override void ClearElementReferences() {
         _elements.Clear();
+    }
+
+    private void PopulateCmdWithColonists() {   // TODO Starbases should probably be built and populated with some other ship
+        Level currentColonyShipLevel = _ownerDesigns.GetCurrentShipTemplateDesign(ShipHullCategory.Colonizer).HullStat.Level;
+        _command.Data.Population = currentColonyShipLevel.GetInitialColonistPopulation();
     }
 
     #region Debug

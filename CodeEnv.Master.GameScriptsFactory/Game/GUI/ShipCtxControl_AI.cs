@@ -31,6 +31,8 @@ public class ShipCtxControl_AI : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _shipMenuOperator.IsFocus; } }
 
+    protected override bool SelectedItemMenuHasContent { get { return true; } } // TEMP allows '__ChgOwner'
+
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_AI(ShipItem ship)

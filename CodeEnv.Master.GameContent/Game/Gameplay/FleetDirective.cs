@@ -157,6 +157,18 @@ namespace CodeEnv.Master.GameContent {
         Withdraw,
 
         /// <summary>
+        /// Fleets containing a Colonizer ship can be ordered to found a Settlement in unoccupied Systems.
+        /// <remarks>6.3.18 Requires a non-null System target.</remarks>
+        /// </summary>
+        FoundSettlement,
+
+        /// <summary>
+        /// Fleets containing a Colonizer ship can be ordered to found a Starbase in Sectors not owned by opponents.
+        /// <remarks>6.3.18 Requires a non-null Sector target.</remarks>
+        /// </summary>
+        FoundStarbase,
+
+        /// <summary>
         /// Each ship in the fleet retreats at best speed.
         /// <remarks>12.12.17 Not yet implemented.</remarks>
         /// </summary>

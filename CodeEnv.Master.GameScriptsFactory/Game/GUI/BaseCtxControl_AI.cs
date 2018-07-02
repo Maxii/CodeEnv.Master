@@ -46,6 +46,8 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _baseMenuOperator.IsFocus; } }
 
+    // 6.19.18 since no orders to issue when selected, uses base.SelectedItemMenuHasContent returning false to avoid showing the menu
+
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_AI(AUnitBaseCmdItem baseCmd)

@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual string DebugName {
             get {
                 if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Player.DebugName, GetType().Name);
+                    _debugName = DebugNameFormat.Inject(Owner.DebugName, GetType().Name);
                 }
                 return _debugName;
             }
@@ -97,13 +97,13 @@ namespace CodeEnv.Master.GameContent {
 
         public PlayerKnowledge Knowledge { get; private set; }
 
-        public Player Player { get; private set; }
+        public Player Owner { get; private set; }
 
         public PlayerResearchManager ResearchMgr { get; private set; }
 
         public PlayerDesigns Designs { get; private set; }
 
-        public IEnumerable<Player> OtherKnownPlayers { get { return Player.OtherKnownPlayers; } }
+        public IEnumerable<Player> OtherKnownPlayers { get { return Owner.OtherKnownPlayers; } }
 
         protected IGameManager _gameMgr;
         protected IDebugControls _debugControls;
@@ -117,10 +117,11 @@ namespace CodeEnv.Master.GameContent {
 
         #region Initialization
 
-        public PlayerAIManager(Player player, PlayerKnowledge knowledge) {
-            Player = player;
+        public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
+            Owner = owner;
             Knowledge = knowledge;
             InitializeValuesAndReferences();
+            __Validate(owner);
         }
 
         private void InitializeValuesAndReferences() {
@@ -131,7 +132,7 @@ namespace CodeEnv.Master.GameContent {
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
 
-            Designs = new PlayerDesigns(Player);
+            Designs = new PlayerDesigns(this);      // currently no UserPlayerDesigns : PlayerDesigns
             ResearchMgr = InitializeResearchMgr();  // must follow after Designs 
         }
 
@@ -361,6 +362,26 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        public bool TryFindClosestSystemToFoundSettlement(Vector3 worldPosition, out ISystem_Ltd closestSystem, params ISystem_Ltd[] excludedSystems) {
+            var candidates = Knowledge.SystemsThatCanFoundOwnerSettlements.Except(excludedSystems);
+            if (candidates.Any()) {
+                closestSystem = candidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestSystem = null;
+            return false;
+        }
+
+        public bool TryFindClosestSectorToFoundStarbase(Vector3 worldPosition, out ISector_Ltd closestSector, params ISector_Ltd[] excludedSectors) {
+            var candidates = Knowledge.SectorsThatCanFoundOwnerStarbases.Except(excludedSectors);
+            if (candidates.Any()) {
+                closestSector = candidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestSector = null;
+            return false;
+        }
+
         /// <summary>
         /// Returns <c>true</c> if there is a known item that Owner is allowed to guard, <c>false</c> otherwise.
         /// If true, closestItem will be be valid and indicate the closest item that Owner is allowed to guard.
@@ -370,7 +391,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="excludedItems">The excluded items.</param>
         /// <returns></returns>
         public bool TryFindClosestGuardableItem(Vector3 worldPosition, out IGuardable closestItem, params IGuardable[] excludedItems) {
-            var itemCandidates = Knowledge.KnownGuardableItems.Except(excludedItems).Where(gItem => gItem.IsGuardingAllowedBy(Player));
+            var itemCandidates = Knowledge.KnownGuardableItems.Except(excludedItems).Where(gItem => gItem.IsGuardingAllowedBy(Owner));
             if (itemCandidates.Any()) {
                 closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
                 return true;
@@ -388,7 +409,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="excludedItems">The excluded items.</param>
         /// <returns></returns>
         public bool TryFindClosestPatrollableItem(Vector3 worldPosition, out IPatrollable closestItem, params IPatrollable[] excludedItems) {
-            var itemCandidates = Knowledge.KnownPatrollableItems.Except(excludedItems).Where(pItem => pItem.IsPatrollingAllowedBy(Player));
+            var itemCandidates = Knowledge.KnownPatrollableItems.Except(excludedItems).Where(pItem => pItem.IsPatrollingAllowedBy(Owner));
             if (itemCandidates.Any()) {
                 closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
                 return true;
@@ -444,7 +465,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Player);
+                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner);
                 return isCandidate;
             });
             if (baseCandidates.Any()) {
@@ -489,10 +510,10 @@ namespace CodeEnv.Master.GameContent {
         public void AssessAwarenessOf(IOwnerItem_Ltd item) {
             //D.Log("{0}.AssessAwarenessOf({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount); 
             IIntelItem intelItem = item as IIntelItem;
-            IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Player);
+            IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);
             if (_debugControls.IsAllIntelCoverageComprehensive) {
-                // Each and every item should be set to Comprehensive by AIntelItem during FinalInitialization...
-                D.AssertEqual(IntelCoverage.Comprehensive, intelCoverage, intelCoverage.GetValueName());
+                // Each and every item should be set to Comprehensive by AIntelItemData during FinalInitialization...
+                D.AssertEqual(IntelCoverage.Comprehensive, intelCoverage);
             }
 
             if (item is IUniverseCenter_Ltd) {
@@ -500,11 +521,9 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
-            if (!_areAllPlayersDiscovered) {
-                CheckForUndiscoveredPlayer(item);
-            }
+            CheckForUndiscoveredPlayer(item);
 
-            if (item is IStar_Ltd || item is ISystem_Ltd) {
+            if (item is IStar_Ltd || item is ISystem_Ltd || item is ISector_Ltd) {
                 // added to knowledge at startup and never removed so no need to attempt add again
                 return;
             }
@@ -594,31 +613,44 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void CheckForUndiscoveredPlayer(IOwnerItem_Ltd item) {
-            D.Assert(!_areAllPlayersDiscovered);
-            //D.Log("{0}.CheckForUndiscoveredPlayer({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount);
+        /// <summary>
+        /// Checks for an undiscovered player who owns this item. Returns <c>true</c> if one is found.
+        /// <remarks>6.29.18 This is the only place that player initial relationships are 'discovered', even
+        /// when beginning with full IntelCoverage of all items.</remarks>
+        /// <remarks>Return value is for debug only.</remarks>
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
+        public bool CheckForUndiscoveredPlayer(IOwnerItem_Ltd item) {
+            bool isUndiscoveredPlayerFound = false;
+            if (!_areAllPlayersDiscovered) {
+                //D.Log("{0}.CheckForUndiscoveredPlayer({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount);
 
-            Player newlyDiscoveredPlayerCandidate;
-            if (item.TryGetOwner_Debug(Player, out newlyDiscoveredPlayerCandidate)) {
-                if (newlyDiscoveredPlayerCandidate == TempGameValues.NoPlayer || newlyDiscoveredPlayerCandidate == Player) {
-                    return;
-                }
-
-                bool isAlreadyKnown = Player.IsKnown(newlyDiscoveredPlayerCandidate);
-                if (!isAlreadyKnown) {
-                    Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
-                    Player.HandleMetNewPlayer(newlyDiscoveredPlayer);
-                    _areAllPlayersDiscovered = Player.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
-                    if (_areAllPlayersDiscovered) {
-                        //D.LogBold("{0}: {1} now knows all players!", DebugName, Owner.DebugName);
-                        //D.Log("{0}'s OtherKnownPlayers: {1}, AllPlayers: {2}.", Owner.DebugName,
-                        //    Owner.OtherKnownPlayers.Select(p => p.DebugName).Concatenate(), _gameMgr.AllPlayers.Select(p => p.DebugName).Concatenate());
+                Player newlyDiscoveredPlayerCandidate;
+                if (item.__TryGetOwner_ForDiscoveringPlayersProcess(Owner, out newlyDiscoveredPlayerCandidate)) {
+                    if (newlyDiscoveredPlayerCandidate != TempGameValues.NoPlayer && newlyDiscoveredPlayerCandidate != Owner) {
+                        bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
+                        if (!isAlreadyKnown) {
+                            Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
+                            if (item is ISector_Ltd) {
+                                D.Warn("FYI. {0} just discovered player {1} because of owner access to {2}!", DebugName, newlyDiscoveredPlayer.DebugName, item.DebugName);
+                            }
+                            Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
+                            _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
+                            if (_areAllPlayersDiscovered) {
+                                //D.LogBold("{0}: {1} now knows all players!", DebugName, Owner.DebugName);
+                                //D.Log("{0}'s OtherKnownPlayers: {1}, AllPlayers: {2}.", Owner.DebugName,
+                                //    Owner.OtherKnownPlayers.Select(p => p.DebugName).Concatenate(), _gameMgr.AllPlayers.Select(p => p.DebugName).Concatenate());
+                            }
+                            isUndiscoveredPlayerFound = true;
+                        }
+                        //else {
+                        //    D.Log("{0}: {1} is already known to {2}.", DebugName, newlyDiscoveredPlayerCandidate.DebugName, Owner.DebugName);
+                        //}
                     }
                 }
-                //else {
-                //    D.Log("{0}: {1} is already known to {2}.", DebugName, newlyDiscoveredPlayerCandidate.DebugName, Owner.DebugName);
-                //}
             }
+            return isUndiscoveredPlayerFound;
         }
 
         /// <summary>
@@ -628,7 +660,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
-            D.AssertEqual(Player, myUnitCmd.Owner);
+            D.AssertEqual(Owner, myUnitCmd.Owner);
             if (!HasKnowledgeOf(myUnitCmd as IUnitCmd_Ltd)) {
                 D.Warn("{0} is unaware of {1} when registering for orders in Frame {2}.", DebugName, myUnitCmd.DebugName, Time.frameCount);
             }
@@ -659,7 +691,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void DeregisterForOrders(IUnitCmd myUnitCmd) {
-            D.AssertEqual(Player, myUnitCmd.Owner);
+            D.AssertEqual(Owner, myUnitCmd.Owner);
             myUnitCmd.isAvailableChanged -= MyCmdIsAvailableChgdEventHandler;
             if (_availableCmds.Contains(myUnitCmd)) {
                 _availableCmds.Remove(myUnitCmd);
@@ -687,12 +719,261 @@ namespace CodeEnv.Master.GameContent {
             ResearchTask uncompletedRsch;
             if (!ResearchMgr.__TryGetRandomUncompletedRsch(out uncompletedRsch)) {
                 var justCompletedFutureTech = justCompletedRsch.Tech;
-                var futureTech = TechnologyFactory.Instance.MakeFutureTechInstanceFollowing(Player, justCompletedFutureTech);
+                var futureTech = TechnologyFactory.Instance.MakeFutureTechInstanceFollowing(Owner, justCompletedFutureTech);
                 uncompletedRsch = new ResearchTask(futureTech);
                 isFutureTechRuntimeCreation = true;
             }
             nextRschTask = uncompletedRsch;
             return true;
+        }
+
+        #endregion
+
+        #region Choose Design Support
+
+        /// <summary>
+        /// AI chooses the FacilityDesign to form/add to a Settlement or Starbase. Can be Obsolete.
+        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
+        /// <remarks>UNCLEAR Default FacilityDesigns aren't currently used.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(FacilityHullCategory hullCat, Action<FacilityDesign> onChosen) {
+            IEnumerable<FacilityDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
+            D.Assert(areDesignsFound);
+            var chosenDesign = RandomExtended.Choice(designChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the ShipDesign to add to a Hanger. Can be Obsolete.
+        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
+        /// <remarks>UNCLEAR Default ShipDesigns aren't currently used.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(ShipHullCategory hullCat, Action<ShipDesign> onChosen) {
+            IEnumerable<ShipDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
+            D.Assert(areDesignsFound);
+            var chosenDesign = RandomExtended.Choice(designChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
+        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="designToBeRefit">The design to be refit.</param>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(FleetCmdModuleDesign designToBeRefit, Action<FleetCmdModuleDesign> onChosen) {
+            IEnumerable<FleetCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
+        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="designToBeRefit">The design to be refit.</param>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(StarbaseCmdModuleDesign designToBeRefit, Action<StarbaseCmdModuleDesign> onChosen) {
+            IEnumerable<StarbaseCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
+        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="designToBeRefit">The design to be refit.</param>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(SettlementCmdModuleDesign designToBeRefit, Action<SettlementCmdModuleDesign> onChosen) {
+            IEnumerable<SettlementCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to initially form a unit.
+        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(Action<FleetCmdModuleDesign> onChosen) {
+            var cmdModuleChoices = Designs.GetAllDeployableFleetCmdModDesigns(includeDefault: true);
+            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to initially form a unit.
+        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(Action<StarbaseCmdModuleDesign> onChosen) {
+            D.Assert(Designs.AreDeployableStarbaseCmdModuleDesignsPresent);
+            var cmdModuleChoices = Designs.GetAllDeployableStarbaseCmdModDesigns(includeDefault: true);
+            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the command module design to use to initially form a unit.
+        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
+        /// </summary>
+        /// <param name="onChosen">Delegate to execute when chosen.</param>
+        [Obsolete]
+        public virtual void ChooseDesign(Action<SettlementCmdModuleDesign> onChosen) {
+            var cmdModuleChoices = Designs.GetAllDeployableSettlementCmdModDesigns(includeDefault: true);
+            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
+            onChosen(chosenDesign);
+        }
+
+        /// <summary>
+        /// AI chooses the FacilityDesign to form/add to a Settlement or Starbase. Can be Obsolete.
+        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// <remarks>UNCLEAR Default FacilityDesigns aren't currently used.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        public virtual FacilityDesign ChooseDesign(FacilityHullCategory hullCat) {
+            IEnumerable<FacilityDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
+            D.Assert(areDesignsFound);
+            return RandomExtended.Choice(designChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the Design to be used to refit the Element with <c>existingDesign</c>.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <param name="existingDesign">The existing design to be refit.</param>
+        /// <returns></returns>
+        public virtual FacilityDesign ChooseRefitDesign(FacilityDesign existingDesign) {
+            IEnumerable<FacilityDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(existingDesign, out designChoices);
+            D.Assert(areDesignsFound);
+            return RandomExtended.Choice(designChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the ShipDesign to add to a Hanger. Can be Obsolete.
+        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// <remarks>UNCLEAR Default ShipDesigns aren't currently used.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull cat.</param>
+        public virtual ShipDesign ChooseDesign(ShipHullCategory hullCat) {
+            IEnumerable<ShipDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
+            D.Assert(areDesignsFound);
+            return RandomExtended.Choice(designChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the Design to be used to refit the Element with <c>existingDesign</c>.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <param name="existingDesign">The existing design to be refit.</param>
+        /// <returns></returns>
+        public virtual ShipDesign ChooseRefitDesign(ShipDesign existingDesign) {
+            IEnumerable<ShipDesign> designChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(existingDesign, out designChoices);
+            D.Assert(areDesignsFound);
+            return RandomExtended.Choice(designChoices);
+        }
+
+
+        /// <summary>
+        /// AI chooses the CmdModuleDesign to be used to form a new Unit.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public virtual FleetCmdModuleDesign ChooseFleetCmdModDesign() {
+            var cmdModuleChoices = Designs.GetAllDeployableFleetCmdModDesigns(includeDefault: true);
+            return RandomExtended.Choice(cmdModuleChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the Design to be used to refit the CmdModule with <c>existingDesign</c>.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <param name="existingDesign">The existing design to be refit.</param>
+        /// <returns></returns>
+        public virtual FleetCmdModuleDesign ChooseRefitDesign(FleetCmdModuleDesign existingDesign) {
+            IEnumerable<FleetCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(existingDesign, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            return RandomExtended.Choice(cmdModUpgradeChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the CmdModuleDesign to be used to form a new Unit.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public virtual StarbaseCmdModuleDesign ChooseStarbaseCmdModDesign() {
+            D.Assert(Designs.AreDeployableStarbaseCmdModuleDesignsPresent);
+            var cmdModuleChoices = Designs.GetAllDeployableStarbaseCmdModDesigns(includeDefault: true);
+            return RandomExtended.Choice(cmdModuleChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the Design to be used to refit the CmdModule with <c>existingDesign</c>.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <param name="existingDesign">The existing design to be refit.</param>
+        /// <returns></returns>
+        public virtual StarbaseCmdModuleDesign ChooseRefitDesign(StarbaseCmdModuleDesign existingDesign) {
+            IEnumerable<StarbaseCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(existingDesign, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            return RandomExtended.Choice(cmdModUpgradeChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the CmdModuleDesign to be used to form a new Unit.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public virtual SettlementCmdModuleDesign ChooseSettlementCmdModDesign() {
+            var cmdModuleChoices = Designs.GetAllDeployableSettlementCmdModDesigns(includeDefault: true);
+            return RandomExtended.Choice(cmdModuleChoices);
+        }
+
+        /// <summary>
+        /// AI chooses the Design to be used to refit the CmdModule with <c>existingDesign</c>.
+        /// <remarks>Currently simply picks a random design.</remarks>
+        /// </summary>
+        /// <param name="existingDesign">The existing design to be refit.</param>
+        /// <returns></returns>
+        public virtual SettlementCmdModuleDesign ChooseRefitDesign(SettlementCmdModuleDesign existingDesign) {
+            IEnumerable<SettlementCmdModuleDesign> cmdModUpgradeChoices;
+            bool areDesignsFound = Designs.TryGetUpgradeDesigns(existingDesign, out cmdModUpgradeChoices);
+            D.Assert(areDesignsFound);
+
+            return RandomExtended.Choice(cmdModUpgradeChoices);
         }
 
         #endregion
@@ -746,7 +1027,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Planet(IPlanet_Ltd planet) {
             if (awareChgd_Planet != null) {
                 D.Assert(!planet.IsDead, planet.DebugName);
-                D.AssertNotEqual(planet.Owner_Debug, Player);
+                D.AssertNotEqual(planet.Owner_Debug, Owner);
                 awareChgd_Planet(this, new AwareChgdEventArgs(planet));
             }
         }
@@ -788,9 +1069,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void HandleOwnerRelationsChangedWith(Player player) {
-            D.AssertNotEqual(Player, player);
-            var priorRelationship = Player.GetPriorRelations(player);
-            var newRelationship = Player.GetCurrentRelations(player);
+            D.AssertNotEqual(Owner, player);
+            var priorRelationship = Owner.GetPriorRelations(player);
+            var newRelationship = Owner.GetCurrentRelations(player);
             D.AssertNotEqual(priorRelationship, newRelationship);
             //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner, player);
             if (priorRelationship == DiplomaticRelationship.Alliance) {
@@ -804,25 +1085,24 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleGainedAllianceWith(Player ally) {
-            D.Assert(Player.IsRelationshipWith(ally, DiplomaticRelationship.Alliance));
+            D.Assert(Owner.IsRelationshipWith(ally, DiplomaticRelationship.Alliance));
 
             var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-            var allyItems = allyAIMgr.Knowledge.OwnerItems;
-            allyItems.ForAll(allyItem => {
-                D.Assert(!(allyItem is IUniverseCenter));
+            var allyOwnedItems = allyAIMgr.Knowledge.OwnerItems;
+            foreach (var allyItem in allyOwnedItems) {
                 //D.Log("{0} is adding Ally {1}'s item {2} to knowledge with IntelCoverage = Comprehensive.", DebugName, ally, allyItem.DebugName);
                 ChangeIntelCoverageToComprehensive(allyItem);
-            });
+            }
         }
 
         private void HandleLostAllianceWith(Player formerAlly) {
-            D.Assert(Player.IsPriorRelationshipWith(formerAlly, DiplomaticRelationship.Alliance));
+            D.Assert(Owner.IsPriorRelationshipWith(formerAlly, DiplomaticRelationship.Alliance));
 
             var formerAllyOwnedItems = Knowledge.GetItemsOwnedBy(formerAlly);
             var formerAllySensorDetectableOwnedItems = formerAllyOwnedItems.Where(item => item is ISensorDetectable).Cast<ISensorDetectable>();
             formerAllySensorDetectableOwnedItems.ForAll(sdItem => {
                 //D.Log("{0} is about to call formerAlly {1}'s item {2}.ResetBasedOnCurrentDetection.", DebugName, formerAlly, sdItem.DebugName);
-                sdItem.ResetBasedOnCurrentDetection(Player);
+                sdItem.ResetBasedOnCurrentDetection(Owner);
             });
         }
 
@@ -837,21 +1117,25 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
-            D.Assert(!(item is ISector));  // UNCLEAR Sector IntelCoverage role not yet determined
-
-            var element = item as IUnitElement;
-            if (element != null) {
-                element.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
+            var sector = item as ISector;
+            if (sector != null) {
+                sector.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
             }
             else {
-                var planetoid = item as IPlanetoid;
-                if (planetoid != null) {
-                    planetoid.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
+                var element = item as IUnitElement;
+                if (element != null) {
+                    element.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
                 }
                 else {
-                    var star = item as IStar;
-                    D.AssertNotNull(star);
-                    star.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
+                    var planetoid = item as IPlanetoid;
+                    if (planetoid != null) {
+                        planetoid.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+                    }
+                    else {
+                        var star = item as IStar;
+                        D.AssertNotNull(star);
+                        star.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+                    }
                 }
             }
         }
@@ -861,6 +1145,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __Validate(Player player) {
+            if (player.IsUser) {
+                D.Assert(this is UserAIManager);
+            }
+        }
 
         /// <summary>
         /// Debug. Returns the items that Owner knows about that are owned by player.
@@ -913,10 +1204,10 @@ namespace CodeEnv.Master.GameContent {
                     __autoRelationsChgJob = _jobMgr.RecurringWaitForHours(durationBetweenChgs, "AutoRelationsChgRecurringJob", waitMilestone: () => {
                         if (OtherKnownPlayers.Any()) {
                             Player player = RandomExtended.Choice(OtherKnownPlayers);
-                            var currentRelations = Player.GetCurrentRelations(player);
+                            var currentRelations = Owner.GetCurrentRelations(player);
                             DiplomaticRelationship newRelations = Enums<DiplomaticRelationship>.GetRandomExcept(default(DiplomaticRelationship),
                                 currentRelations, DiplomaticRelationship.Self);
-                            Player.SetRelationsWith(player, newRelations);
+                            Owner.SetRelationsWith(player, newRelations);
                         }
                     });
                 }
@@ -1014,7 +1305,7 @@ namespace CodeEnv.Master.GameContent {
                 return false;
             }
 
-            if (GameReferences.DebugControls.FleetsAutoAttackAsDefault) {
+            if (_debugControls.FleetsAutoAttackAsDefault) {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     return false;
                 }
@@ -1036,6 +1327,10 @@ namespace CodeEnv.Master.GameContent {
                             fleetCmd.deathOneShot -= __MyAttackingFleetDeathEventHandler;
                         }
 
+                        if (__IssueFleetFoundBaseOrder(fleetCmd)) {
+                            return true;
+                        }
+
                         __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
                         if (__isUniverseFullyExplored) {
                             // couldn't find target to attack and universe is fully explored so all targets have been destroyed
@@ -1052,6 +1347,10 @@ namespace CodeEnv.Master.GameContent {
                     if (__myAttackingFleets.Contains(fleetCmd)) {
                         __myAttackingFleets.Remove(fleetCmd);
                         fleetCmd.deathOneShot -= __MyAttackingFleetDeathEventHandler;
+                    }
+
+                    if (__IssueFleetFoundBaseOrder(fleetCmd)) {
+                        return true;
                     }
 
                     __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
@@ -1079,7 +1378,11 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
 
-                if (GameReferences.DebugControls.FleetsAutoExploreAsDefault) {
+                if (__IssueFleetFoundBaseOrder(fleetCmd)) {
+                    return true;
+                }
+
+                if (_debugControls.FleetsAutoExploreAsDefault) {
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
                         return false;
                     }
@@ -1148,9 +1451,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private bool __IssueFleetAttackOrder(IFleetCmd fleetCmd, bool findFarthestTgt) {
             if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Attack)) {
-                List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Player)).ToList();
-                attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Player)));
-                attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Player)));
+                List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Owner)).ToList();
+                attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Owner)));
+                attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Owner)));
                 //attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
                 if (attackTgts.Any()) {
                     IUnitAttackable attackTgt;
@@ -1211,17 +1514,17 @@ namespace CodeEnv.Master.GameContent {
             if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore)) {
                 var knownItemsUnexploredByOwnerFleets = Knowledge.KnownItemsUnexploredByOwnerFleets;
                 if (knownItemsUnexploredByOwnerFleets.Any()) {
-                    var closestUnexploredItem = knownItemsUnexploredByOwnerFleets.MinBy(item => Vector3.SqrMagnitude(fleetCmd.Position - item.Position));
+                    var closestUnexploredItem = GameUtility.GetClosest(fleetCmd.Position, knownItemsUnexploredByOwnerFleets);
                     D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
                         DebugName, fleetCmd.DebugName, closestUnexploredItem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
-                        closestUnexploredItem.IsOwnerAccessibleTo(Player));
+                        closestUnexploredItem.IsOwnerAccessibleTo(Owner));
                     var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredItem);
                     fleetCmd.CurrentOrder = order;
                     isExploreOrderIssued = true;
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed exploration of known universe that {2} is allowed to explore.",
-                        DebugName, fleetCmd.DebugName, Player.DebugName);
+                        DebugName, fleetCmd.DebugName, Owner.DebugName);
                 }
             }
             return isExploreOrderIssued;
@@ -1234,7 +1537,7 @@ namespace CodeEnv.Master.GameContent {
                     from unitBase in Knowledge.Bases
                     let ownerAssessibleUnitBase = unitBase as IUnitBaseCmd
                     // OK to know owner as can always move to a base. Just don't want to get fired on
-                    where !ownerAssessibleUnitBase.Owner.IsAtWarWith(Player) && !__basesVisited.Contains(ownerAssessibleUnitBase)
+                    where !ownerAssessibleUnitBase.Owner.IsAtWarWith(Owner) && !__basesVisited.Contains(ownerAssessibleUnitBase)
                     select ownerAssessibleUnitBase;
                 if (visitableUnvisitedBases.Any()) {
                     var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
@@ -1246,10 +1549,62 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.",
-                        DebugName, fleetCmd.DebugName, Player.DebugName);
+                        DebugName, fleetCmd.DebugName, Owner.DebugName);
                 }
             }
             return isMoveOrderIssued;
+        }
+
+        private bool __IssueFleetFoundBaseOrder(IFleetCmd fleetCmd) {
+            bool isFoundBaseOrderIssued = false;
+
+            bool tryFoundSettlement = _debugControls.FleetsAutoFoundSettlements;
+            bool tryFoundStarbase = _debugControls.FleetsAutoFoundStarbases;
+            bool tryFoundBase = tryFoundSettlement || tryFoundStarbase;
+            if (tryFoundBase) {
+                tryFoundSettlement = tryFoundSettlement && RandomExtended.SplitChance();
+                if (tryFoundSettlement) {
+                    isFoundBaseOrderIssued = __IssueFleetFoundSettlementOrder(fleetCmd);
+                }
+                else {
+                    if (tryFoundStarbase) {
+                        isFoundBaseOrderIssued = __IssueFleetFoundStarbaseOrder(fleetCmd);
+                    }
+                }
+            }
+            return isFoundBaseOrderIssued;
+        }
+
+        private bool __IssueFleetFoundSettlementOrder(IFleetCmd fleetCmd) {
+            bool isFoundSettlementOrderIssued = false;
+            if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.FoundSettlement)) {
+                IEnumerable<ISystem_Ltd> allowedSystems;
+                bool areFoundSettlementSystemsAvailable = Knowledge.TryGetSystemsThatCanFoundSettlements(out allowedSystems);
+                D.Assert(areFoundSettlementSystemsAvailable);
+                var closestAllowedSystem = GameUtility.GetClosest(fleetCmd.Position, allowedSystems);
+                D.Log("{0} is issuing {1} an order to {2} in {3} in Frame {4}.", DebugName, fleetCmd.DebugName,
+                    FleetDirective.FoundSettlement.GetValueName(), closestAllowedSystem.DebugName, Time.frameCount);
+                var order = new FleetOrder(FleetDirective.FoundSettlement, OrderSource.PlayerAI, closestAllowedSystem as IFleetNavigableDestination);
+                fleetCmd.CurrentOrder = order;
+                isFoundSettlementOrderIssued = true;
+            }
+            return isFoundSettlementOrderIssued;
+        }
+
+        private bool __IssueFleetFoundStarbaseOrder(IFleetCmd fleetCmd) {
+            bool isFoundStarbaseOrderIssued = false;
+            if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.FoundStarbase)) {
+                IEnumerable<ISector_Ltd> allowedSectors;
+                bool areFoundStarbaseSectorsAvailable = Knowledge.TryGetSectorsThatCanFoundStarbases(out allowedSectors);
+                D.Assert(areFoundStarbaseSectorsAvailable);
+                var closestAllowedSector = GameUtility.GetClosest(fleetCmd.Position, allowedSectors);
+                D.Log("{0} is issuing {1} an order to {2} in {3} in Frame {4}.", DebugName, fleetCmd.DebugName,
+                    FleetDirective.FoundStarbase.GetValueName(), closestAllowedSector.DebugName, Time.frameCount);
+                var order = new FleetOrder(FleetDirective.FoundStarbase, OrderSource.PlayerAI, closestAllowedSector as IFleetNavigableDestination);
+                fleetCmd.CurrentOrder = order;
+                isFoundStarbaseOrderIssued = true;
+            }
+            return isFoundStarbaseOrderIssued;
         }
 
         #endregion

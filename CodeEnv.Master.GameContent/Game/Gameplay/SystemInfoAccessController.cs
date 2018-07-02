@@ -63,6 +63,7 @@ namespace CodeEnv.Master.GameContent {
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, System IntelCoverage is Basic, but a member could be allowing access
+                    // 6.16.18 Cntlr has multiple clients so can't consolidate logic in Item.AssessWhetherToFireOwnerInfoAccessChgdEventFor
 
                     // Note: Once a System grants access to Owner it can't be rescinded as Stars and Planetoids use NonRegressibleIntel.
                     // However, a 'defacto' rescind could theoretically take place if 1) one or more planetoid(s) was the source of the grant 
@@ -79,12 +80,13 @@ namespace CodeEnv.Master.GameContent {
                     }
 
                     SystemData sysData = _data as SystemData;
-                    hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID);
+                    hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
                     if (!hasBasicAccessToOwner) {
                         hasBasicAccessToOwner = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).
-                            Any(iac => iac.HasIntelCoverageReqdToAccess(player, infoID));
+                            Any(iac => iac.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));
                     }
-                    _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;   // Reqd assignment when the out is a ValueType
+                    _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;   // Reqd assignment when the out is not a ReferenceType
+
                     return hasBasicAccessToOwner;
                 // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
                 default:

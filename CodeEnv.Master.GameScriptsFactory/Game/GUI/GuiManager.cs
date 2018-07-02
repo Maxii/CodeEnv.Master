@@ -167,6 +167,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         return DebugName;
     }
 
+
     #region Debug
 
     [System.Diagnostics.Conditional("DEBUG")]

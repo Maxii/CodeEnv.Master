@@ -216,8 +216,12 @@ namespace CodeEnv.Master.GameContent {
 
         public AUnitCmdModuleDesign CmdModuleDesign { get; private set; }
 
-        protected IList<AUnitElementData> _elementsData;
+        public int ElementCount { get { return _elementsData.Count; } }
+
+        protected sealed override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
+
         protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
+        private IList<AUnitElementData> _elementsData;
         private IList<IDisposable> _sensorRangeSubscriptions;
 
         #region Initialization 
@@ -270,10 +274,10 @@ namespace CodeEnv.Master.GameContent {
         public void ActivateCmdSensors() {
             // 5.13.17 Moved from Data.CommenceOperations to allow Cmd.CommenceOperations to call when
             // it is prepared to detect and be detected - aka after it enters Idling state.
-            if (!_debugCntls.DeactivateMRSensors) {
+            if (!__debugCntls.DeactivateMRSensors) {
                 Sensors.Where(s => s.RangeCategory == RangeCategory.Medium).ForAll(s => s.IsActivated = true);
             }
-            if (!_debugCntls.DeactivateLRSensors) {
+            if (!__debugCntls.DeactivateLRSensors) {
                 Sensors.Where(s => s.RangeCategory == RangeCategory.Long).ForAll(s => s.IsActivated = true);
             }
             RecalcUnitSensorRange();
@@ -455,14 +459,30 @@ namespace CodeEnv.Master.GameContent {
             // Align the IntelCoverage of this Cmd with that of its new HQ
             var otherPlayers = _gameMgr.AllPlayers.Except(Owner);
             foreach (var player in otherPlayers) {
+                IntelCoverage playerIntelCoverageOfOldHQ = GetIntelCoverage(player);    // Cmds coverage the same as OldHQ until changed
                 IntelCoverage playerIntelCoverageOfNewHQ = HQElementData.GetIntelCoverage(player);
                 IntelCoverage resultingCoverage;
-                bool isPlayerIntelCoverageAccepted = TrySetIntelCoverage(player, playerIntelCoverageOfNewHQ, out resultingCoverage);
-                // 2.6.17 FIXME It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
-                // previous HQ had > None, thereby attempting to illegally regress a BaseCmd's IntelCoverage to None from > None.
-                // Same thing could happen to FleetCmd except regress to None wouldn't be illegal. It WOULD result in the Fleet disappearing...
-                // Possible fixes: if illegal, force change of new HQ IntelCoverage to what old HQ was?
-                D.Assert(isPlayerIntelCoverageAccepted);
+                bool isPlayerIntelCoverageChgd = TryChangeIntelCoverage(player, playerIntelCoverageOfNewHQ, out resultingCoverage);
+                // 2.6.17 It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
+                // previous HQ had > None, thereby attempting to regress a BaseCmd's IntelCoverage to None from > None which won't take.
+                // FIXME Same thing could happen to FleetCmd except regress to None would occur which would result in the Fleet disappearing...
+                // Desirable fix?: if a fleet and disappears from User, force change of new HQ IntelCoverage to what old HQ was?
+                if (playerIntelCoverageOfOldHQ > IntelCoverage.None && playerIntelCoverageOfNewHQ == IntelCoverage.None) {
+                    // fleet can change to None but Base can't
+                    if (isPlayerIntelCoverageChgd) {
+                        D.AssertEqual(GetIntelCoverage(player), IntelCoverage.None);
+                        D.Assert(this is FleetCmdData);
+                        D.Warn("{0}: {1} has just disappeared from {2}'s visibility because of a HQ change.", DebugName, UnitName, player.DebugName);
+                    }
+                    else {
+                        D.AssertNotEqual(GetIntelCoverage(player), IntelCoverage.None);
+                        D.Assert(this is AUnitBaseCmdData);
+                    }
+                }
+
+                if (isPlayerIntelCoverageChgd) {
+                    D.AssertNotEqual(playerIntelCoverageOfOldHQ, resultingCoverage);    // OPTIMIZE patently obvious?
+                }
             }
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
 
@@ -470,24 +490,14 @@ namespace CodeEnv.Master.GameContent {
             HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
         }
 
-        private void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
-            if (HQElementData.IsOwnerChangeUnderway && _elementsData.Count > Constants.One) {
-                // 5.17.17 HQElement is changing owner and I'm not going to go with it to that owner
-                // so don't follow its IntelCoverage change. I'll pick up my IntelCoverage as soon as
-                // I get my newly assigned HQElement. Following its change when not going with it results
-                // in telling others of my very temp change which will throw errors when the chg doesn't make sense
-                // - e.g. tracking its change to IntelCoverage.None with an ally.
-                // 5.20.17 This combination of criteria can never occur for a BaseCmd as an element owner change
-                // is only possible when it is the only element.
-                return;
-            }
-
+        protected virtual void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            var playerPriorIntelCoverage = GetIntelCoverage(playerWhosCoverageChgd);
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(playerWhosCoverageChgd);
             IntelCoverage resultingCoverage;
-            var isIntelCoverageAccepted = TrySetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement, out resultingCoverage);
-            D.Assert(isIntelCoverageAccepted);
-            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
-            //    DebugName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+            var isIntelCoverageChgd = TryChangeIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement, out resultingCoverage);
+            if (isIntelCoverageChgd) {
+                D.AssertNotEqual(playerPriorIntelCoverage, resultingCoverage);  // OPTIMIZE patently obvious?
+            }
         }
 
         private void HandleUnitMaxHitPtsChanging(float newMaxHitPts) {
@@ -520,9 +530,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void HandleUnitNameChanged() {
             Name = UnitName + GameConstants.CmdNameExtension;
-            if (!_elementsData.IsNullOrEmpty()) {
-                _elementsData.ForAll(eData => eData.UnitName = UnitName);
-            }
         }
 
         private void HandleCmdSensorRangeChanged() {
@@ -542,8 +549,9 @@ namespace CodeEnv.Master.GameContent {
         public virtual void AddElement(AUnitElementData elementData) {
             D.Assert(!_elementsData.Contains(elementData), elementData.DebugName);
             __ValidateOwner(elementData);
-            UpdateElementUnitName(elementData);
             _elementsData.Add(elementData);
+            elementData.CmdData = this;
+
             Subscribe(elementData);
             RefreshComposition();
 
@@ -552,14 +560,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void UpdateElementUnitName(AUnitElementData elementData) {
-            //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, UnitName);
-            elementData.UnitName = UnitName;    // the name of the fleet, not the command
-        }
-
         public virtual void RemoveElement(AUnitElementData elementData) {
             bool isRemoved = _elementsData.Remove(elementData);
             D.Assert(isRemoved, elementData.DebugName);
+
+            elementData.CmdData = null;
 
             Unsubscribe(elementData);
             RefreshComposition();
@@ -744,28 +749,19 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        /// <summary>
-        /// Removes the damage from command module equipment.
-        /// <remarks>11.26.17 HACK placeholder for refitting cmd module as currently not supported.</remarks>
-        /// </summary>
-        public void __RemoveDamageFromCmdModuleEquipment() {
-            RemoveDamageFromAllEquipment();
-        }
-
         protected override void __ValidateAllEquipmentDamageRepaired() {
             base.__ValidateAllEquipmentDamageRepaired();
             Sensors.ForAll(s => D.Assert(!s.IsDamaged));
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateOwner(AUnitElementData elementData) {
             D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");
             if (elementData.Owner == TempGameValues.NoPlayer) {
-                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, DebugName);
-                elementData.Owner = Owner;
+                D.Error("{0} owner should be set before adding element to {1}.", elementData.Name, DebugName);
             }
             else if (elementData.Owner != Owner) {
-                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner, DebugName, Owner);
-                elementData.Owner = Owner;
+                D.Error("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner.DebugName, DebugName, Owner.DebugName);
             }
         }
 

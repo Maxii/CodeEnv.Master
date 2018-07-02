@@ -39,14 +39,9 @@ public abstract class AAutoUnitCreator : AUnitCreator {
 
     protected PlayerDesigns _ownerDesigns;
 
-    /// <summary>
-    /// Builds and positions the Unit in preparation for deployment and operations.
-    /// <remarks>Must be called before AuthorizeDeployment.</remarks>
-    /// </summary>
-    public sealed override void PrepareUnitForDeployment() {
+    protected sealed override void PrepareUnitForDeployment_Internal() {
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, UnitName, DeployDate);
-        InitializeRootUnitName();
         MakeUnit();
     }
 
@@ -57,6 +52,7 @@ public abstract class AAutoUnitCreator : AUnitCreator {
         AddElementsToCommand();
         AssignHQElement();
         PositionUnit();
+        HandleUnitPositioned();
     }
 
     protected abstract void MakeElements();
@@ -72,7 +68,16 @@ public abstract class AAutoUnitCreator : AUnitCreator {
     /// </summary>
     protected abstract void AssignHQElement();
 
-    protected virtual void PositionUnit() { }
+    protected virtual void PositionUnit() {
+        LogEvent();
+    }
+
+    /// <summary>
+    /// Hook for derived classes once the Unit is made and positioned but not yet operational.
+    /// </summary>
+    protected virtual void HandleUnitPositioned() {
+        LogEvent();
+    }
 
     #region Event and Property Change Handlers
 

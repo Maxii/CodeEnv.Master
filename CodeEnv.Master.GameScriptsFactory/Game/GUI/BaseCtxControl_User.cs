@@ -227,6 +227,23 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _baseMenuOperator);
     }
 
+    #region Debug
 
+    protected override bool __IsSubmenuSupportedFor(BaseDirective directive) {
+        switch (directive) {
+            case BaseDirective.Attack:
+            case BaseDirective.ChangeHQ:
+                return true;
+            case BaseDirective.Scuttle:
+            case BaseDirective.Repair:
+            case BaseDirective.Refit:
+            case BaseDirective.Disband:
+                return false;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+        }
+    }
+
+    #endregion
 }
 

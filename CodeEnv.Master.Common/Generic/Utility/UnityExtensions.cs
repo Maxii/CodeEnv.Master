@@ -335,10 +335,31 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Efficient way of comparing two vectors for equality.
+        /// Efficient way of comparing two vectors for equality within allowedDeviation in Unity distance Units.
         /// </summary>
-        public static bool IsSameAs(this Vector3 source, Vector3 v) {
-            return Mathfx.Approx(source, v, UnityConstants.FloatEqualityPrecision);
+        /// <param name="source">The source.</param>
+        /// <param name="v">The v.</param>
+        /// <param name="allowedDeviation">The allowed deviation in Units.</param>
+        /// <returns></returns>
+        public static bool IsSameAs(this Vector3 source, Vector3 v, float allowedDeviation = UnityConstants.FloatEqualityPrecision) {
+            return Mathfx.Approx(source, v, allowedDeviation);
+        }
+
+        /// <summary>
+        /// Debug way of comparing two vectors for equality within allowedDeviation in Unity distance Units,
+        /// returning the actualDeviation.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="v">The v.</param>
+        /// <param name="actualDeviation">The actual deviation in Units.</param>
+        /// <param name="allowedDeviation">The allowed deviation in Units.</param>
+        /// <returns></returns>
+        public static bool IsSameAs(this Vector3 source, Vector3 v, out float actualDeviation, float allowedDeviation = UnityConstants.FloatEqualityPrecision) {
+            Utility.ValidateNotNegative(allowedDeviation);
+            D.AssertNotEqual(Constants.ZeroF, allowedDeviation);
+            float vectorSeparation = (source - v).magnitude;
+            actualDeviation = vectorSeparation;
+            return vectorSeparation < allowedDeviation;
         }
 
         /// <summary>
@@ -365,7 +386,8 @@ namespace CodeEnv.Master.Common {
         /// <returns>
         ///   <c>true</c> if [is same direction] as [the specified direction]; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, out float actualDeviation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+        public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, out float actualDeviation,
+            float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             D.Assert(!sourceDir.IsSameAs(Vector3.zero));
             D.Assert(!dir.IsSameAs(Vector3.zero));
             return UnityUtility.AreDirectionsWithinTolerance(sourceDir.normalized, dir.normalized, out actualDeviation, allowedDeviation);

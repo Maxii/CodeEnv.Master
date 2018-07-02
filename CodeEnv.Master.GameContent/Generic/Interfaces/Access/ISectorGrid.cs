@@ -27,17 +27,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISectorGrid {
 
-        IEnumerable<ISector> AllSectors { get; }
+        IEnumerable<ISector> Sectors { get; }
+
+        IEnumerable<ISector> CoreSectors { get; }
 
         /// <summary>
         /// Returns the SectorID that contains the provided world location.
-        /// Throws an error if <c>worldLocation</c> is not within the universe.
-        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe.
-        /// If this is not certain, use TryGetSectorIDThatContains(worldLocation) instead.</remarks>
+        /// Throws an error if <c>worldLocation</c> is not within the universe or within a Sector.
+        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a Sector.
+        /// If this is not certain, use TryGetSectorIDContaining(worldLocation) instead.</remarks>
         /// </summary>
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
-        IntVector3 GetSectorIDThatContains(Vector3 worldPoint);
+        IntVector3 GetSectorIDContaining(Vector3 worldLocation);
 
         /// <summary>
         /// Returns <c>true</c> if a sectorID has been assigned containing this worldLocation, <c>false</c> otherwise.
@@ -50,13 +52,15 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Gets the sector containing the provided worldLocation.
-        /// Throws an error if <c>worldLocation</c> is not within the universe.
-        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe.
+        /// Throws an error if <c>worldLocation</c> is not within the universe or within a Sector.
+        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a Sector.
         /// If this is not certain, use TryGetSectorContaining(worldLocation) instead.</remarks>
         /// </summary>
         /// <param name="worldLocation">The world point.</param>
         /// <returns></returns>
         ISector GetSectorContaining(Vector3 worldLocation);
+
+        ISector GetSector(IntVector3 sectorID);
 
 
     }

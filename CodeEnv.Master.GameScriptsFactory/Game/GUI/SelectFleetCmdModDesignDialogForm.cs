@@ -16,6 +16,7 @@
 
 // default namespace
 
+using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,21 +28,24 @@ public class SelectFleetCmdModDesignDialogForm : ASelectDesignDialogForm {
 
     public override FormID FormID { get { return FormID.SelectFleetCmdModDesignDialog; } }
 
-    protected override DesignIconGuiElement ChooseInitialIconToBePicked(IEnumerable<DesignIconGuiElement> allDisplayedIcons) {
-        ////AUnitMemberDesign defaultCmdDesign = GameManager.Instance.GetAIManagerFor(Settings.Player).Designs.GetDefaultFleetCmdModDesign();
-        ////return allDisplayedIcons.Single(icon => icon.Design == defaultCmdDesign);
-        return allDisplayedIcons.Single(icon => icon.Design.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Default);
-    }
-
-    protected override IEnumerable<AUnitMemberDesign> GetDesigns(bool includeObsolete) {
+    protected override IEnumerable<AUnitMemberDesign> GetDesignChoices() {
         var playerDesigns = GameManager.Instance.GetAIManagerFor(Settings.Player).Designs;
+        IEnumerable<FleetCmdModuleDesign> designChoices = null;
 
-        var cmdDesigns = playerDesigns.GetAllDeployableFleetCmdModDesigns(includeObsolete, includeDefault: true).Cast<AUnitMemberDesign>();
-        ////var cmdDefaultDesign = playerDesigns.GetDefaultFleetCmdModDesign();
-        ////if (!cmdDesigns.Contains(cmdDefaultDesign)) {
-        ////    cmdDesigns.Add(cmdDefaultDesign);
-        ////}
-        return cmdDesigns;
+        bool isRefitSelection = Settings.OptionalParameter != null;
+        if (isRefitSelection) {
+            FleetCmdModuleDesign existingDesign = Settings.OptionalParameter as FleetCmdModuleDesign;
+            D.AssertNotNull(existingDesign);
+            bool areDesignsFound = playerDesigns.TryGetUpgradeDesigns(existingDesign, out designChoices);
+            D.Assert(areDesignsFound);  // existingDesign not included in choices
+
+            // this is a refit so no reason to include the default choice
+        }
+        else {
+            // the Design being selected is for initial deployment of a Unit
+            designChoices = playerDesigns.GetAllDeployableFleetCmdModDesigns(includeDefault: true);
+        }
+        return designChoices.Cast<AUnitMemberDesign>();
     }
 
 }

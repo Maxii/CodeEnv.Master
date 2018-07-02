@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler<ResearchCompletedEventArgs> researchCompleted;
 
-        public string DebugName { get { return DebugNameFormat.Inject(_aiMgr.Player.DebugName, GetType().Name); } }
+        public string DebugName { get { return DebugNameFormat.Inject(_aiMgr.Owner.DebugName, GetType().Name); } }
 
         private float _playerTotalScienceYield;
         private DateMinderDuration _researchQueueUpdateDuration;

@@ -46,7 +46,7 @@ public abstract class AGuiButton : ATextTooltip {
     protected UIButton _button;
     private GameInputHelper _inputHelper;
 
-    protected sealed override void Awake() {
+    protected override void Awake() {   // 6.5.18 Not sealed to allow UserActionButton to override as Singleton
         base.Awake();
         InitializeValuesAndReferences();
         __ValidateOnAwake();

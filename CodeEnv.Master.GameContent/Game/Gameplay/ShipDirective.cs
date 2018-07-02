@@ -142,6 +142,18 @@ namespace CodeEnv.Master.GameContent {
         Explore,
 
         /// <summary>
+        /// Colonizer ships can be ordered to found a Settlement in an unoccupied System.
+        /// <remarks>6.3.18 Requires a non-null System Target.</remarks>
+        /// </summary>
+        FoundSettlement,
+
+        /// <summary>
+        /// Colonizer ships can be ordered to found a Starbase in Sectors not owned by opponents.
+        /// <remarks>6.3.18 Requires a non-null Sector Target.</remarks>
+        /// </summary>
+        FoundStarbase,
+
+        /// <summary>
         /// Instructs the ship to disband in the hanger of the target base. If already located in the hanger of the target
         /// base, the ship will initiate disbanding. If not, it will attempt to transfer from its existing fleet and enter the
         /// target base's hanger and then initiate disbanding.

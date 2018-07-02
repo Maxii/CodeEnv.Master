@@ -111,7 +111,8 @@ public class NewGameSystemGenerator {
     /// <param name="gameSettings">The game settings.</param>
     /// <param name="sectorIDsToAvoid">The sector IDs to avoid.</param>
     /// <returns></returns>
-    public IDictionary<Player, SystemCreator> DeployAndConfigurePlayersHomeSystemCreators(GameSettings gameSettings, IEnumerable<IntVector3> sectorIDsToAvoid) {
+    public IDictionary<Player, SystemCreator> DeployAndConfigurePlayersHomeSystemCreators(GameSettings gameSettings,
+        IEnumerable<IntVector3> sectorIDsToAvoid) {
         var sectorGrid = SectorGrid.Instance;
 
         int homeSystemQtyToDeploy = gameSettings.PlayerCount;
@@ -126,12 +127,13 @@ public class NewGameSystemGenerator {
         IList<PlanetoidCategory> homePlanetCatsByPlanetIndex = GetPlanetCategories(homeSystemDesirability, isHomeSystem: true);
 
         IntVector3 userHomeSystemSectorID;
-        bool isUserHomeSectorIdFound = sectorGrid.TryGetRandomSectorID(out userHomeSystemSectorID, includePeriphery: false, excludedIDs: sectorIDsToAvoid_Internal);
+        ////bool isUserHomeSectorIdFound = sectorGrid.TryGetRandomSectorID(out userHomeSystemSectorID, includePeriphery: false, excludedIDs: sectorIDsToAvoid_Internal);
+        bool isUserHomeSectorIdFound = sectorGrid.TryGetRandomCoreSectorID(out userHomeSystemSectorID, excludedIDs: sectorIDsToAvoid_Internal);
         D.Assert(isUserHomeSectorIdFound);
         sectorIDsToAvoid_Internal.Add(userHomeSystemSectorID);
 
         // IMPROVE This neighbor addition is superfluous as CalcAiPlayerHomeSector() requires sectorCandidates to be > 2 sectors away from userHomeSystemSector
-        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(userHomeSystemSectorID);
+        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(userHomeSystemSectorID);
         sectorIDsToAvoid_Internal.AddRange(homeNeighboringSectorIDs);
 
         Vector3 homeLocation = sectorGrid.GetSectorPosition(userHomeSystemSectorID);
@@ -159,7 +161,7 @@ public class NewGameSystemGenerator {
 
             // This keeps other homeSystemSectors from being placed right next to this homeSystemSector where 
             // DeployAndConfigureAdditionalCreatorsAround() may choose to place additional systems
-            homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+            homeNeighboringSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
             sectorIDsToAvoid_Internal.AddRange(homeNeighboringSectorIDs);
         }
         D.Log(ShowDebugLog, "{0} deployed {1} Home {2}s. Names: {3}.", DebugName, deployedCreatorLookup.Count, typeof(SystemCreator).Name,
@@ -194,7 +196,8 @@ public class NewGameSystemGenerator {
             maxSectorDistanceFromUserHome = closestAllowedSectorDistanceToUserHome + maxClosestAdder;
         }
 
-        IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIDsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome, includePeriphery: false);
+        ////IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIDsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome, includePeriphery: false);
+        IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIDsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
         if (!candidateSectorIDs.Any()) {
             D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", DebugName, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
         }
@@ -222,7 +225,8 @@ public class NewGameSystemGenerator {
 
         var deployedCreators = new List<SystemCreator>(additionalCreatorQtyToDeploy);
         SectorGrid sectorGrid = SectorGrid.Instance;
-        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+        ////var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
         var sectorIDsToDeployTo = homeNeighboringSectorIDs.Shuffle().Take(additionalCreatorQtyToDeploy);
         D.AssertEqual(sectorIDsToDeployTo.Count(), additionalCreatorQtyToDeploy);  // probable shortage of homeNeighboringSectorIDs due to periphery
 

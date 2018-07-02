@@ -63,8 +63,8 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     private SettlementCmdItem _command;
     private IList<FacilityItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = !transform.name.IsNullOrEmpty() ? transform.name : "DebugSettlement";
+    protected override string InitializeRootUnitName() {
+        return !transform.name.IsNullOrEmpty() ? transform.name : "DebugSettlement";
     }
 
     protected override void MakeElements() {
@@ -140,13 +140,14 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     }
 
     protected override void PositionUnit() {
-        LogEvent(); // 10.6.16 Selection of system to deploy to moved to UniverseCreator
+        LogEvent(); // 10.6.16 Selection of system to deploy too moved to UniverseCreator
         var system = gameObject.GetSingleComponentInParents<SystemItem>();
         system.Settlement = _command;
     }
 
     protected override void CompleteUnitInitialization() {
         LogEvent();
+        PopulateCmdWithColonists();
         _elements.ForAll(e => e.FinalInitialize());
         _command.FinalInitialize();
     }
@@ -174,6 +175,11 @@ public class DebugSettlementCreator : ADebugUnitCreator {
 
     protected override void ClearElementReferences() {
         _elements.Clear();
+    }
+
+    private void PopulateCmdWithColonists() {
+        Level currentColonyShipLevel = _ownerDesigns.GetCurrentShipTemplateDesign(ShipHullCategory.Colonizer).HullStat.Level;
+        _command.Data.Population = currentColonyShipLevel.GetInitialColonistPopulation();
     }
 
     #region Debug

@@ -27,8 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsHQ { get; }
 
-        bool IsOwnerChangeUnderway { get; }
-
         IUnitCmd Command { get; }
 
         IElementSensorRangeMonitor SRSensorMonitor { get; }
@@ -36,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
         ReworkingMode ReworkUnderway { get; }
 
         void HandleUncompletedRemovalFromConstructionQueue(float completionPercentage);
+
+        bool __IsOwnerChgUnderway { get; }
 
     }
 }

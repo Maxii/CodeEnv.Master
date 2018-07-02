@@ -41,8 +41,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool IsHQ { get; }
 
-        bool IsOwnerChangeUnderway { get; }
-
         /// <summary>
         /// Returns the UnitCommand for this UnitElement.
         /// <remarks>3.25.17 Debated treating access to Command like Owner with restricted access based on
@@ -55,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool __TryGetIsHQChangedEventSubscribers(out string targetNames);
 
-
+        bool __IsOwnerChgUnderway { get; }
     }
 }
 

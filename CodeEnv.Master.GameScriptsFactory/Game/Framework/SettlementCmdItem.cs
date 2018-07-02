@@ -35,7 +35,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     private SystemItem _parentSystem;
     public SystemItem ParentSystem {
-        private get { return _parentSystem; }
+        get { return _parentSystem; }
         set {
             if (_parentSystem != null) {
                 D.Error("Parent System {0} of {1} can only be set once.", _parentSystem.DebugName, DebugName);
@@ -56,6 +56,11 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         }
     }
 
+    /// <summary>
+    /// Players that have already permanently acquired access to this item's Owner.
+    /// <remarks>Used in conjunction with AssessWhetherToFireOwnerInfoAccessChangedEventFor(player),
+    /// this collection enables avoidance of unnecessary reassessments.</remarks>
+    /// </summary>
     private IList<Player> _playersWithInfoAccessToOwner;
 
     #region Initialization
@@ -87,7 +92,9 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     }
 
     /// <summary>
-    /// Assesses whether to fire its infoAccessChanged event.
+    /// Assesses whether to fire a infoAccessChanged event indicating InfoAccess rights to the Owner has been 
+    /// permanently achieved (due to NonRegressibleIntel of System where located).
+    /// <remarks>All other infoAccessChanged events are fired when IntelCoverage changes.</remarks>
     /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
     /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
     /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
@@ -100,7 +107,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
-    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+    internal void AssessWhetherToFireOwnerInfoAccessChangedEventFor(Player player) {
         if (!_playersWithInfoAccessToOwner.Contains(player)) {
             // A Settlement provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
             // and second and more commonly, if its System provides access. A System provides access to its Owner
@@ -172,7 +179,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     protected override bool TryPickFacilityToRefitCmdModule(IEnumerable<FacilityItem> candidates, out FacilityItem facility) {
         D.Assert(!candidates.IsNullOrEmpty());
         facility = null;
-        bool toRefitCmdModule = OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.CmdModuleDesign);
+        bool toRefitCmdModule = OwnerAiMgr.Designs.AreUpgradeDesignsAvailable(Data.CmdModuleDesign);
         if (toRefitCmdModule) {
             facility = candidates.SingleOrDefault(f => f.IsHQ);
             if (facility == null) {

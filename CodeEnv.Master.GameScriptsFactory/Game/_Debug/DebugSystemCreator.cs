@@ -105,7 +105,7 @@ public class DebugSystemCreator : SystemCreator {
 
     #endregion
 
-    // 10.12.16 Eliminated overridden BuildAndDeploySystem() which checked ValidateConfiguration() as un-configured DebugSystemCreators
+    // 10.12.16 Eliminated overridden BuildAndDeploySystem() which checked ValidateConfiguration() as unconfigured DebugSystemCreators
     // are destroyed by NewGameSystemGenerator. It makes no sense for UniverseCreator to call BuildAndDeploySystem on a Creator that
     // hasn't been used and configured
 
@@ -116,13 +116,17 @@ public class DebugSystemCreator : SystemCreator {
             _system = GetComponentInChildren<SystemItem>();
             FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
 
-            _systemFactory.PopulateSystemInstance(SystemName, cameraStat, ref _system);
+            var aSector = SectorGrid.Instance.GetSector(SectorID);
+            Sector sector = aSector as Sector;
+            D.AssertNotNull(sector);
+            _systemFactory.PopulateSystemInstance(SystemName, sector, cameraStat, ref _system);
             if (!_system.gameObject.isStatic) {
                 D.Error("{0} should be static after being positioned.", _system.DebugName);
             }
 
             _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
-            SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
+            ////SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
+            sector.System = _system;
         }
         else {
             base.MakeSystem();

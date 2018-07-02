@@ -63,7 +63,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
 
-        public bool IsOwnerChangeUnderway { get; set; }
+        /// <summary>
+        /// One of two IsOwnerChgUnderway versions.
+        /// <remarks>6.20.18 This one is being used in one case so far were it appears to be needed.
+        /// 1) When FleetCmdData is responding to an IntelCoverage change from its HQElement and determines 
+        /// that the HQElement's coverage is changing because its owner is changing and its about to separate from the fleet.
+        /// In that case it declines to chg its own coverage to track its departing HQElement, knowing that its about to
+        /// get a new HQElement whose coverage it will want.
+        /// </summary>
+        public bool IsOwnerChgUnderway { get; set; }
 
         /// <summary>
         /// Used for controlling other player's access to Item Info.
@@ -73,8 +81,6 @@ namespace CodeEnv.Master.GameContent {
         public bool ShowDebugLog { get { return Item.ShowDebugLog; } }
 
         public IOwnerItem Item { get; private set; }
-
-        protected IDebugControls _debugCntls;
 
         #region Initialization
 
@@ -87,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
             Item = item;
             D.AssertNotNull(owner, DebugName);  // owner can be NoPlayer but never null
             _owner = owner;
-            _debugCntls = GameReferences.DebugControls;
+            __debugCntls = GameReferences.DebugControls;
             // 7.9.16 Initialize(); now called by AItem.InitializeOnData to move out of constructor
         }
 
@@ -122,12 +128,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OwnerPropertyChangingHandler(Player newOwner) {
-            IsOwnerChangeUnderway = true;
+            IsOwnerChgUnderway = true;
             HandleOwnerChanging(newOwner);
         }
 
         private void OwnerPropChangedHandler() {
-            D.AssertNotNull(Owner, DebugName);  // TempGameValues.NoPlayer but never null
             HandleOwnerChanged();
             // IsOwnerChangeUnderway = false; Handled from AItem when all change work completed
         }
@@ -142,17 +147,48 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);    // only MortalItems should ever see a change to false
         }
 
-        protected virtual void HandleOwnerChanging(Player newOwner) { }
+        protected virtual void HandleOwnerChanging(Player incomingOwner) { } // 6.18.18 Not currently used
 
-        protected virtual void HandleOwnerChanged() {
+        private void HandleOwnerChanged() {
             //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner);
+            PropagateOwnerChange();
+            HandleOwnerChangesComplete();
         }
+
+        /// <summary>
+        /// Hook for derived classes to propagate any item owner changes that depend on this change.
+        /// <remarks>Called immediately after this Item owner has changed and just before HandleOwnerChangesComplete.</remarks>
+        /// <remarks>6.17.18 Makes sure all dependent owner changes have taken place before other events that
+        /// are triggered by this change can fire, ala IntelCoverage and InfoAccess Chg events. Specifically, when a Settlement
+        /// is founded, it changes the system owner which can change the IntelCoverage which can fire a InfoAccessChg event
+        /// which is processed by the fleet that founded the settlement before the Sector's owner has been changed resulting in
+        /// an error.</remarks>
+        /// </summary>
+        protected virtual void PropagateOwnerChange() { }
+
+        /// <summary>
+        /// Hook for derived classes called after all dependent owner changes 
+        /// have been propagated that result from this Item's owner change.
+        /// </summary>
+        protected virtual void HandleOwnerChangesComplete() { }
 
         protected virtual void HandleTopographyChanged() { }
 
         public sealed override string ToString() {
             return DebugName;
         }
+
+        #region Debug
+
+        protected IDebugControls __debugCntls;
+
+        /// <summary>
+        /// One of two IsOwnerChgUnderway versions.
+        /// <remarks>6.20.18 This one is used to support debug and is not needed in a release version.</remarks>
+        /// </summary>
+        public bool __IsOwnerChgUnderway { get { return IsOwnerChgUnderway; } }
+
+        #endregion
 
     }
 }

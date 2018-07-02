@@ -68,13 +68,7 @@ namespace CodeEnv.Master.GameContent {
             return new NonRegressibleIntel();
         }
 
-        #region Event and Property Change Handlers
-
-        protected override void HandleOwnerChanged() {
-            throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(DebugName, Owner.LeaderName));
-        }
-
-        #endregion
+        // UniverseCenter never has its owner change
 
     }
 }

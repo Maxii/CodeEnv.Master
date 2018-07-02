@@ -243,7 +243,8 @@ namespace CodeEnv.Master.Common {
         //Two non-parallel lines which may or may not touch each other have a point on each line which are closest
         //to each other. This function finds those two points. If the lines are not parallel, the function 
         //outputs true, otherwise false.
-        public static bool ClosestPointsOnTwoLines(out Vector3 closestPointLine1, out Vector3 closestPointLine2, Vector3 linePoint1, Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2) {
+        public static bool ClosestPointsOnTwoLines(out Vector3 closestPointLine1, out Vector3 closestPointLine2, Vector3 linePoint1,
+            Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2) {
 
             closestPointLine1 = Vector3.zero;
             closestPointLine2 = Vector3.zero;
@@ -736,7 +737,7 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        //Returns true if "point" is in a rectangle mad up of RectA to RectD. The line point is assumed to be on the same 
+        //Returns true if "point" is in a rectangle made up of RectA to RectD. The line point is assumed to be on the same 
         //plane as the rectangle. If the point is not on the plane, use ProjectPointOnPlane() first.
         public static bool IsPointInRectangle(Vector3 point, Vector3 rectA, Vector3 rectC, Vector3 rectB, Vector3 rectD) {
 

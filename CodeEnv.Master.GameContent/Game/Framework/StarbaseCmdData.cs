@@ -16,21 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// Class for Data associated with a StarbaseCmdItem.
     /// </summary>
     public class StarbaseCmdData : AUnitBaseCmdData {
 
+        private const StarbaseCategory IsEstablishedThreshold = StarbaseCategory.LocalBase;
+
         private StarbaseCategory _category;
         public StarbaseCategory Category {
             get { return _category; }
-            private set { SetProperty<StarbaseCategory>(ref _category, value, "Category"); }
+            private set { SetProperty<StarbaseCategory>(ref _category, value, "Category", CategoryPropChangedHandler); }
         }
 
         private int _capacity;
@@ -47,6 +46,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public new StarbaseCmdModuleDesign CmdModuleDesign { get { return base.CmdModuleDesign as StarbaseCmdModuleDesign; } }
+
+        public bool IsCrippled { get; set; }    // UNDONE has no effect
+
+        private bool _isEstablished;
+        public bool IsEstablished {
+            get { return _isEstablished; }
+            private set { SetProperty<bool>(ref _isEstablished, value, "IsEstablished"); }
+        }
+
+        private IList<Player> _playersFullyExplored;
 
         #region Initialization 
 
@@ -76,9 +85,7 @@ namespace CodeEnv.Master.GameContent {
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
             IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleDesign cmdModDesign)
             : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
-            Population = cmdModDesign.CmdModuleStat.StartingPopulation;
-            Approval = cmdModDesign.CmdModuleStat.StartingApproval;
-            __PopulateResourcesFromSector();
+            __PopulatePropertyValuesFromSector();
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
@@ -120,13 +127,42 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-        #region Event and Property Change Handlers
-
-        #endregion
-
         public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
             base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDampener);
             // CmdModuleDesign does have StarbaseCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
+        }
+
+        public bool IsFullyExploredBy(Player player) {
+            return _playersFullyExplored != null && _playersFullyExplored.Contains(player);
+        }
+
+        #region Event and Property Change Handlers
+
+        private void CategoryPropChangedHandler() {
+            HandleCategoryChanged();
+        }
+
+        #endregion
+
+        private void HandleCategoryChanged() {
+            bool isEstablished = Category >= IsEstablishedThreshold;
+            if (IsEstablished != isEstablished) {
+                IsEstablished = isEstablished;
+            }
+        }
+
+        protected override void HandleIntelCoverageChangedFor(Player player) {
+            base.HandleIntelCoverageChangedFor(player);
+            AssessRecordFullyExploredBy(player);
+        }
+
+        private void AssessRecordFullyExploredBy(Player player) {
+            if (GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
+                _playersFullyExplored = _playersFullyExplored ?? new List<Player>();
+                if (!_playersFullyExplored.Contains(player)) {
+                    _playersFullyExplored.Add(player);
+                }
+            }
         }
 
         #region Debug
@@ -134,7 +170,7 @@ namespace CodeEnv.Master.GameContent {
         // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach.
         // 10.15.17 Need to determine what other Resources besides a System's Resources can be present in
         // a Sector. Then decide what Resources in a Sector a Starbase can have access too.
-        private void __PopulateResourcesFromSector() {
+        private void __PopulatePropertyValuesFromSector() {
             Capacity = 10;
             var resources = new ResourcesYield.ResourceValuePair[] {
                 new ResourcesYield.ResourceValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),

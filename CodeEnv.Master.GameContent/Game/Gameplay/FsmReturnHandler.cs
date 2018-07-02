@@ -39,21 +39,6 @@ namespace CodeEnv.Master.GameContent {
 
         public FsmCallReturnCause ReturnCause { get; set; }
 
-        /// <summary>
-        /// Processes the FsmCallReturnCause (aka the cause of the Return()) and executes the Task assigned to that
-        /// Return() cause, if any. Returns <c>true</c> if the Return() has FsmCallReturnCause.None indicating the
-        /// Call()ed state Return()ed upon successful completion and had no Task to execute, <c>false</c> if there was
-        /// a FsmCallReturnCause besides None. An FsmCallReturnCause besides None indicates the Call()ed state
-        /// Return()ed as a result of an event and did not successfully complete, resulting in execution of the Task
-        /// associated with that FsmCallReturnCause.
-        /// </summary>
-        public bool DidCallSuccessfullyComplete {
-            get {
-                FsmCallReturnCause unusedCause;
-                return !TryProcessAndFindReturnCause(out unusedCause);
-            }
-        }
-
         private IDictionary<FsmCallReturnCause, Action> _returnCauseTaskLookup;
 
         public FsmReturnHandler(IDictionary<FsmCallReturnCause, Action> returnCauseTaskLookup, string calledStateName) {
@@ -64,14 +49,32 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Processes the FsmCallReturnCause (aka the cause of the Return()) and executes the Task assigned to that
+        /// Return() cause, if any. Returns <c>true</c> if the Return() has FsmCallReturnCause.None indicating the
+        /// Call()ed state Return()ed upon successful completion and had no Task to execute, <c>false</c> if there was
+        /// a FsmCallReturnCause besides None. An FsmCallReturnCause besides None indicates the Call()ed state
+        /// Return()ed as a result of an event and did not successfully complete, resulting in execution of the Task
+        /// associated with that FsmCallReturnCause.
+        /// </summary>
+        /// <param name="isWaitingToProcessReturn">if set to <c>true</c> [is waiting to process return].</param>
+        /// <returns></returns>
+        public bool WasCallSuccessful(ref bool isWaitingToProcessReturn) {
+            FsmCallReturnCause unusedCause;
+            return !TryProcessAndFindReturnCause(out unusedCause, ref isWaitingToProcessReturn);
+        }
+
+        /// <summary>
+        /// Processes the FsmCallReturnCause (aka the cause of the Return()) and executes the Task assigned to that
         /// Return() cause, if any. Returns <c>false</c> if the Return() has FsmCallReturnCause.None indicating the
         /// Call()ed state Return()ed upon successful completion and no Task was processed, <c>true</c> if there was a
         /// FsmCallReturnCause besides None indicating the Call()ed state Return()ed as a result of an event and
         /// the Task associated with that Return() cause was processed.
         /// </summary>
         /// <param name="returnCause">The FsmCallReturnCause that was returned.</param>
+        /// <param name="isWaitingToProcessReturn">if set to <c>true</c> [is waiting to process return].</param>
         /// <returns></returns>
-        public bool TryProcessAndFindReturnCause(out FsmCallReturnCause returnCause) {
+        public bool TryProcessAndFindReturnCause(out FsmCallReturnCause returnCause, ref bool isWaitingToProcessReturn) {
+            D.Assert(isWaitingToProcessReturn);
+            isWaitingToProcessReturn = false;
             returnCause = ReturnCause;
             if (ReturnCause != default(FsmCallReturnCause)) {
                 Action task;
@@ -85,6 +88,7 @@ namespace CodeEnv.Master.GameContent {
             }
             return false;
         }
+
 
         public void Clear() {
             ReturnCause = default(FsmCallReturnCause);

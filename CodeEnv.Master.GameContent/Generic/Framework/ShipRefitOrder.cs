@@ -21,18 +21,22 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// An order for a ship to refit to a Design.
+    /// <remarks>6.8.18 I purposely pick RefitDesign before getting to the element so that the AI can make a better
+    /// choice of what to refit too. It will make a better choice because it can see all the elements in this Cmd 
+    /// that are candidates for a refit.</remarks>
     /// </summary>
     public class ShipRefitOrder : ShipOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Design = {3}, Target = {4}, FollowonOrder = {5}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, \nDesign = {3}, \nTarget = {4}, \nCmdOrderID = {5}, \nFollowonOrder = {6}]";
 
         public override string DebugName {
             get {
                 string designText = RefitDesign != null ? RefitDesign.DebugName : "not yet assigned";
                 string targetText = Target != null ? Target.DebugName : "none";
+                string cmdOrderIdText = CmdOrderID != default(Guid) ? CmdOrderID.ToShortText() : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.DebugName : "none";
                 return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), designText,
-                    targetText, followonOrderText);
+                    targetText, cmdOrderIdText, followonOrderText);
             }
         }
 

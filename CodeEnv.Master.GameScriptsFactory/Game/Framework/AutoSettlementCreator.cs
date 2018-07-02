@@ -32,8 +32,8 @@ public class AutoSettlementCreator : AAutoUnitCreator {
     private SettlementCmdItem _command;
     private IList<FacilityItem> _elements;
 
-    protected override void InitializeRootUnitName() {
-        RootUnitName = "AutoSettlement";
+    protected override string InitializeRootUnitName() {
+        return "AutoSettlement";
     }
 
     protected override void MakeElements() {
@@ -74,6 +74,7 @@ public class AutoSettlementCreator : AAutoUnitCreator {
 
     protected override void CompleteUnitInitialization() {
         LogEvent();
+        PopulateCmdWithColonists();
         _elements.ForAll(e => e.FinalInitialize());
         _command.FinalInitialize();
     }
@@ -99,6 +100,11 @@ public class AutoSettlementCreator : AAutoUnitCreator {
 
     protected override void ClearElementReferences() {
         _elements.Clear();
+    }
+
+    private void PopulateCmdWithColonists() {
+        Level currentColonyShipLevel = _ownerDesigns.GetCurrentShipTemplateDesign(ShipHullCategory.Colonizer).HullStat.Level;
+        _command.Data.Population = currentColonyShipLevel.GetInitialColonistPopulation();
     }
 
     #region Debug

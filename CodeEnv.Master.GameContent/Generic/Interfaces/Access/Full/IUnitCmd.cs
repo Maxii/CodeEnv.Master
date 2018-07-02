@@ -39,8 +39,6 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler unitOutputsChanged;
 
-        bool IsOwnerChangeUnderway { get; }
-
         NewOrderAvailability Availability { get; }
 
         /// <summary>

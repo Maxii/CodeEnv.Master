@@ -86,8 +86,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Initialization
 
-    protected override bool InitializeDebugLog() {
-        return _debugCntls.ShowFacilityDebugLogs;
+    protected override bool __InitializeDebugLog() {
+        return __debugCntls.ShowFacilityDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -204,10 +204,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
-        D.AssertEqual(Constants.One, UnitElementCount);
-        D.AssertEqual(Owner, Command.Owner);
+    protected override void ImplementNonUiChangesFollowingOwnerChange() {
+        base.ImplementNonUiChangesFollowingOwnerChange();
         D.Log("{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
     }
 
@@ -579,7 +577,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void FinalInitialize_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
     }
 
     void FinalInitialize_EnterState() {
@@ -593,7 +591,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void FinalInitialize_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -602,7 +600,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteConstructOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
 
         _lastCmdOrderID = CurrentOrder.CmdOrderID;
         ReworkUnderway = ReworkingMode.Constructing;
@@ -678,9 +676,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteConstructOrder_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Constructing);
         ReworkUnderway = ReworkingMode.None;
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -689,10 +687,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
-        if (Availability == NewOrderAvailability.Unavailable) {  // 1.13.18 follow-on or repair order likely to be unauthorized if Unavailable
-            ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
-        }
+        __ValidateCommonNonCallableEnterStateValues();
         // 12.4.17 Can't ChangeAvailabilityTo(Available) here as can atomically cause a new order to be received 
         // which would violate FSM rule: no state change in void EnterStates
     }
@@ -703,6 +698,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (CurrentOrder != null) {
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is about to execute follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+
+                if (Availability == NewOrderAvailability.Unavailable) {
+                    // Resulting state may throw an error if it doesn't expect Unavailable
+                    D.Warn("FYI. {0} is about to execute FollowonOrder {1} while still {2}. Fixing.", DebugName, CurrentOrder.FollowonOrder.DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                    ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+                }
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
                 D.AssertEqual(OrderSource.Captain, followonOrderSource, CurrentOrder.ToString());
@@ -716,6 +717,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
 
         if (AssessNeedForRepair()) {
+            if (Availability == NewOrderAvailability.Unavailable) {
+                // ExecuteRepairOrder state may throw an error if it doesn't expect Unavailable
+                D.Warn("FYI. {0} is about to execute a Repair Order while still {1}. Fixing.", DebugName, NewOrderAvailability.Unavailable.GetValueName());
+                ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+            }
             IssueCaptainsRepairOrder();
             yield return null;
             D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
@@ -784,7 +790,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
     }
 
     #endregion
@@ -812,7 +818,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.Assert(CurrentOrder.ToCallback);
 
         // The attack target acquired from the order. Should always be a Fleet
@@ -932,7 +938,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         //D.Assert(isUnsubscribed);
         //isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmPrimaryAttackTgt, toSubscribe: false);
         //D.Assert(isUnsubscribed);
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
         _fsmPrimaryAttackTgt = null;
     }
 
@@ -958,7 +964,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.AssertEqual(Command, CurrentOrder.Target);
         // 1.7.18 Can't Assert < 100% as RestartState can occur immediately after all damage repaired
         // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can issue this order
@@ -979,7 +985,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             Call(FacilityState.Repairing);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.DidCallSuccessfullyComplete) {
+            if (!returnHandler.WasCallSuccessful(ref _isWaitingToProcessReturn)) {
                 yield return null;
                 D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
             }
@@ -1025,7 +1031,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        D.Assert(IsOwnerChangeUnderway);
+        D.Assert(__IsOwnerChgUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
     }
@@ -1042,7 +1048,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
         // No TargetDeathEventHandler and TargetOwnerChgdEventHandler needed for our own base with _UponLosingOwnership and _UponDeath
         // No infoAccessChgdEventHandlers needed for our own base
     }
@@ -1056,7 +1062,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
         D.AssertNull(_repairWaitYI);
         ReworkUnderway = ReworkingMode.Repairing;
         StartEffectSequence(EffectSequenceID.Repairing);
@@ -1146,6 +1152,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         KillRepairWait();
         StopEffectSequence(EffectSequenceID.Repairing);
         ReworkUnderway = ReworkingMode.None;
+        ResetAndValidateCommonCallableExitStateValues();
     }
 
     #endregion
@@ -1156,14 +1163,31 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     // See AUnitElementItem StateMachine Support Members
 
+    private void HaveUserPickCmdModuleRefitDesign() {
+        bool isStarbaseCmd = Command is StarbaseCmdItem;
+        FormID formId = isStarbaseCmd ? FormID.SelectStarbaseCmdModDesignDialog : FormID.SelectSettlementCmdModDesignDialog;
+        string dialogTextFormat = "Pick the Design to refit this {0} CmdModule. \nCancel to not refit the CmdModule.";
+        string dialogText = isStarbaseCmd ? dialogTextFormat.Inject("Starbase") : dialogTextFormat.Inject("Settlement");
+        EventDelegate cancelDelegate = new EventDelegate(() => {
+            HandleCmdModDesignChosen(Command.Data.CmdModuleDesign); // canceling dialog means don't refit CmdModule
+            DialogWindow.Instance.Hide();
+        });
+
+        var existingDesign = Command.Data.CmdModuleDesign;
+        bool useUserActionButton = false;
+        DialogWindow.Instance.HaveUserPickCmdModRefitDesign(formId, dialogText, cancelDelegate, existingDesign,
+            (cmdModDesignPicked) => HandleCmdModDesignChosen(cmdModDesignPicked), useUserActionButton);
+    }
+
     #endregion
 
     void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         D.Assert(CurrentOrder is FacilityRefitOrder);
         D.AssertEqual(Command, CurrentOrder.Target);
         D.AssertNull(_elementPreReworkValues);
+        D.AssertNull(_chosenCmdModuleDesign);
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
 
         _lastCmdOrderID = CurrentOrder.CmdOrderID;
@@ -1184,18 +1208,38 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         FacilityRefitOrder refitOrder = CurrentOrder as FacilityRefitOrder;
         var facilityRefitDesign = refitOrder.RefitDesign;
-        float refitCost = __CalcRefitCost(facilityRefitDesign, Data.Design);
+        float refitCost = AUnitMemberDesign.__CalcRefitConstructionCost(facilityRefitDesign, Data.Design);
 
         _elementPreReworkValues = Data.PrepareForRework();
 
-        AUnitCmdModuleDesign cmdModuleRefitDesign = null;
         if (refitOrder.IncludeCmdModule) {
             var cmdModuleExistingDesign = Command.Data.CmdModuleDesign;
-            bool isRefitDesignFound = TryGetUpgradeDesign(cmdModuleExistingDesign, out cmdModuleRefitDesign);
-            D.Assert(isRefitDesignFound);
-            float cmdModuleRefitCost = __CalcRefitCost(cmdModuleRefitDesign, cmdModuleExistingDesign);
-            D.Warn(/*ShowDebugLog, */"FYI. {0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
-                Command.DebugName, cmdModuleRefitDesign.DebugName, cmdModuleRefitCost);
+
+            bool isStarbaseCmd = Command is StarbaseCmdItem;
+
+            if (Owner.IsUser && !__debugCntls.AiChoosesUserCmdModRefitDesigns) {
+                HaveUserPickCmdModuleRefitDesign();
+                D.Assert(_gameMgr.IsPaused);
+                while (_chosenCmdModuleDesign == null) {
+                    // wait here for User to pick CmdModuleDesign
+                    yield return null;
+                }
+            }
+            else {
+                if (isStarbaseCmd) {
+                    var starbaseCmdModExistingDesign = cmdModuleExistingDesign as StarbaseCmdModuleDesign;
+                    var chosenDesign = OwnerAiMgr.ChooseRefitDesign(starbaseCmdModExistingDesign);
+                    HandleCmdModDesignChosen(chosenDesign);
+                }
+                else {
+                    var settlementCmdModExistingDesign = cmdModuleExistingDesign as SettlementCmdModuleDesign;
+                    var chosenDesign = OwnerAiMgr.ChooseRefitDesign(settlementCmdModExistingDesign);
+                    HandleCmdModDesignChosen(chosenDesign);
+                }
+            }
+            D.AssertNotNull(_chosenCmdModuleDesign);
+
+            float cmdModuleRefitCost = AUnitCmdModuleDesign.__CalcRefitConstructionCost(_chosenCmdModuleDesign, cmdModuleExistingDesign);
             refitCost += cmdModuleRefitCost;
         }
 
@@ -1213,8 +1257,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         // ...and, if CmdModule refit was included, refit it first before adding/removing the element...
         if (refitOrder.IncludeCmdModule) {
-            D.AssertNotNull(cmdModuleRefitDesign);
-            UnitFactory.Instance.RefitCmdInstance(cmdModuleRefitDesign, Command);
+            var cmdModuleExistingDesign = Command.Data.CmdModuleDesign;
+            if (_chosenCmdModuleDesign != cmdModuleExistingDesign) { // User cancel button auto picks existing design
+                UnitFactory.Instance.RefitCmdInstance(_chosenCmdModuleDesign, Command);
+            }
         }
 
         ReworkUnderway = ReworkingMode.None;
@@ -1241,7 +1287,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        D.Assert(IsOwnerChangeUnderway);
+        D.Assert(__IsOwnerChgUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
     }
@@ -1295,10 +1341,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRefitOrder_ExitState() {
         LogEvent();
         // Uncompleted Refit can be canceled and go to Idling by removal from ConstructionQueue
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
         StopEffectSequence(EffectSequenceID.Refitting);
         ReworkUnderway = ReworkingMode.None;
         _elementPreReworkValues = null;
+        _chosenCmdModuleDesign = null;
     }
 
     #endregion
@@ -1322,7 +1369,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNonCallableStateValues();
+        __ValidateCommonNonCallableEnterStateValues();
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
         D.AssertEqual(Command, CurrentOrder.Target);
         D.AssertNull(_elementPreReworkValues);
@@ -1373,7 +1420,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        D.Assert(IsOwnerChangeUnderway);
+        D.Assert(__IsOwnerChgUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
     }
@@ -1455,7 +1502,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteDisbandOrder_ExitState() {
         LogEvent();
-        ResetCommonNonCallableStateValues();
+        ResetAndValidateCommonNonCallableExitStateValues();
         _elementPreReworkValues = null;
         StopEffectSequence(EffectSequenceID.Disbanding);
         ReworkUnderway = ReworkingMode.None;
@@ -1578,24 +1625,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    protected override void ValidateCommonNonCallableStateValues() {
-        base.ValidateCommonNonCallableStateValues();
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-    }
-
-    protected override void ValidateCommonCallableStateValues(string calledStateName) {
-        base.ValidateCommonCallableStateValues(calledStateName);
-        D.AssertNotNull(_fsmTgt);
-        var mortalFsmTgt = _fsmTgt as IMortalItem_Ltd;
-        if (mortalFsmTgt != null) {
-            D.Assert(!mortalFsmTgt.IsDead, _fsmTgt.DebugName);
-        }
-    }
-
-    protected override void ResetCommonNonCallableStateValues() {
-        base.ResetCommonNonCallableStateValues();
+    protected override void ResetAndValidateCommonNonCallableExitStateValues() {
+        base.ResetAndValidateCommonNonCallableExitStateValues();
         _fsmTgt = null;
     }
 
@@ -1662,6 +1693,30 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #endregion
 
     #region Debug
+
+    protected override void __ValidateCommonNonCallableEnterStateValues() {
+        base.__ValidateCommonNonCallableEnterStateValues();
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
+        }
+    }
+
+    protected override void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
+        base.__ValidateCommonCallableEnterStateValues(calledStateName, includeFsmTgt);
+        if (includeFsmTgt) {
+            D.AssertNotNull(_fsmTgt);
+            var mortalFsmTgt = _fsmTgt as IMortalItem_Ltd;
+            if (mortalFsmTgt != null) {
+                D.Assert(!mortalFsmTgt.IsDead, _fsmTgt.DebugName);
+            }
+        }
+    }
+
+    protected override void __ValidateFollowingOwnerChange() {
+        base.__ValidateFollowingOwnerChange();
+        D.AssertEqual(Constants.One, UnitElementCount);
+        D.AssertEqual(Owner, Command.Owner);
+    }
 
     protected override void __ValidateCurrentStateWhenAssessingNeedForRepair() {
         D.Assert(!IsCurrentStateAnyOf(FacilityState.ExecuteRepairOrder, FacilityState.Repairing));
@@ -1748,6 +1803,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (orderDirective == FacilityDirective.Scuttle) {
             return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirective check
         }
+        if (orderDirective == FacilityDirective.__ChgOwner) {
+            return UnitElementCount == Constants.One;   // Can't use IsAssaultAllowedBy(player) as no access to player
+        }
         if (Availability == NewOrderAvailability.Unavailable) {
             D.AssertNotEqual(FacilityDirective.Cancel, orderDirective);
             failCause = "Unavailable";
@@ -1764,7 +1822,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         if (orderDirective == FacilityDirective.Refit) {
             failCause = "No refit designs";
-            return OwnerAiMgr.Designs.IsUpgradeDesignAvailable(Data.Design);
+            return OwnerAiMgr.Designs.AreUpgradeDesignsAvailable(Data.Design);
         }
         if (orderDirective == FacilityDirective.Disband) {
             // Can disband at any time as long as not Constructing, Refitting or already Disbanding
@@ -1819,8 +1877,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (_debugCntls.ShowObstacleZones) {
+        __debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -1836,12 +1894,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
+        EnableDebugShowObstacleZone(__debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        if (_debugCntls != null) {
-            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
 
@@ -2067,7 +2125,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public IList<StationaryLocation> LocalAssemblyStations { get { return Command.LocalAssemblyStations; } }
+    public IEnumerable<StationaryLocation> LocalAssemblyStations { get { return Command.LocalAssemblyStations; } }
 
     #endregion
 

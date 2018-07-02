@@ -155,8 +155,14 @@ namespace CodeEnv.Master.Common {
 
         public const string InspectorWindowName = "Inspector";
 
-        public const string NguiEmbeddedColorFormat = "[{0:000000}]";
+        public const string NguiEmbeddedColorInitiatorFormat = "[{0:000000}]";
         public const string NguiEmbeddedColorTerminator = "[-]";
+        // 6.16.18 Without these, the embedded color simply 'tints' the existing font base tint (UILabel.ColorTint setting)
+        // rather than replacing it. This works fine if the base tine is white, but if not... Use these to fully replace the
+        // color of the font with the embedded color no matter what the base tint value in UILabel is.
+        // http://www.tasharen.com/forum/index.php?topic=12104.0
+        public const string NguiBaseTintRemovalInitiator = "[c]";
+        public const string NguiBaseTintRemovalTerminator = "[/c]";
 
         /// <summary>
         /// My default precision for Unity float equality comparisons.

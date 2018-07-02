@@ -135,16 +135,16 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             wed.eventsGoToColliders = true;
         });
         /*
-                  * Ngui 3.7.1 workaround that makes sure all UICamera event delegates are raised.
-                  * Note: 3.7.1 introduced these event delegates, deprecating genericEventHandler. Unfortunately, the delegate
-                  * is only fired if there is a 'visible' gameObject (Camera's cullingMask and UICamera's eventRcvrMask don't hide it, 
-                  * and the gameObject has an enabled Collider) underneath the cursor. CameraControl (and others) rely on GameInput 
-                  * hearing about all events (currently onScroll, onPress, onDragStart, onDrag, onDragEnd). Setting the fallThrough field to any 
-                  * gameObject makes sure all event delegates are raised, bypassing the mask and collider requirement. The fallThrough 
-                  * gameObject is used in place of a 'visible' gameObject if none is found.
-                  * Warning: the gameObject used should not have methods for handling UICamera delegates as SendMessage finds them
-                  * and generates an error that the method found does not have the correct number of parameters!
-                  */
+        * Ngui 3.7.1 workaround that makes sure all UICamera event delegates are raised.
+        * Note: 3.7.1 introduced these event delegates, deprecating genericEventHandler. Unfortunately, the delegate
+        * is only fired if there is a 'visible' gameObject (Camera's cullingMask and UICamera's eventRcvrMask don't hide it, 
+        * and the gameObject has an enabled Collider) underneath the cursor. CameraControl (and others) rely on GameInput 
+        * hearing about all events (currently onScroll, onPress, onDragStart, onDrag, onDragEnd). Setting the fallThrough field to any 
+        * gameObject makes sure all event delegates are raised, bypassing the mask and collider requirement. The fallThrough 
+        * gameObject is used in place of a 'visible' gameObject if none is found.
+        * Warning: the gameObject used should not have methods for handling UICamera delegates as SendMessage finds them
+        * and generates an error that the method found does not have the correct number of parameters!
+        */
         UICamera.fallThrough = MainCameraControl.Instance.gameObject;
     }
 
@@ -203,7 +203,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     /// <summary>
     /// Called when the InputMode changes.
-    /// Notes: [Un]subscribing to world mouse events covers camera movement from dragging and scrolling, 
+    /// Notes: Unsubscribing to world mouse events covers camera movement from dragging and scrolling, 
     /// and pressing on empty space (for SelectionManager). Camera movement from arrow keys and the screen edge 
     /// are covered by their specific bool as is other key detection used by PlayerViews. Changing the eventReceiverMask 
     /// of the _worldEventDispatchers covers all OnHover, OnClick, OnDoubleClick, PressEventHandler events embedded 
@@ -393,13 +393,13 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     #region Pressed Events
 
-    // Note: Changed SelectionManager to use onUnconsumedPressDown rather than onClick as this way
-    // an open ContextMenu hides itself (and changes the inputMode back to normal) AFTER the onPress
+    // Note: Changed SelectionManager to use unconsumedPress rather than onClick as this way
+    // an open ContextMenu hides itself (and changes the inputMode back to normal) AFTER the unconsumedPress
     // delegate would have been received. The delegate isn't received as there is no subscription active
     // while in the pop up inputMode. The upshot is that the SelectionManager will not lose its selection when
     // randomly clicking on open space to get out of a context menu. Using onClick didn't work as the onClick
     // delegate isn't fired until the completion of the click action, which is way after the input mode is changed
-    // back to normal, thereby firing onUnconsumedClick which undesirably clears the SelectionManager.
+    // back to normal, thereby firing unconsumedPress which undesirably clears the SelectionManager.
 
     /// <summary>
     /// Occurs when a mouse button is pressed down, but not over a gameObject.

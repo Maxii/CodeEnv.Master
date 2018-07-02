@@ -134,8 +134,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     #region Event and Property Change Handlers
 
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
+    protected override void ImplementUiChangesFollowingOwnerChange() {
+        base.ImplementUiChangesFollowingOwnerChange();
         AssessIcon();
     }
 
@@ -182,8 +182,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     #region Show Icon
 
     private void InitializeIcon() {
-        _debugCntls.showPlanetIcons += ShowPlanetIconsChangedEventHandler;
-        if (_debugCntls.ShowPlanetIcons) {
+        __debugCntls.showPlanetIcons += ShowPlanetIconsChangedEventHandler;
+        if (__debugCntls.ShowPlanetIcons) {
             EnableIcon(true);
         }
     }
@@ -211,7 +211,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
                 }
             }
             else {
-                D.Assert(!_debugCntls.ShowPlanetIcons);
+                D.Assert(!__debugCntls.ShowPlanetIcons);
             }
         }
     }
@@ -227,7 +227,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     private void ShowPlanetIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(_debugCntls.ShowPlanetIcons);
+        EnableIcon(__debugCntls.ShowPlanetIcons);
     }
 
     /// <summary>
@@ -235,8 +235,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        if (_debugCntls != null) {
-            _debugCntls.showPlanetIcons -= ShowPlanetIconsChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showPlanetIcons -= ShowPlanetIconsChangedEventHandler;
         }
     }
 
@@ -277,7 +277,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public override IList<StationaryLocation> LocalAssemblyStations { get { return ParentSystem.LocalAssemblyStations; } }
+    public override IEnumerable<StationaryLocation> LocalAssemblyStations { get { return ParentSystem.LocalAssemblyStations; } }
 
     #endregion
 

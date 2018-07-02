@@ -118,12 +118,13 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// <summary>
     /// The PlayerAIManager for the owner of this item. 
     /// <remarks>Will be null if Owner is NoPlayer.</remarks>
+    /// <remarks>6.28.18 This approach precludes any sequencing issues caused by owner changes propagating thru 
+    /// Data before the Owner change here updates this value.</remarks>
     /// </summary>
-    public PlayerAIManager OwnerAiMgr { get; private set; }
-
-    protected bool IsOwnerChangeUnderway {
-        get { return Data.IsOwnerChangeUnderway; }
-        private set { Data.IsOwnerChangeUnderway = value; }
+    public PlayerAIManager OwnerAiMgr {
+        get {
+            return Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
+        }
     }
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
@@ -133,14 +134,14 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     protected IInputManager _inputMgr;
     protected IGameManager _gameMgr;
     protected IJobManager _jobMgr;
-    protected IDebugControls _debugCntls;
+    protected IDebugControls __debugCntls;
 
     #region Initialization
 
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
-        ShowDebugLog = InitializeDebugLog();
+        ShowDebugLog = __InitializeDebugLog();
         Subscribe();
         enabled = false;
     }
@@ -149,10 +150,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         _inputMgr = GameReferences.InputManager;
         _gameMgr = GameReferences.GameManager;
         _jobMgr = GameReferences.JobManager;
-        _debugCntls = GameReferences.DebugControls;
+        __debugCntls = GameReferences.DebugControls;
     }
-
-    protected abstract bool InitializeDebugLog();
 
     protected virtual void Subscribe() {
         _subscriptions = new List<IDisposable>();
@@ -178,13 +177,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, NamePropChangedHandler));
     }
 
-    /// <summary>
-    /// Initializes the Owner's PlayerAIManager for this item.
-    /// </summary>
-    private void InitializeOwnerAIManager() {
-        OwnerAiMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
-    }
-
     protected sealed override void Start() {
         base.Start();
     }
@@ -195,7 +187,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// </summary>
     public virtual void FinalInitialize() {
         Data.FinalInitialize();
-        InitializeOwnerAIManager();
     }
 
     #endregion
@@ -238,15 +229,15 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     private void OwnerPropChangingHandler(Player newOwner) {
-        // IsOwnerChangeUnderway = true; Handled by AItemData before any change work is done
+        // Data.IsOwnerChangeUnderway = true; Handled by AItemData before any change work is done
         HandleOwnerChanging(newOwner);
-        OnOwnerChanging(newOwner);  // UNCLEAR 5.15.17 Send event BEFORE handling internally?
+        OnOwnerChanging(newOwner);
     }
 
     private void OwnerPropChangedHandler() {
         HandleOwnerChanged();
         OnOwnerChanged();
-        IsOwnerChangeUnderway = false;  // after all change work is done, changes state in AItemData
+        Data.IsOwnerChgUnderway = false;  // after all change work is done, changes state in AItemData
     }
 
     private void InputModePropChangedHandler() {
@@ -281,11 +272,44 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         enabled = IsOperational;
     }
 
-    protected abstract void HandleOwnerChanging(Player newOwner);
-
-    protected virtual void HandleOwnerChanged() {
-        InitializeOwnerAIManager();
+    private void HandleOwnerChanging(Player incomingOwner) {    // 6.17.18 Always occurs AFTER Data.HandleOwnerChanging occurs
+        ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
+        ImplementUiChangesPriorToOwnerChange(incomingOwner);
     }
+
+    /// <summary>
+    /// Hook for derived classes that allows any (non-UI) changes that need to be made prior to this Item's Owner changing.
+    /// <remarks>6.17.18 Reserved for (non-UI) changes that need to occur in the MonoBehaviour Item rather than in Data - 
+    /// e.g. dealing with the PlayerAIMgr or instantiating new Items. All other work that needs to take place prior to 
+    /// an owner change should occur in Data.</remarks>
+    /// </summary>
+    protected virtual void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) { }
+
+    /// <summary>
+    /// Hook for derived classes that allows any UI changes that need to be made prior to this Item's Owner changing.
+    /// <remarks>6.17.18 All other work that needs to take place prior to an owner change should occur in Data.</remarks>
+    /// </summary>
+    protected virtual void ImplementUiChangesPriorToOwnerChange(Player incomingOwner) { }
+
+    private void HandleOwnerChanged() { // 6.17.18 Always occurs AFTER Data.HandleOwnerChanged occurs
+        ImplementNonUiChangesFollowingOwnerChange();
+        ImplementUiChangesFollowingOwnerChange();
+        __ValidateFollowingOwnerChange();
+    }
+
+    /// <summary>
+    /// Hook for derived classes that allows any (non-UI) changes that need to be made as a result of this Item's Owner having changed.
+    /// <remarks>6.17.18 Reserved for (non-UI) changes that need to occur in the MonoBehaviour Item rather than in Data - 
+    /// e.g. dealing with the PlayerAIMgr or instantiating new Items. All other work that needs to take place as a result 
+    /// of an owner change should occur in Data.</remarks>
+    /// </summary>
+    protected virtual void ImplementNonUiChangesFollowingOwnerChange() { }
+
+    /// <summary>
+    /// Hook for derived classes that allows any UI changes that need to be made as a result of this Item's Owner having changed.
+    /// <remarks>6.17.18 All other work that needs to take place as a result of an owner change should occur in Data.</remarks>
+    /// </summary>
+    protected virtual void ImplementUiChangesFollowingOwnerChange() { }
 
     private void HandleInputModeChanged(GameInputMode inputMode) {
         if (IsHoveredHudShowing) {
@@ -334,13 +358,23 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateFollowingOwnerChange() {
+        D.AssertNotNull(Owner);
+        // 6.20.18 Owner change comes from 2 places: 1) new User-issued __ChgOwner order which is not processed until unpaused,
+        // and 2) Assault by an opponent which can't occur while paused as no movement and no state machine processing
+        D.Assert(!_gameMgr.IsPaused);
+    }
+
     /// <summary>
     /// Debug flag in editor indicating whether to show the D.Log for this item.
     /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
     /// </summary>
     public bool ShowDebugLog { get; private set; }
 
-    private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
+    protected abstract bool __InitializeDebugLog();
+
+    private const string __AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
 
     /// <summary>
     /// Logs a statement that the method that calls this has been called.
@@ -349,7 +383,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     public override void LogEvent() {
         if ((__debugSettings.EnableEventLogging && ShowDebugLog)) {
             string methodName = GetCallingMethodName();
-            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
+            string fullMethodName = __AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
     }
@@ -435,11 +469,19 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     #endregion
 
-    #region IItem_Ltd Members
+    #region IOwnerItem_Ltd Members
 
     public Player Owner_Debug { get { return Data.Owner; } }
 
-    public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
+    /// <summary>
+    /// Debug version of TryGetOwner without the validation that
+    /// requestingPlayer already knows owner when OwnerInfoAccess is available.
+    /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>
+    /// </summary>
+    /// <param name="requestingPlayer">The requesting player.</param>
+    /// <param name="owner">The owner.</param>
+    /// <returns></returns>
+    public bool __TryGetOwner_ForDiscoveringPlayersProcess(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             return true;

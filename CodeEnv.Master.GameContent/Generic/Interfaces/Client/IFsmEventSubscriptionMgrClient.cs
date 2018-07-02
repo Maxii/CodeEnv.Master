@@ -39,6 +39,8 @@ namespace CodeEnv.Master.GameContent {
 
         void HandleAwarenessChgd(IMortalItem_Ltd item);
 
+        void HandleSectorStationVacancyChgd(StationaryLocation station, bool isVacant);
+
     }
 }
 

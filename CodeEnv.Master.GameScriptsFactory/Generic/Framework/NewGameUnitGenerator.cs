@@ -82,7 +82,7 @@ public class NewGameUnitGenerator {
             var currentShipTemplateDesigns = MakeShipDesigns(player, allCurrentShipHullStats, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard },
-                AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+                AUnitMemberDesign.SourceAndStatus.SystemCreation_Template, includeFtlEngine: false);
             foreach (var shipDesign in currentShipTemplateDesigns) {
                 RegisterDesign(player, shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
             }
@@ -618,7 +618,7 @@ public class NewGameUnitGenerator {
     private IList<ShipDesign> MakeShipDesigns(Player owner, IEnumerable<ShipHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
         DebugLaunchedWeaponLoadout launchedLoadout, DebugPassiveCMLoadout passiveCMLoadout, DebugActiveCMLoadout activeCMLoadout,
         DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, IEnumerable<ShipCombatStance> stances,
-        AUnitMemberDesign.SourceAndStatus status) {
+        AUnitMemberDesign.SourceAndStatus status, bool includeFtlEngine = true) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         IList<ShipDesign> designs = new List<ShipDesign>();
@@ -639,7 +639,15 @@ public class NewGameUnitGenerator {
             var shieldGenStats = GetCurrentShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
             ShipCombatStance stance = RandomExtended.Choice(stances);
 
-            var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
+            EngineStat ftlEngineStat = null;
+            if (includeFtlEngine) {
+                ftlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.FtlPropulsion);
+                if (ftlEngineStat == null) {
+                    D.Warn("{0}: Cannot install FtlEngineStat in ship as it is not yet available.", DebugName);
+                }
+            }
+
+            var design = MakeElementDesign(owner, hullStat, ftlEngineStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
                 shieldGenStats, stance, status);
             designs.Add(design);
         }
@@ -675,14 +683,13 @@ public class NewGameUnitGenerator {
         return designs;
     }
 
-    private ShipDesign MakeElementDesign(Player owner, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
-        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ShipCombatStance stance,
-        AUnitMemberDesign.SourceAndStatus status) {
+    private ShipDesign MakeElementDesign(Player owner, ShipHullStat hullStat, EngineStat ftlEngineStat, IEnumerable<AWeaponStat> weaponStats,
+    IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+    IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ShipCombatStance stance,
+    AUnitMemberDesign.SourceAndStatus status) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         var stlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.StlPropulsion);
-        var ftlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.FtlPropulsion);  // can be null
 
         var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
         var design = new ShipDesign(owner, elementsReqdSRSensorStat, hullStat, stlEngineStat, stance) {

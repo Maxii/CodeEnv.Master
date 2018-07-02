@@ -124,10 +124,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <param name="optionalRootUnitName">Optional RootName of the Unit.</param>
     /// <returns></returns>
+    [Obsolete("Not currently used")]
     public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
         Player player = ships.First().Owner;
         PlayerDesigns playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
-        ////FleetCmdModuleDesign defaultCmdModDesign = playerDesigns.GetDefaultFleetCmdModDesign();
         FleetCmdModuleDesign defaultCmdModDesign = playerDesigns.GetFleetCmdModDefaultDesign();
         return MakeFleetInstance(creatorLocation, defaultCmdModDesign, ships, formation, optionalRootUnitName);
     }
@@ -142,9 +142,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, FleetCmdModuleDesign cmdModDesign, IEnumerable<ShipItem> ships, Formation formation,
-        string optionalRootUnitName = null) {
-        Player owner = ships.First().Owner;
+    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, FleetCmdModuleDesign cmdModDesign, IEnumerable<ShipItem> ships,
+        Formation formation, string optionalRootUnitName = null) {
         var creator = MakeFleetCreator(creatorLocation, ships, cmdModDesign);
         if (optionalRootUnitName != null) {
             creator.RootUnitName = optionalRootUnitName;
@@ -176,11 +175,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return MakeFleetInstance(creatorLocation, cmdModDesign, ships, formation, optionalRootUnitName);
     }
 
-    private FleetCreator MakeFleetCreator(Vector3 creatorLocation, IEnumerable<ShipItem> ships, FleetCmdModuleDesign cmdModDesign) {
+    private RuntimeFleetCreator MakeFleetCreator(Vector3 creatorLocation, IEnumerable<ShipItem> ships, FleetCmdModuleDesign cmdModDesign) {
         GameObject creatorGo = new GameObject();
         UnityUtility.AttachChildToParent(creatorGo, FleetsFolder.Instance.gameObject);
         creatorGo.transform.position = creatorLocation;
-        var creator = creatorGo.AddComponent<FleetCreator>();
+        var creator = creatorGo.AddComponent<RuntimeFleetCreator>();
         creator.Elements = ships;
         creator.CmdModDesign = cmdModDesign;
         return creator;
@@ -241,7 +240,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(Player owner, FleetCmdModuleDesign cmdModDesign, ref FleetCmdItem cmd, string unitName,
         Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
-        D.AssertNotNull(unitName);
+        Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
@@ -285,6 +284,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(Player owner, ShipDesign design, string name, ref ShipItem element) {
         D.AssertNotNull(element.transform.parent, element.DebugName);
         D.Assert(!element.IsOperational, element.DebugName);
+        Utility.ValidateNotNullOrEmpty(name);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         ShipHull hull = element.gameObject.GetSingleComponentInChildren<ShipHull>();
         var hullCategory = design.HullCategory;
@@ -305,11 +305,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design, element);
         var shieldGenerators = MakeShieldGenerators(design, element);
 
-        ////var stlEngine = MakeEngine(design.StlEngineStat, "StlEngine");
-        ////FtlEngine ftlEngine = null;
-        ////if (design.FtlEngineStat != null) {
-        ////    ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
-        ////}
         Engine stlEngine;
         FtlEngine ftlEngine;
         MakeEngines(design, out stlEngine, out ftlEngine);
@@ -345,6 +340,44 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
         var creator = creatorGo.GetComponent<AutoStarbaseCreator>();
         creator.Configuration = config;
+        return creator;
+    }
+
+    /// <summary>
+    /// Makes a StarbaseCmdItem instance at the location of a Sector's vacantStation using a 
+    /// RuntimeStarbaseCreator parented to the StarbasesFolder.
+    /// </summary>
+    /// <param name="cmdModDesign">The command mod design.</param>
+    /// <param name="centralHubDesign">The central hub design.</param>
+    /// <param name="colonyShip">The colony ship.</param>
+    /// <param name="vacantStation">A vacant station in a Sector.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
+    /// <returns></returns>
+    public StarbaseCmdItem MakeStarbaseInstance(StarbaseCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign, ShipItem colonyShip,
+        StationaryLocation vacantStation, Formation formation = Formation.Globe, string optionalRootUnitName = null) {
+        var creator = MakeStarbaseCreator(cmdModDesign, centralHubDesign, colonyShip, vacantStation);
+        if (optionalRootUnitName != null) {
+            creator.RootUnitName = optionalRootUnitName;
+        }
+        creator.PrepareUnitForDeployment();
+        creator.AuthorizeDeployment();
+        StarbaseCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<StarbaseCmdItem>();
+        cmd.Data.Formation = formation;
+        return cmd;
+    }
+
+    private RuntimeStarbaseCreator MakeStarbaseCreator(StarbaseCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign,
+        ShipItem colonyShip, StationaryLocation vacantStation) {
+        GameObject creatorGo = new GameObject();
+        UnityUtility.AttachChildToParent(creatorGo, StarbasesFolder.Instance.gameObject);
+        creatorGo.transform.position = vacantStation.Position;
+
+        var creator = creatorGo.AddComponent<RuntimeStarbaseCreator>();
+
+        creator.CmdModDesign = cmdModDesign;
+        creator.CentralHubDesign = centralHubDesign;
+        creator.ColonyShip = colonyShip;
         return creator;
     }
 
@@ -403,7 +436,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, StarbaseCmdModuleDesign cmdModDesign, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
-        D.AssertNotNull(unitName);
+        Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
@@ -424,7 +457,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Settlements
 
     /// <summary>
-    /// Makes a settlement creator instance installed in orbit around system.
+    /// Makes a AutoSettlementCreator instance installed in orbit around system.
     /// </summary>
     /// <param name="config">The configuration.</param>
     /// <param name="system">The system.</param>
@@ -439,6 +472,43 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
         var creator = creatorGo.GetComponent<AutoSettlementCreator>();
         creator.Configuration = config;
+        return creator;
+    }
+
+    /// <summary>
+    /// Makes a settlement instance at the location of the SettlementStation using a 
+    /// RuntimeSettlementCreator parented to the designated system.
+    /// </summary>
+    /// <param name="cmdModDesign">The command mod design.</param>
+    /// <param name="centralHubDesign">The central hub design.</param>
+    /// <param name="colonyShip">The colony ship.</param>
+    /// <param name="system">The system.</param>
+    /// <param name="settlementStation">The settlement station.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
+    /// <returns></returns>
+    public SettlementCmdItem MakeSettlementInstance(SettlementCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign, ShipItem colonyShip,
+        SystemItem system, StationaryLocation settlementStation, Formation formation = Formation.Globe, string optionalRootUnitName = null) {
+        var creator = MakeSettlementCreator(cmdModDesign, centralHubDesign, colonyShip, system, settlementStation.Position);
+        if (optionalRootUnitName != null) {
+            creator.RootUnitName = optionalRootUnitName;
+        }
+        creator.PrepareUnitForDeployment();
+        creator.AuthorizeDeployment();
+        SettlementCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<SettlementCmdItem>();
+        cmd.Data.Formation = formation;
+        return cmd;
+    }
+
+    private RuntimeSettlementCreator MakeSettlementCreator(SettlementCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign,
+        ShipItem colonyShip, SystemItem system, Vector3 creatorWorldLocation) {
+        GameObject creatorGo = new GameObject();
+        Vector3 creatorLocalPosition = creatorWorldLocation - system.Position;
+        SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData, creatorLocalPosition);
+        var creator = creatorGo.AddComponent<RuntimeSettlementCreator>();
+        creator.CmdModDesign = cmdModDesign;
+        creator.CentralHubDesign = centralHubDesign;
+        creator.ColonyShip = colonyShip;
         return creator;
     }
 
@@ -466,8 +536,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, GameObject unitContainer, string unitName,
-        Formation formation = Formation.Globe) {
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, GameObject unitContainer,
+        string unitName, Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         //D.Log("{0}: {1}.localPosition = {2} after creation.", DebugName, design.CmdStat.UnitName, cmdGo.transform.localPosition);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
@@ -498,7 +568,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
-        D.AssertNotNull(unitName);
+        Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
@@ -544,6 +614,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         if (element.transform.parent == null) {
             D.Error("{0} should already have a parent.", element.DebugName);
         }
+        Utility.ValidateNotNullOrEmpty(name);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         FacilityHull hull = element.gameObject.GetSingleComponentInChildren<FacilityHull>();
         var hullCategory = design.HullCategory;
@@ -581,12 +652,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Refits the provided instance of <c>cmd</c> to be consistent with the specifications in the provided <c>cmdModDesign</c>.
-    /// <remarks>Will throw an error if the Level of the new design is not greater than the level of the existing design.</remarks>
+    //// <remarks>Will throw an error if the Level of the new design is not greater than the level of the existing design.</remarks>
     /// </summary>
     /// <param name="cmdModDesign">The command module design.</param>
     /// <param name="cmd">The command instance to be refit.</param>
     public void RefitCmdInstance(AUnitCmdModuleDesign cmdModDesign, AUnitCmdItem cmd) {
-        D.Assert(cmdModDesign.DesignLevel > cmd.Data.CmdModuleDesign.DesignLevel);
+        // cmdModDesign.DesignLevel not necessarily > existing design's as RootDesignName can be different
         ReplaceCmdModuleWith(cmdModDesign, cmd);
     }
 
@@ -597,6 +668,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmdModDesign">The command module design.</param>
     /// <param name="cmd">The command instance to be modified.</param>
     public void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, AUnitCmdItem cmd) {
+        D.AssertNotEqual(cmd.Data.CmdModuleDesign, cmdModDesign);
         //D.Log("{0}.ReplaceCmdModuleWith() called for {1} using {2}.", DebugName, cmd.DebugName, cmdModDesign.DebugName);
         // Deactivate, decouple and remove all CmdSensors and the FtlDampener from their Monitors
         cmd.SensorMonitors.ForAll(mon => mon.ResetForReuse());

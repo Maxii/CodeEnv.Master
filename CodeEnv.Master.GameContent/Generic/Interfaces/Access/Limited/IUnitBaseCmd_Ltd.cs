@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// A collection of assembly stations that are local to the item.
         /// </summary>
-        IList<StationaryLocation> LocalAssemblyStations { get; }
+        IEnumerable<StationaryLocation> LocalAssemblyStations { get; }
 
         //IHanger_Ltd Hanger { get; }   11.8.17 IHanger_Ltd is currently obsolete
 

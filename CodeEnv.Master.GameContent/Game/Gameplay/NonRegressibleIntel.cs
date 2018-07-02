@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NonRegressibleIntel : AIntel {
 
+        public override IntelCoverage LowestAllowedCoverageValue { get { return CurrentCoverage; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="NonRegressibleIntel"/> class.
         /// </summary>

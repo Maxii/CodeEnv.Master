@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, \nTarget = {3}, \nOrderID = {4}, \nFollowonOrder = {5}]";
 
         private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
                                                                                                     ShipDirective.AssumeStation,
@@ -44,13 +44,15 @@ namespace CodeEnv.Master.GameContent {
                                                                                                     ShipDirective.EnterHanger,
                                                                                                     ShipDirective.Move,
                                                                                                     ShipDirective.Refit,
-                                                                                                    ShipDirective.Repair
+                                                                                                    ShipDirective.Repair,
+                                                                                                    ShipDirective.FoundSettlement
                                                                                                 };
         public virtual string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
+                string cmdOrderIdText = CmdOrderID != default(Guid) ? CmdOrderID.ToShortText() : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, cmdOrderIdText, followonOrderText);
             }
         }
 

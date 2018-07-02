@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>This version automatically improves any Reqd EquipmentStats (including the HullStat) to the current Level available,
         /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
         /// the mix of optional EquipmentStats.</remarks>
-        /// <remarks>Warning: Does NOT transfer over Status which will be the default until externally changed.</remarks>
+        /// <remarks>Warning: Does NOT transfer over Status which will be None until externally changed.</remarks>
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public ShipDesign(ShipDesign designToImprove)
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
               GetImprovedReqdStat(designToImprove.Player, designToImprove.HullStat),
               GetImprovedReqdStat(designToImprove.Player, designToImprove.StlEngineStat), designToImprove.CombatStance) {
 
-            D.Log("{0} is using 'copy' constructor on {1}...", GetType().Name, designToImprove.DebugName);
+            //D.Log("{0} is using 'copy' constructor on {1}...", GetType().Name, designToImprove.DebugName);
 
             D.AssertNotEqual(SourceAndStatus.SystemCreation_Default, designToImprove.Status);
 
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
             DesignLevel = designToImprove.DesignLevel;
-            D.Log("... to generate {0}.", DebugName);
+            //D.Log("... to generate {0}.", DebugName);
         }
 
         public ShipDesign(Player player, SensorStat reqdSRSensorStat, ShipHullStat hullStat, EngineStat stlEngineStat, ShipCombatStance combatStance)

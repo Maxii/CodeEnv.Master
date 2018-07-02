@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
-    private const string DebugNameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}[{1}]";
     private const string UnitNameFormat = "{0}{1}";
 
     private static int _unitNameCounter = Constants.One;
@@ -35,7 +35,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         get {
             if (_debugName == null) {
                 string unitName = UnitName.IsNullOrEmpty() ? "UnassignedUnitName" : UnitName;
-                _debugName = DebugNameFormat.Inject(unitName, GetType().Name);
+                _debugName = DebugNameFormat.Inject(GetType().Name, unitName);
             }
             return _debugName;
         }
@@ -70,7 +70,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     public abstract GameDate DeployDate { get; }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDContaining(transform.position); } }
+    ////public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
 
     protected abstract Player Owner { get; }
 
@@ -111,7 +112,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         }
     }
 
-    protected abstract void InitializeRootUnitName();
+    protected abstract string InitializeRootUnitName();
 
     private void InitializeUnitName() {
         UnitName = UnitNameFormat.Inject(RootUnitName, _unitNameCounter);
@@ -138,7 +139,16 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// Builds and positions the Unit in preparation for deployment and operations.
     /// <remarks>Must be called before AuthorizeDeployment.</remarks>
     /// </summary>
-    public abstract void PrepareUnitForDeployment();
+    public void PrepareUnitForDeployment() {
+        if (RootUnitName.IsNullOrEmpty()) {
+            RootUnitName = InitializeRootUnitName();
+        }
+        string rootUnitName = RootUnitName;
+        PrepareUnitForDeployment_Internal();
+        D.AssertEqual(rootUnitName, RootUnitName);  // makes sure PrepareUnitForDeployment_Internal doesn't change RootUnitName
+    }
+
+    protected abstract void PrepareUnitForDeployment_Internal();
 
     /// <summary>
     /// Authorizes the creator to deploy and commence operations of the Unit on the DeployDate specified by the Configuration.
@@ -210,8 +220,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// Starts the state machine of this Unit's Command. Returns <c>true</c> if CmdOperations was begun,
     /// <c>false</c> if it was deferred because an owner change was still underway.
     /// <remarks>5.3.17 Added bool return to avoid clearing LoneFleetCreator element ref if beginning CmdOperations was deferred. 
-    /// 11.18.17 FIXME currently false is never returned now that LoneFleetCreator replaced by multi-ship FleetCreator.
-    /// Added warning in FleetCreator if owner change is actually underway.</remarks>
+    /// 11.18.17 FIXME currently false is never returned now that LoneFleetCreator replaced by multi-ship RuntimeFleetCreator.
+    /// Added warning in RuntimeFleetCreator if owner change is actually underway.</remarks>
     /// </summary>
     /// <returns></returns>
     protected abstract bool BeginCommandOperations();

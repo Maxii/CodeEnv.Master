@@ -86,8 +86,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region Initialization
 
-    protected sealed override bool InitializeDebugLog() {
-        return _debugCntls.ShowPlanetoidDebugLogs;
+    protected sealed override bool __InitializeDebugLog() {
+        return __debugCntls.ShowPlanetoidDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -189,7 +189,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     protected sealed override void HandleInfoAccessChangedFor(Player player) {
         base.HandleInfoAccessChangedFor(player);
-        ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
+        ParentSystem.AssessWhetherToFireOwnerInfoAccessChangedEventFor(player);
     }
 
     protected override void PrepareForDeathSequence() {
@@ -232,17 +232,17 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         }
     }
 
-    protected override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
+    protected override void ImplementNonUiChangesPriorToOwnerChange(Player incomingOwner) {
+        base.ImplementNonUiChangesPriorToOwnerChange(incomingOwner);
         if (Owner != TempGameValues.NoPlayer) {
             // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
             ResetBasedOnCurrentDetection(Owner);
 
             IEnumerable<Player> allies;
-            if (TryGetAllies(out allies)) {
+            if (Data.TryGetAllies(out allies)) {
                 allies.ForAll(ally => {
-                    if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
-                        // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                    if (ally != incomingOwner && !ally.IsRelationshipWith(incomingOwner, DiplomaticRelationship.Alliance)) {
+                        // 5.18.17 no point assessing current detection for incomingOwner or a incomingOwner ally
                         // as HandleOwnerChgd will assign Comprehensive to them all. 
                         ResetBasedOnCurrentDetection(ally);
                     }
@@ -252,11 +252,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
     }
 
+    #region Event and Property Change Handlers
+
     private void CurrentStatePropChangedHandler() {
         HandleStateChange();
     }
-
-    #region Event and Property Change Handlers
 
     #endregion
 
@@ -327,8 +327,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (_debugCntls.ShowObstacleZones) {
+        __debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -344,12 +344,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
+        EnableDebugShowObstacleZone(__debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        if (_debugCntls != null) {
-            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (__debugCntls != null) {
+            __debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
 
@@ -367,12 +367,29 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Planetoid can operate in.
+    /// </summary>
+    public enum PlanetoidState {
+
+        None,
+
+        Idling,
+
+        Dead
+
+    }
+
+    #endregion
+
     #region IAssemblySupported Members
 
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public abstract IList<StationaryLocation> LocalAssemblyStations { get; }
+    public abstract IEnumerable<StationaryLocation> LocalAssemblyStations { get; }
 
     #endregion
 
@@ -541,22 +558,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
-    #region Nested Classes
-
-    /// <summary>
-    /// Enum defining the states a Planetoid can operate in.
-    /// </summary>
-    public enum PlanetoidState {
-
-        None,
-
-        Idling,
-
-        Dead
-
-    }
-
-    #endregion
 
 
 }

@@ -69,12 +69,12 @@ namespace CodeEnv.Master.GameContent {
                 Capacity = CalcCapacityFromSystemMembers(sysData);
             }
 
-            if (sysData.IsAnyMembersIntelCoverageGreaterThanSystem(Player)) {
-                Resources = CalcResourcesFromSystemMembers(sysData);
-            }
-            else {
-                Resources = AssessResources(sysData.Resources);
-            }
+            // 6.12.18 Resource visibility in a SystemReport should always be derived from System
+            // member reports as 1) System IntelCoverage can be different than individual member's
+            // IntelCoverage, and 2) the assessment results using AssessResources(resourcesFromData)
+            // can vary as each report can potentially respond differently to IsAwarenessOfPresenceAllowed(resID)
+            // and IsAwarenessOfValueAllowed(resID), even if all coverages are the same.
+            Resources = CalcResourcesFromSystemMemberReports(sysData);
 
             if (sysData.SettlementData != null) {
                 var settlementReport = sysData.SettlementData.GetReport(Player);
@@ -89,12 +89,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Calculates System resources from the reports of the star and planetoids.
         /// <remarks>10.21.17 Previously calculated using AssessResources(StarData) and AssessResources(PlanetoidData)
-        /// which was erroneous as this Report's AssessResources() is for SystemData. Only Star Report's AssessResources()
-        /// can be used for StarData and likewise for PlanetoidData since the criteria used by AssessResources() can be overridden.</remarks>
+        /// which was erroneous as this Report's AssessResources() is customized for SystemData. Only Star Report's AssessResources()
+        /// can be used for StarData and likewise for PlanetoidData since the criteria used by AssessResources() 
+        /// in IsAwarenessOfPresenceAllowed(resID) and IsAwarenessOfValueAllowed(resID) can vary if overridden.</remarks>
         /// </summary>
         /// <param name="sysData">The system data.</param>
         /// <returns></returns>
-        private ResourcesYield CalcResourcesFromSystemMembers(SystemData sysData) {
+        private ResourcesYield CalcResourcesFromSystemMemberReports(SystemData sysData) {
             IList<ResourcesYield> sysMembersResources = new List<ResourcesYield>();
 
             var starReport = sysData.StarData.GetReport(Player);
@@ -132,6 +133,22 @@ namespace CodeEnv.Master.GameContent {
                 return sysMembersCapacity.Sum();
             }
             return null;
+        }
+
+        #endregion
+
+        #region Debug
+
+        protected override ResourcesYield AssessResources(ResourcesYield dataResources) {
+            throw new System.NotImplementedException("AssessResources for SystemReport using member reports.");
+        }
+
+        protected override bool IsAwarenessOfPresenceAllowed(ResourceID resourceID) {
+            throw new System.NotImplementedException("AssessResources for SystemReport using member reports.");
+        }
+
+        protected override bool IsAwarenessOfValueAllowed(ResourceID resourceID) {
+            throw new System.NotImplementedException("AssessResources for SystemReport using member reports.");
         }
 
         #endregion

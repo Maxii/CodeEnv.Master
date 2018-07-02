@@ -2237,6 +2237,32 @@ namespace CodeEnv.Master.GameContent {
             return designName;
         }
 
+        /// <summary>
+        /// Returns the initial population of colonists to be applied to a Settlement just founded by a colony ship.
+        /// The Level used is from the ShipHullStat -> the more advanced the hull, the more room for colonists.
+        /// <remarks>Handled this way as Ship Stats aren't setup to hold unique values by HullCategory.</remarks>
+        /// </summary>
+        /// <param name="colonyShipLevel">The colony ship level.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static int GetInitialColonistPopulation(this Level colonyShipLevel) {
+            switch (colonyShipLevel) {
+                case Level.One:
+                    return 100;
+                case Level.Two:
+                    return 200;
+                case Level.Three:
+                    return 300;
+                case Level.Four:
+                    return 400;
+                case Level.Five:
+                    return 500;
+                case Level.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(colonyShipLevel));
+            }
+        }
+
         #endregion
 
         #region Equipment Category

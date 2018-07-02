@@ -65,6 +65,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ASector.cs" />
+    <Compile Include="Generic\Framework\ARuntimeUnitCreator.cs" />
     <Compile Include="Generic\Graphics\ASelectDesignDialogForm.cs" />
     <Compile Include="Generic\Graphics\APopupDialogForm.cs" />
     <Compile Include="Game\GUI\SelectFleetCmdModDesignDialogForm.cs" />
@@ -74,7 +76,7 @@
     <Compile Include="Generic\Graphics\AResearchTreeNode.cs" />
     <Compile Include="Game\Framework\FleetMoveHelper.cs" />
     <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
-    <Compile Include="Game\Framework\FleetCreator.cs" />
+    <Compile Include="Game\Framework\RuntimeFleetCreator.cs" />
     <Compile Include="Generic\Utility\GameScriptsUtility.cs" />
     <Compile Include="Generic\Graphics\ABaseUnitHudForm.cs" />
     <Compile Include="Generic\Graphics\AFleetUnitHudForm.cs" />
@@ -150,6 +152,11 @@
     <Compile Include="Game\GUI\SelectDesignScreenDialogForm.cs" />
     <Compile Include="Game\GUI\SelectSettlementCmdModDesignDialogForm.cs" />
     <Compile Include="Game\GUI\SelectStarbaseCmdModDesignDialogForm.cs" />
+    <Compile Include="Game\Framework\RuntimeSettlementCreator.cs" />
+    <Compile Include="Game\Framework\RuntimeStarbaseCreator.cs" />
+    <Compile Include="Game\GUI\SelectFacilityDesignDialogForm.cs" />
+    <Compile Include="Game\GUI\SelectShipDesignDialogForm.cs" />
+    <Compile Include="RimSector.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />

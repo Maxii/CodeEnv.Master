@@ -88,6 +88,9 @@ namespace CodeEnv.Master.GameContent {
         SelectFleetCmdModDesignDialog,
         SelectStarbaseCmdModDesignDialog,
         SelectSettlementCmdModDesignDialog,
+
+        SelectFacilityDesignDialog,
+        SelectShipDesignDialog
     }
 }
 
