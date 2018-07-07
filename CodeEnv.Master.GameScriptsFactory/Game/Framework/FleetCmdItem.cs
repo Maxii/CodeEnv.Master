@@ -4057,6 +4057,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     private IFleetNavigableDestination GetRegroupDestination(Vector3 preferredDirection) {
         preferredDirection.ValidateNormalized();
+        // IMPROVE algorithm should emphasize core sector as they have bases and systems 
 
         float maxTravelDistanceAllowedSqrd = 360000F;    // 600 units
 
@@ -8597,7 +8598,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 FleetOrder followonOrder = CurrentOrder.FollowonOrder;
                 if (followonOrder != null && followonOrder.Directive == FleetDirective.Repair) {
                     // Repair is already in the works
-                    isNeedForRepair = false; ;
+                    isNeedForRepair = false;
+                    ;
                 }
             }
         }

@@ -71,7 +71,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     public abstract GameDate DeployDate { get; }
 
     public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDContaining(transform.position); } }
-    ////public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
 
     protected abstract Player Owner { get; }
 

@@ -45,6 +45,38 @@ namespace CodeEnv.Master.Common {
         };
 
         /// <summary>
+        /// Chooses the point from candidatePoints that is furthest from all existingPoints, aka chooses the point
+        /// that has the largest minimum distance to any existing point.
+        /// </summary>
+        /// <param name="candidatePoints">The candidate points.</param>
+        /// <param name="existingPoints">The existing points.</param>
+        /// <returns></returns>
+        public static Vector3 ChooseFurthestFrom(IEnumerable<Vector3> candidatePoints, IEnumerable<Vector3> existingPoints) {
+            Utility.ValidateNotNullOrEmpty(candidatePoints);
+            Utility.ValidateNotNullOrEmpty(existingPoints);
+            // for each candidate cell, find min distance to existing cells and record it
+            // then chosen cell should be that cell whose min to any existing cell is > any other
+            IDictionary<float, Vector3> pointByMinDistanceToExistingPointsLookup = new Dictionary<float, Vector3>();
+            foreach (var candidatePoint in candidatePoints) {
+                Vector3 minDistancePoint = default(Vector3);
+                float minSqrDistanceToExistingPoint = float.MaxValue;
+                foreach (var existingPoint in existingPoints) {
+                    float sqrDistanceToExistingPoint = Vector3.SqrMagnitude(candidatePoint - existingPoint);
+                    if (sqrDistanceToExistingPoint < minSqrDistanceToExistingPoint) {
+                        minSqrDistanceToExistingPoint = sqrDistanceToExistingPoint;
+                        minDistancePoint = candidatePoint;
+                    }
+                }
+                if (!pointByMinDistanceToExistingPointsLookup.ContainsKey(minSqrDistanceToExistingPoint)) {
+                    pointByMinDistanceToExistingPointsLookup.Add(minSqrDistanceToExistingPoint, minDistancePoint);
+                }
+            }
+
+            var largestMinSqrDistance = pointByMinDistanceToExistingPointsLookup.Keys.Max();
+            return pointByMinDistanceToExistingPointsLookup[largestMinSqrDistance];
+        }
+
+        /// <summary>
         /// Returns the percentage distance along the line where the nearest point on the line is located.
         /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
         /// </summary>

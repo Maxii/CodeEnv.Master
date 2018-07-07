@@ -44,7 +44,7 @@ public class UniverseCreator {
     private IList<StationaryLocation> _vacantStarbaseStationsUsed;
     private List<AUnitCreator> _unitCreators;
     private List<SystemCreator> _systemCreators;
-    //private SectorGrid _sectorGrid;   // ref to SectorGrid complicates things as SectorGrid is not persistent
+    // ref to SectorGrid complicates things as SectorGrid is not persistent
     private GameManager _gameMgr;
     private DebugControls _debugCntls;
 
@@ -90,7 +90,6 @@ public class UniverseCreator {
 
         var sectorGrid = SectorGrid.Instance;
         var deployableSectorIDs = sectorGrid.CoreSectorIDs;
-        ////var deployableSectorIDs = sectorGrid.SectorIDs;
         int systemQty = CalcUniverseSystemsQty(deployableSectorIDs.Count());
 
         // Deploy intended Home SystemCreators first
@@ -147,9 +146,9 @@ public class UniverseCreator {
 
         unoccupiedSectorIDs = unoccupiedSectorIDs.Shuffle();
         var sectorIDsToDeployTo = unoccupiedSectorIDs.Take(remainingSystemQty);
-        var sectorPositionsToDeployTo = sectorIDsToDeployTo.Select(index => sectorGrid.GetSectorPosition(index));
-        sectorPositionsToDeployTo.ForAll(position => {
-            var creator = SystemGenerator.DeployAndConfigureRandomSystemCreatorTo(position);
+        var sectorLocationsToDeployTo = sectorIDsToDeployTo.Select(index => sectorGrid.GetSectorWorldLocation(index));
+        sectorLocationsToDeployTo.ForAll(loc => {
+            var creator = SystemGenerator.DeployAndConfigureRandomSystemCreatorTo(loc);
             _systemCreators.Add(creator);
         });
 
@@ -444,7 +443,6 @@ public class UniverseCreator {
             sectorIDsToDeployTo.Push(homeSectorID); // if start with fleet(s), always deploy one in the home sector
             if (qtyToDeploy > Constants.One) {
                 // there are additional fleets to deploy around the home system
-                ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
                 IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (!gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
@@ -599,8 +597,7 @@ public class UniverseCreator {
 
             ISystem system;
             SectorGrid sectorGrid = SectorGrid.Instance;
-            ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includeRim: false);
             foreach (var neighborSectorID in homeNeighborSectorIDs) {
                 if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
                     if (!usedSystems.Contains(system)) {
@@ -685,8 +682,7 @@ public class UniverseCreator {
             D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
-            ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringCoreSectorIDs(homeSectorID);
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includeRim: false);
             foreach (var neighborSectorID in homeNeighborSectorIDs) {
                 ISystem unusedSystem;
                 if (!gameKnowledge.TryGetSystem(neighborSectorID, out unusedSystem)) {
@@ -785,9 +781,7 @@ public class UniverseCreator {
             systemsToDeployTo.Push(system); // places home system on bottom but who cares?
             if (qtyToDeploy > Constants.One) {
                 // there are additional settlements to deploy around the home system
-                SectorGrid sectorGrid = SectorGrid.Instance;
-                ////IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
-                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+                IEnumerable<IntVector3> homeNeighborSectorIDs = SectorGrid.Instance.GetNeighboringSectorIDs(homeSectorID);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
                         if (!usedSystems.Contains(system)) {
@@ -903,7 +897,7 @@ public class UniverseCreator {
             ISystem unused;
             IntVector3 sectorID;
             for (int i = 0; i < qtyToDeploy; i++) {
-                if (sectorGrid.TryGetRandomCoreSectorID(out sectorID, excludedIDs: excludedSectorIDs)) {
+                if (sectorGrid.TryGetRandomSectorID(out sectorID, excludedSectorIDs, includeRim: false)) {
                     if (!gameKnowledge.TryGetSystem(sectorID, out unused)) {
                         sectorIDsToDeployTo.Push(sectorID);
                     }
@@ -915,19 +909,6 @@ public class UniverseCreator {
                 }
                 break;
             }
-            ////for (int i = 0; i < qtyToDeploy; i++) {
-            ////    if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: excludedSectorIDs)) {
-            ////        if (!gameKnowledge.TryGetSystem(sectorID, out unused)) {
-            ////            sectorIDsToDeployTo.Push(sectorID);
-            ////        }
-            ////        else {
-            ////            i--;
-            ////        }
-            ////        excludedSectorIDs.Add(sectorID);
-            ////        continue;
-            ////    }
-            ////    break;
-            ////}
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
                 D.Warn("{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
@@ -1005,13 +986,6 @@ public class UniverseCreator {
                 }
                 break;
             }
-            ////for (int i = 0; i < qtyToDeploy; i++) {
-            ////    if (sectorGrid.TryGetRandomSectorID(out sectorID, includePeriphery: false, excludedIDs: sectorIDsToDeployTo)) {
-            ////        sectorIDsToDeployTo.Push(sectorID);
-            ////        continue;
-            ////    }
-            ////    break;
-            ////}
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
                 D.Warn("{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);

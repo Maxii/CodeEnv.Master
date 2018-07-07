@@ -34,11 +34,14 @@ public class SectorGridEditor : Editor {
 
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
-            NGUIEditorTools.SetLabelWidth(160F);
+            NGUIEditorTools.SetLabelWidth(140F);
             NGUIEditorTools.DrawProperty("Sector Visibility Depth", serializedObject, "_sectorVisibilityDepth");
 
             GUILayout.Space(5F);
+            NGUIEditorTools.SetLabelWidth(160F);
+            NGUIEditorTools.DrawProperty("Rim Cell Vertex Threshold", serializedObject, "_rimCellVertexThreshold");
 
+            GUILayout.Space(5F);
             EditorGUI.BeginDisabledGroup(true);
             {
                 NGUIEditorTools.SetLabelWidth(100F);

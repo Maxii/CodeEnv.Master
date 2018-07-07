@@ -25,7 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Extensions for Enums specific to the game. 
-    /// <remarks>TODO Externalize all to XML</remarks>
+    /// <remarks>TODO Externalize all to XML.</remarks>
+    /// <remarks>TODO Consolidate into/with NewGameConfigurator.</remarks>
     /// </summary>
     public static class GameEnumExtensions {
 

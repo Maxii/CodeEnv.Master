@@ -32,12 +32,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
-    /// radius of the inscribed sphere used to generate the item's surrounding waypoints.
-    /// </summary>
-    public const float RadiusMultiplierForWaypointInscribedSphere = 2.5F;
-
-    /// <summary>
-    /// The multiplier to apply to the item radius value used when determining the
     /// distance of the surrounding patrol stations from the item's position.
     /// </summary>
     private const float PatrolStationDistanceMultiplier = 2F;
@@ -389,7 +383,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     #region IFleetNavigableDestination Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-        return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+        return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer;
+        ;
     }
 
     #endregion

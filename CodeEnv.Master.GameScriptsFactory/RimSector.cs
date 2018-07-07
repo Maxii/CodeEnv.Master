@@ -30,16 +30,20 @@ public class RimSector : ASector {
 
     private const string SectorNameFormat = "RimSector {0}";
 
-    private static float[] RadiusPercentageSteps = { Constants.OneHundredPercent, 0.99F,  0.98F, 0.97F, 0.90F, 0.80F,
-        0.70F, 0.60F, 0.50F, 0.40F, 0.30F, 0.20F };
+    private static float[] RadiusPercentageSteps = { Constants.OneHundredPercent, 0.99F,  0.98F, 0.97F, 0.90F, 0.80F, 0.79F, 0.78F, 0.77F, 0.76F, 0.75F,
+        0.74F, 0.73F, 0.72F, 0.71F, 0.70F, 0.60F, 0.50F, 0.49F, 0.48F, 0.47F, 0.46F, 0.45F, 0.44F, 0.43F, 0.42F, 0.41F, 0.40F,
+        0.39F, 0.38F, 0.37F, 0.36F, 0.35F, 0.34F, 0.33F, 0.32F, 0.31F, 0.30F, 0.20F };
 
-    private static float[] PositionSteps = { 0F, 10F, 50F, 100F, 150F, 200F, 250F, 300F, 350F, 400F, 450F, 500F, 550F };
+    private static float[] PositionSteps = { 0F, 10F, 50F, 100F, 110F, 120F, 130F, 140F, 150F, 200F, 250F, 300F,
+        350F, 360F, 370F, 380F, 390F, 400F, 410F, 420F, 430F, 440F, 450F, 500F, 550F };
 
     public static bool TryFindAcceptablePosition(Vector3 cellCenterWorldLocation, float universeRadiusSqrd, out Vector3 position, out float radius) {
         float maxRadius = Constants.ZeroF;
         Vector3 maxRadiusPosition = Vector3.zero;
+#pragma warning disable 0219
         int maxRadiusIndex = Constants.Zero;
         int maxRadiusPositionIndex = Constants.Zero;
+#pragma warning restore 0219
 
         Vector3 directionToOrigin = (GameConstants.UniverseOrigin - cellCenterWorldLocation).normalized;
 
@@ -68,8 +72,8 @@ public class RimSector : ASector {
         radius = maxRadius;
         bool isPositionFound = radius > Constants.ZeroF;
         if (isPositionFound) {
-            D.Log("Found RimSector position using PositionUnitStep {0}, RadiusPercentStep {1:P00}. CellCenter = {2}.",
-                PositionSteps[maxRadiusPositionIndex], RadiusPercentageSteps[maxRadiusIndex], cellCenterWorldLocation);
+            //D.Log("Found RimSector position {0:0.} units from center with Radius {1:0.}, {2:P00} of normal. CellCenter = {3}.",
+            //PositionSteps[maxRadiusPositionIndex], radius, RadiusPercentageSteps[maxRadiusIndex], cellCenterWorldLocation);
         }
         return isPositionFound;
     }

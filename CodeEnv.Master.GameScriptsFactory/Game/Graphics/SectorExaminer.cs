@@ -239,8 +239,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void HandleCurrentSectorIdChanged() {
-        Vector3 sectorPosition = _sectorGrid.GetSectorPosition(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
-        transform.position = sectorPosition;
+        Vector3 sectorCenterLoc = _sectorGrid.GetSectorWorldLocation(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
+        transform.position = sectorCenterLoc;
         ShowSectorWireframes(true);
         UpdateSectorIDLabel();
         HighlightSectorContents(true);

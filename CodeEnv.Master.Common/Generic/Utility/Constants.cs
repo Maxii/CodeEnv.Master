@@ -95,6 +95,7 @@ namespace CodeEnv.Master.Common {
         public const string FormatCurrency_2Dp = "{0:C02}";
 
         public const string PercentNumericFormat = "P00";
+        public const string ExponentialNumericFormat_1Dp = "E1";    // 1.0E12, or e1 to get 1.0e12
 
         // 3.25.16 Moved to GameTime
         //public const string GameCalenderDateFormat = "{0}.{1:D3}.{2:00.}";  //= "{0}.{1:D3}.{2:D2}";
@@ -153,7 +154,9 @@ namespace CodeEnv.Master.Common {
         public const float OneF = 1.0F;
         public const float OneHundredPercent = 1.0F;
         public static float OneThird = 1F / 3F;
+        public static float OneHalf = 1F / 2F;
         public static float TwoThirds = 2F / 3F;
+        public static float FourThirds = 4F / 3F;
 
         public const int OneKilobyte = 1024;
         public const int OneMegabyte = 1048576;

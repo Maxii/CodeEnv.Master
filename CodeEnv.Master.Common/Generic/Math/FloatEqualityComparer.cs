@@ -14,7 +14,8 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.Common
+{
 
     using System.Collections.Generic;
     using UnityEngine;
@@ -22,7 +23,8 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// My own float equality comparer used to avoid boxing in Dictionaries and HashSets.
     /// </summary>
-    public class FloatEqualityComparer : IEqualityComparer<float> {
+    public class FloatEqualityComparer : IEqualityComparer<float>
+    {
 
         public string DebugName { get { return GetType().Name; } }
 
@@ -36,7 +38,8 @@ namespace CodeEnv.Master.Common {
 
         private static float _quantum = Mathf.Log10(1 + _relativeMaxQuantError);
 
-        public override string ToString() {
+        public override string ToString()
+        {
             return DebugName;
         }
 
@@ -46,9 +49,11 @@ namespace CodeEnv.Master.Common {
         /// <see cref="http://stackoverflow.com/questions/14693561/should-i-use-decimal-type-as-keys-in-a-dictionary"/>
         /// <param name="value">The value.</param>
         /// <returns></returns>
-        private float Quantize(float value) {
+        private float Quantize(float value)
+        {
             float result;
-            unchecked {
+            unchecked
+            {
                 result = Mathf.Log10(Mathf.Abs(value));
                 result = Mathf.Floor(result / _quantum) * _quantum;
                 result = Mathf.Sign(value) * Mathf.Pow(10F, result);
@@ -58,10 +63,11 @@ namespace CodeEnv.Master.Common {
 
         #region IEqualityComparer<float> Members
 
-        public int GetHashCode(float value) {
+        public int GetHashCode(float value)
+        {
             // Rule: If two things are equal then they MUST return the same value for GetHashCode()
             // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
-            int result = Quantize(value).GetHashCode();   ////return value.GetHashCode();
+            int result = Quantize(value).GetHashCode();
             //D.Log("{0}.GetHashCode({1}) returning {2}.", typeof(FloatEqualityComparer).Name, value, result);
             return result;
             // According to this article, GetHashCode() of the IEqualityComparer<T> is used in 
@@ -69,10 +75,10 @@ namespace CodeEnv.Master.Common {
             // http://stackoverflow.com/questions/4095395/whats-the-role-of-gethashcode-in-the-iequalitycomparert-in-net
         }
 
-        public bool Equals(float value, float other) {
+        public bool Equals(float value, float other)
+        {
             // Its very clear that if Equals is true within tolerance, GetHashCode(value) and (other) won't return same value
             // so it violates the rule above. 
-            //// bool result = Mathfx.Approx(value, other, UnityConstants.FloatEqualityPrecision); 
             float quantizedValue = Quantize(value);
             float quantizedOther = Quantize(other);
             bool result = Mathf.Approximately(quantizedValue, quantizedOther);

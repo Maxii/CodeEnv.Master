@@ -27,6 +27,7 @@ using GridFramework.Extensions.Nearest;
 using GridFramework.Extensions.Vectrosity;
 using GridFramework.Grids;
 using GridFramework.Renderers.Rectangular;
+using MoreLinq;
 using UnityEngine;
 
 /// <summary>
@@ -35,6 +36,11 @@ using UnityEngine;
 public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private const string SectorNameFormat = "Sector {0}";
+
+    /// <summary>
+    /// The offset that converts cellVertex grid coordinates into cell grid coordinates.
+    /// </summary>
+    private static Vector3 CellVertexGridCoordinatesToCellGridCoordinatesOffset = new Vector3(0.5F, 0.5F, 0.5F);
 
     /// <summary>
     /// The offset values in grid coordinate space that, when added to a cell coordinate (0.5, 1.5, -2.0)
@@ -53,6 +59,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private string DebugName { get { return GetType().Name; } }
 
+    [Tooltip("The minimum number of vertices reqd inside the Universe for a cell to be considered for a RimSector.")]
+    [SerializeField]
+    private int _rimCellVertexThreshold = 2;
+
     [Tooltip("Controls how many layers of sectors are visible when in SectorViewMode. 0 = ShowAll.")]
     [SerializeField]
     private int _sectorVisibilityDepth = 3;
@@ -64,10 +74,12 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// </summary>
     [Tooltip("Size of the grid in sectors")]
     [SerializeField]    // Serialized to let the editor show the size while running
-    private Vector3 _gridSize;
+    private Vector3 _gridSize;  // 7.4.18 Small 8x8x8, URadius 4800, UVolume ~ 4.6e12
 
     /// <summary>
-    /// Returns all sectors inside the universe.
+    /// Returns all CoreSectors and RimSectors.
+    /// <remarks>CoreSectors are 100% contained within the UniverseRadius. RimSectors have some percentage
+    /// of their volume protruding outside the universe.</remarks>
     /// </summary>
     public IEnumerable<ASector> Sectors { get { return _sectorIdToSectorLookup.Values; } }
 
@@ -76,24 +88,21 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// </summary>
     public IEnumerable<IntVector3> SectorIDs { get { return _sectorIdToSectorLookup.Keys; } }
 
-    private IList<Vector3> __universeCellWorldLocations;
-    public IEnumerable<Vector3> UniverseCellWorldLocations { get { return __universeCellWorldLocations; } }
-
     private IList<IntVector3> _coreSectorIDs;
     public IEnumerable<IntVector3> CoreSectorIDs { get { return _coreSectorIDs; } }
 
-    private Sector[] _coreSectors;
+    private IEnumerable<Sector> _coreSectors;
     public IEnumerable<Sector> CoreSectors {
         get {
-            _coreSectors = _coreSectors ?? _sectorIdToSectorLookup.Values.Where(sector => sector is Sector).Cast<Sector>().ToArray();
+            _coreSectors = _coreSectors ?? _sectorIdToSectorLookup.Values.Where(sector => sector is Sector).Cast<Sector>();
             return _coreSectors;
         }
     }
 
     /// <summary>
     /// Read-only. The location of the center of all sectors in world space.
+    /// <remarks>For RimSectors, the location returned may not be the equivalent of RimSector.Position.</remarks>
     /// </summary>
-    [Obsolete("Not currently used")]
     public IEnumerable<Vector3> SectorCenters { get { return _sectorIdToCellWorldLocationLookup.Values; } }
 
     /// <summary>
@@ -105,15 +114,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private bool IsGridWireframeShowing { get { return _gridWireframe != null && _gridWireframe.IsShowing; } }
 
     /// <summary>
-    /// The offset that converts cellVertex grid coordinates into cell grid coordinates.
-    /// </summary>
-    private Vector3 _cellVertexGridCoordinatesToCellGridCoordinatesOffset = new Vector3(0.5F, 0.5F, 0.5F);
-
-    /// <summary>
     /// The world location of each cell vertex. Only contains cells inside the radius of the universe.
     /// <remarks>A cell vertex is effectively the cell index in the grid coordinate system, aka Vector3(1, -1, 0).</remarks>
     /// </summary>
-    private IList<Vector3> _cellVertexWorldLocations;   // TODO not really used except for validation
+    private IList<Vector3> _cellVertexWorldLocations;   // OPTIMIZE not really used except for validation
 
     /// <summary>
     /// Lookup that translates a cell's GridCoordinates into the appropriate sectorID.
@@ -161,15 +165,21 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        InitializeLocalReferencesAndValues();
+        InitializeValuesAndReferences();
         InitializeGrid();
         Subscribe();
     }
 
-    private void InitializeLocalReferencesAndValues() {
+    private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
         _mainCameraCntl = MainCameraControl.Instance;
         _playerViews = PlayerViews.Instance;
+        _cellVertexWorldLocations = new List<Vector3>();
+        _cellGridCoordinatesToSectorIdLookup = new Dictionary<Vector3, IntVector3>(Vector3EqualityComparer.Default);
+        _sectorIdToCellGridCoordinatesLookup = new Dictionary<IntVector3, Vector3>();
+        _sectorIdToCellWorldLocationLookup = new Dictionary<IntVector3, Vector3>();
+        _sectorIdToSectorLookup = new Dictionary<IntVector3, ASector>();
+        _coreSectorIDs = new List<IntVector3>();
     }
 
     private void InitializeGrid() {
@@ -362,7 +372,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <returns></returns>
     private Vector3 GetCellVertexGridCoordinatesFrom(IntVector3 sectorID) {
         D.AssertNotDefault(sectorID);
-        return GetCellGridCoordinatesFor(sectorID) - _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
+        return GetCellGridCoordinatesFor(sectorID) - CellVertexGridCoordinatesToCellGridCoordinatesOffset;
     }
 
     #endregion
@@ -372,42 +382,37 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void ConstructSectors() {
         __RecordDurationStartTime();
 
-        int cellQty = Mathf.RoundToInt(_gridSize.magnitude); // OPTIMIZE cell qty >> sector qty
-        _cellVertexWorldLocations = new List<Vector3>(cellQty);
-        _cellGridCoordinatesToSectorIdLookup = new Dictionary<Vector3, IntVector3>(cellQty, Vector3EqualityComparer.Default);
-        _sectorIdToCellGridCoordinatesLookup = new Dictionary<IntVector3, Vector3>(cellQty);
-        _sectorIdToCellWorldLocationLookup = new Dictionary<IntVector3, Vector3>(cellQty);
-        //_sectorIdToSectorLookup = new Dictionary<IntVector3, Sector>(cellQty);
-        _sectorIdToSectorLookup = new Dictionary<IntVector3, ASector>(cellQty);
-        _coreSectorIDs = new List<IntVector3>(cellQty);
-
-        __universeCellWorldLocations = new List<Vector3>(cellQty);
-
         float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
         D.AssertNotEqual(Constants.ZeroF, universeRadius);
         __universeRadiusSqrd = universeRadius * universeRadius;
 
+        double universeVol = Constants.FourThirds * Mathf.PI * Mathf.Pow(universeRadius, 3F);
+        double volOfACoreSector = Mathf.Pow(TempGameValues.SectorSideLength, 3F);
+        double totalCoreSectorVol = 0D;
+        double estTotalRimSectorVol = 0D;
+
         int inspectedCellCount = Constants.Zero;
+        int rimCount = Constants.Zero;
+        int failedRimCount = Constants.Zero;
+        int drossCount = Constants.Zero;
+        int outCount = Constants.Zero;
 
         // all axes have the same range of lowest to highest values so just pick x
         int highestCellVertexGridCoordinateAxisValue = Mathf.RoundToInt(_outermostCellVertexGridCoordinates.x); // float values are effectively ints
         int lowestCellVertexGridCoordinateAxisValue = -highestCellVertexGridCoordinateAxisValue;
 
-        int failedRimCount = 0;
-        int drossCount = 0;
-        int outCount = 0;
         // x, y and z are their respective axis's cell vertex grid coordinate
         for (int x = lowestCellVertexGridCoordinateAxisValue; x < highestCellVertexGridCoordinateAxisValue; x++) {    // '<=' adds vertices on outer edge but no sectors
             for (int y = lowestCellVertexGridCoordinateAxisValue; y < highestCellVertexGridCoordinateAxisValue; y++) {
                 for (int z = lowestCellVertexGridCoordinateAxisValue; z < highestCellVertexGridCoordinateAxisValue; z++) {
                     Vector3 cellVertexGridCoordinates = new Vector3(x, y, z);
-                    Vector3 cellGridCoordinates = cellVertexGridCoordinates + _cellVertexGridCoordinatesToCellGridCoordinatesOffset; // (0.5, 1.5, 6.5)
+                    Vector3 cellGridCoordinates = cellVertexGridCoordinates + CellVertexGridCoordinatesToCellGridCoordinatesOffset; // (0.5, 1.5, 6.5)
 
                     inspectedCellCount++;
-                    UniverseCellCategory category;
-                    if (TryDetermineGridCellUseAsUniverseCell(cellGridCoordinates, __universeRadiusSqrd, out category)) {
+                    UniverseCellCategory cellCategory;
+                    if (TryDetermineGridCellUseAsASector(cellGridCoordinates, __universeRadiusSqrd, out cellCategory)) {
                         Vector3 cellWorldLocation = _grid.GridToWorld(cellGridCoordinates);
-                        if (category == UniverseCellCategory.Core) {
+                        if (cellCategory == UniverseCellCategory.Core) {
                             IntVector3 sectorID = CalculateSectorIDFromCellGridCoordindates(cellGridCoordinates);
 
                             Vector3 cellVertexWorldLocation = _grid.GridToWorld(cellVertexGridCoordinates);
@@ -415,11 +420,11 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                             _cellGridCoordinatesToSectorIdLookup.Add(cellGridCoordinates, sectorID);
                             _sectorIdToCellGridCoordinatesLookup.Add(sectorID, cellGridCoordinates);
 
-                            _sectorIdToCellWorldLocationLookup.Add(sectorID, cellWorldLocation);
                             AddCoreSector(sectorID, cellWorldLocation);
+                            totalCoreSectorVol += volOfACoreSector;
                         }
                         else {
-                            D.AssertEqual(UniverseCellCategory.Rim, category);
+                            D.AssertEqual(UniverseCellCategory.Rim, cellCategory);
                             Vector3 acceptablePositionPropValue;
                             float acceptableRadiusPropValue;
                             if (RimSector.TryFindAcceptablePosition(cellWorldLocation, __universeRadiusSqrd, out acceptablePositionPropValue, out acceptableRadiusPropValue)) {
@@ -430,23 +435,28 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                                 _cellGridCoordinatesToSectorIdLookup.Add(cellGridCoordinates, sectorID);
                                 _sectorIdToCellGridCoordinatesLookup.Add(sectorID, cellGridCoordinates);
 
-                                _sectorIdToCellWorldLocationLookup.Add(sectorID, cellWorldLocation);
                                 AddRimSector(cellWorldLocation, acceptablePositionPropValue, acceptableRadiusPropValue, sectorID);
+                                rimCount++;
+                                // 7.4.18 This estimate is low. Vol of cube with faceDistance = 1 is 1.909 x vol of sphere with radius 1. 
+                                // For Small Universe, 70+% of RimSectors get all of that additional volume from the corners, 20% get 2/3rds 
+                                // of the additional volume and 10% get 1/3rd of that additional volume. However, mix varies significantly 
+                                // depending on _rimCellVertexThreshold and size of universe.
+                                estTotalRimSectorVol += Constants.FourThirds * Mathf.PI * Mathf.Pow(acceptableRadiusPropValue, 3F);
                             }
                             else {
                                 D.Warn("{0} could not find acceptable position for RimSector centered at {1}.", DebugName, cellWorldLocation);
-                                category = UniverseCellCategory.FailedRim;
+                                cellCategory = UniverseCellCategory.FailedRim;
                             }
                         }
                     }
 
-                    if (category == UniverseCellCategory.FailedRim) {
+                    if (cellCategory == UniverseCellCategory.FailedRim) {
                         failedRimCount++;
                     }
-                    if (category == UniverseCellCategory.Dross) {
+                    if (cellCategory == UniverseCellCategory.Dross) {
                         drossCount++;
                     }
-                    if (category == UniverseCellCategory.Out) {
+                    if (cellCategory == UniverseCellCategory.Out) {
                         outCount++;
                     }
                 }
@@ -457,14 +467,23 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         if (inspectedCellCount != gridCellQty) {
             D.Error("{0}: inspected cell count {1} should equal {2} cells in grid.", DebugName, inspectedCellCount, gridCellQty);
         }
-        D.Log("{0} inspected {1} grid cells, creating {2} UniverseCells. Sectors = {3}, RimSectors = {4}, FailedRimSectors = {5}, DrossCells = {6}, OutCells = {7}.",
-            DebugName, inspectedCellCount, __universeCellWorldLocations.Count, _coreSectorIDs.Count,
-            _sectorIdToSectorLookup.Count - _coreSectorIDs.Count, failedRimCount, drossCount, outCount);
-        __LogRimSectorCornerCount();
+        D.Log("{0} inspected {1} grid cells, creating {2} ASectors. CoreSectors = {3}, RimSectors = {4}, FailedRimCells = {5}, DrossCells = {6}, OutCells = {7}.",
+            DebugName, inspectedCellCount, _sectorIdToSectorLookup.Count, _coreSectorIDs.Count, rimCount, failedRimCount, drossCount, outCount);
+        //__LogRimSectorCornerCount();
+        double estTotalSectorVol = totalCoreSectorVol + estTotalRimSectorVol;
+        double totalCoreSectorPercentOfUniverseVol = totalCoreSectorVol / universeVol;
+        double estRimSectorPercentOfUniverseVol = estTotalRimSectorVol / universeVol;
+        double totalASectorPercentOfUniverseVol = totalCoreSectorPercentOfUniverseVol + estRimSectorPercentOfUniverseVol;
+        D.LogBold("{0}: Estimated navigable volume {1:E1} is {2:P00} of UniverseVolume {3:E1}.", DebugName, estTotalSectorVol, totalASectorPercentOfUniverseVol, universeVol);
+        D.Log("{0}: Total CoreSector Volume {1:E1} and estimated Total Rim Volume {2:E1} is {3:P00} and {4:P00} respectively of Universe volume.",
+            DebugName, totalCoreSectorVol, estTotalRimSectorVol, totalCoreSectorPercentOfUniverseVol, estRimSectorPercentOfUniverseVol);
+        // 7.4.18 Small Results _rimCellVertexThreshold =2: Core=136, Rim=216(min 264 radius), Dross=56; @3: Core=136, Rim=168(min 480 radius), Dross=104
+        // CoreSector Vol % of UniverseVol = @2@3 = 50%; RimSectorVol % = @2 31+%, @3 30+% 
+
         __LogDuration("{0}.ConstructSectors()".Inject(DebugName));
     }
 
-    private bool TryDetermineGridCellUseAsUniverseCell(Vector3 gridCellCenter, float universeRadiusSqrd, out UniverseCellCategory category) {
+    private bool TryDetermineGridCellUseAsASector(Vector3 gridCellCenter, float universeRadiusSqrd, out UniverseCellCategory category) {
         // From Testing: if > 4 valid corners, center is always valid. With 4 valid corners, center is sometimes valid. 
         // With 3 valid corners, center is rarely valid
 
@@ -484,7 +503,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             }
         }
         bool isGridCellCoreSector = validCornerCount == 8;
-        bool isGridCellRim = !isGridCellCoreSector && validCornerCount >= 3;
+        bool isGridCellRim = !isGridCellCoreSector && validCornerCount >= _rimCellVertexThreshold;
 
         bool isGridCellDross = !isGridCellCoreSector && !isGridCellRim && validCornerCount > 0;
         bool isGridCellOut = validCornerCount == 0;
@@ -519,6 +538,528 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
         }
         return category == UniverseCellCategory.Core || category == UniverseCellCategory.Rim;
+    }
+
+    /// <summary>
+    /// Calculates the sectorID from the provided cellGridCoordinates, aka the center of a cell in
+    /// the GridCoordinate system.
+    /// </summary>
+    /// <param name="cellGridCoordinates">The cell's coordinates in the GridCoordindate System.</param>
+    /// <returns></returns>
+    private IntVector3 CalculateSectorIDFromCellGridCoordindates(Vector3 cellGridCoordinates) {
+        // SectorIDs will contain no 0 value. The sectorID to the left of the origin is -1, to the right +1
+        float x = cellGridCoordinates.x, y = cellGridCoordinates.y, z = cellGridCoordinates.z;
+        int xID = x.ApproxEquals(Constants.ZeroF) ? 1 : (x > Constants.ZeroF ? Mathf.CeilToInt(x) : Mathf.FloorToInt(x));
+        int yID = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y) : Mathf.FloorToInt(y));
+        int zID = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z) : Mathf.FloorToInt(z));
+        var sectorID = new IntVector3(xID, yID, zID);
+        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorID = {2}.", DebugName, cellGridCoordinates, sectorID);
+        return sectorID;
+    }
+
+    private void AddCoreSector(IntVector3 sectorID, Vector3 sectorCenterWorldLoc) {
+        Sector sector = MakeSectorInstance(sectorID, sectorCenterWorldLoc);
+        _sectorIdToCellWorldLocationLookup.Add(sectorID, sectorCenterWorldLoc);
+        _sectorIdToSectorLookup.Add(sectorID, sector);
+        _coreSectorIDs.Add(sectorID);
+    }
+
+    private void AddRimSector(Vector3 sectorCenterWorldLoc, Vector3 positionPropValue, float radiusPropValue, IntVector3 sectorID) {
+        RimSector sector = MakeRimSectorInstance(positionPropValue, radiusPropValue, sectorID);
+        _sectorIdToCellWorldLocationLookup.Add(sectorID, sectorCenterWorldLoc);
+        _sectorIdToSectorLookup.Add(sectorID, sector);
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Returns the SectorID that contains the provided world location.
+    /// Throws an error if <c>worldLocation</c> is not within the universe or there is no Sector at that location.
+    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a ASector.
+    /// If this is not certain, use TryGetSectorIDContaining(worldLocation) instead.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <returns></returns>
+    public IntVector3 GetSectorIDContaining(Vector3 worldLocation) {
+        //GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
+        if (!GameUtility.IsLocationContainedInUniverse(worldLocation, __universeRadiusSqrd)) {
+            D.Error("{0}: {1} is not contained in Universe.", DebugName, worldLocation);
+        }
+        IntVector3 sectorID;
+        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        bool isSectorIDPresent = _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
+        if (!isSectorIDPresent) {
+            D.Error("@{0} found cell {1} using _grid.NearestCell that has no Sector for WorldLocation {2}. " +
+                "Use TryGetSectorIDContaining instead?", DebugName, nearestCellGridCoordinates, worldLocation);
+        }
+        return sectorID;
+    }
+
+    /// <summary>
+    /// Gets the world space location of the sector indicated by the provided sectorID.
+    /// Throws an error if no sector is present at that sectorID.
+    /// <remarks>This may not be the same value as a RimSector's Position property.</remarks>
+    /// </summary>
+    /// <param name="sectorID">ID of the sector.</param>
+    /// <returns></returns>
+    public Vector3 GetSectorWorldLocation(IntVector3 sectorID) {
+        D.AssertNotDefault(sectorID);
+        Vector3 worldCenterLocation;
+        bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldCenterLocation);
+        D.Assert(isSectorFound, sectorID.DebugName);
+        return worldCenterLocation;
+    }
+
+
+    /// <summary>
+    /// Returns <c>true</c> if a sectorID has been assigned containing this worldLocation, <c>false</c> otherwise.
+    /// <remarks>Locations inside the universe have assigned SectorIDs, while those outside do not.</remarks>
+    /// <remarks>5.22.17 This version allows the use of worldLocations outside the Universe.
+    /// Current known users that use locations outside the Universe are SectorExaminer and MainCameraControl.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <param name="sectorID">The resulting sectorID.</param>
+    /// <returns></returns>
+    public bool TryGetSectorIDContaining(Vector3 worldLocation, out IntVector3 sectorID) {
+        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        return _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
+    }
+
+    /// <summary>
+    /// Gets the sector associated with this sectorID. 
+    /// </summary>
+    /// <param name="sectorID">The sectorID.</param>
+    /// <returns></returns>
+    public ASector GetSector(IntVector3 sectorID) {
+        D.AssertNotDefault(sectorID);
+        ASector sector;
+        if (!_sectorIdToSectorLookup.TryGetValue(sectorID, out sector)) {
+            D.Error("{0}: No Sector at {1}.", DebugName, sectorID.DebugName);
+        }
+        return sector;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a sector has been assigned containing this worldLocation, <c>false</c> otherwise.
+    /// <remarks>Throws an error if worldLocation is outside the Universe.</remarks>
+    /// <remarks>Not all locations inside the universe are in Sectors as some locations are inside RimCells.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <param name="sector">The sector.</param>
+    /// <returns></returns>
+    public bool TryGetSectorContaining(Vector3 worldLocation, out ASector sector) {
+        GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
+        IntVector3 sectorID;
+        if (TryGetSectorIDContaining(worldLocation, out sectorID)) {
+            sector = GetSector(sectorID);
+            return true;
+        }
+        sector = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the sector containing the provided worldLocation.
+    /// Throws an error if <c>worldLocation</c> is not within the universe or not within a Sector.
+    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a Sector.
+    /// If this is not certain, use TryGetSectorContaining(worldLocation) instead.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <returns></returns>
+    public ASector GetSectorContaining(Vector3 worldLocation) {
+        var sectorID = GetSectorIDContaining(worldLocation);
+        return GetSector(sectorID);
+    }
+
+    public bool TryGetRandomSectorID(out IntVector3 sectorID, IEnumerable<IntVector3> excludedIDs = null, bool includeRim = true) {
+        IEnumerable<IntVector3> idsToChooseFrom = includeRim ? _sectorIdToCellGridCoordinatesLookup.Keys : _coreSectorIDs;
+        if (excludedIDs != null) {
+            idsToChooseFrom = idsToChooseFrom.Except(excludedIDs);
+        }
+        if (idsToChooseFrom.Any()) {
+            sectorID = RandomExtended.Choice(idsToChooseFrom);
+            return true;
+        }
+        sectorID = default(IntVector3);
+        return false;
+    }
+
+    public bool IsCoreSector(IntVector3 sectorID) {
+        D.Assert(_sectorIdToSectorLookup.Keys.Contains(sectorID));
+        return _coreSectorIDs.Contains(sectorID);
+    }
+
+    public bool IsRimSector(IntVector3 sectorID) {
+        return !IsCoreSector(sectorID);
+    }
+
+    /// <summary>
+    /// Gets the IDs of the neighbors to the sector indicated by centerSectorID including RimSectors.
+    /// The centerSectorID is not included.
+    /// <remarks>Provided as a convenience when you know you are in a Sector.
+    /// Use GetNeighboringSectorIDs(worldLocation) if you may be over a Cell without a Sector.</remarks>
+    /// </summary>
+    /// <param name="centerSectorID">The center SectorID.</param>
+    /// <param name="includeRim">if set to <c>true</c> [include rim].</param>
+    /// <returns></returns>
+    public IList<IntVector3> GetNeighboringSectorIDs(IntVector3 centerSectorID, bool includeRim = true) {
+        D.AssertNotDefault(centerSectorID);
+        var sectorIDs = includeRim ? _sectorIdToSectorLookup.Keys : _coreSectorIDs;
+        IList<IntVector3> neighbors = new List<IntVector3>();
+        int[] xValuePair = CalcSectorIDNeighborPair(centerSectorID.x);
+        int[] yValuePair = CalcSectorIDNeighborPair(centerSectorID.y);
+        int[] zValuePair = CalcSectorIDNeighborPair(centerSectorID.z);
+        foreach (var x in xValuePair) {
+            foreach (var y in yValuePair) {
+                foreach (var z in zValuePair) {
+                    IntVector3 sectorID = new IntVector3(x, y, z);
+                    if (sectorIDs.Contains(sectorID)) {
+                        neighbors.Add(sectorID);
+                    }
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    private int[] CalcSectorIDNeighborPair(int centerIdAxisValue) {
+        int[] neighborValuePair = new int[2];
+        // no 0 value in my sectorIDs
+        neighborValuePair[0] = centerIdAxisValue - 1 == 0 ? centerIdAxisValue - 2 : centerIdAxisValue - 1;
+        neighborValuePair[1] = centerIdAxisValue + 1 == 0 ? centerIdAxisValue + 2 : centerIdAxisValue + 1;
+        return neighborValuePair;
+    }
+
+    /// <summary>
+    /// Gets the neighboring sectorIDs within the Universe that surrounds the ASector containing worldLocation.
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <param name="includeRim">if set to <c>true</c> [include rim].</param>
+    /// <returns></returns>
+    public IEnumerable<IntVector3> GetNeighboringSectorIDs(Vector3 worldLocation, bool includeRim = true) {
+        GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
+        Vector3 gridCellCoordinates = _grid.WorldToGrid(worldLocation);
+        IList<IntVector3> neighbors = new List<IntVector3>();
+        float[] xValuePair = CalcGridCellNeighborPair(gridCellCoordinates.x);
+        float[] yValuePair = CalcGridCellNeighborPair(gridCellCoordinates.y);
+        float[] zValuePair = CalcGridCellNeighborPair(gridCellCoordinates.z);
+        foreach (var x in xValuePair) {
+            foreach (var y in yValuePair) {
+                foreach (var z in zValuePair) {
+                    Vector3 neighborGridCoordinates = new Vector3(x, y, z);
+                    IntVector3 neighborSectorID;
+                    if (_cellGridCoordinatesToSectorIdLookup.TryGetValue(neighborGridCoordinates, out neighborSectorID)) {
+                        if (!includeRim && IsRimSector(neighborSectorID)) {
+                            continue;
+                        }
+                        neighbors.Add(neighborSectorID);
+                    }
+                }
+            }
+        }
+        D.AssertNotEqual(Constants.Zero, neighbors.Count);
+        return neighbors;
+    }
+
+    private float[] CalcGridCellNeighborPair(float gridCellAxisValue) {
+        float[] neighborValuePair = new float[2];
+        neighborValuePair[0] = gridCellAxisValue - 1F;
+        neighborValuePair[1] = gridCellAxisValue + 1F;
+        return neighborValuePair;
+    }
+
+    /// <summary>
+    /// Gets the neighboring sectors to the sector at centerID including RimSectors.
+    /// The sector at centerID is not included.
+    /// </summary>
+    /// <param name="centerID">The centerID.</param>
+    /// <param name="includeRim">if set to <c>true</c> [include rim].</param>
+    /// <returns></returns>
+    public IEnumerable<ISector_Ltd> GetNeighboringSectors(IntVector3 centerID, bool includeRim = true) {
+        IList<ISector_Ltd> neighborSectors = new List<ISector_Ltd>();
+        foreach (var sectorID in GetNeighboringSectorIDs(centerID, includeRim)) {
+            neighborSectors.Add(GetSector(sectorID));
+        }
+        return neighborSectors;
+    }
+
+    /// <summary>
+    /// Gets the distance in sectors between the center of the sectors located at these two sectorIDs.
+    /// Example: the distance between (1, 1, 1) and (1, 1, 2) is 1.0. The distance between 
+    /// (1, 1, 1) and (1, 2, 2) is 1.414, and the distance between (-1, 1, 1) and (1, 1, 1) is 1.0
+    /// as sectorIDs have no 0 value.
+    /// </summary>
+    /// <param name="firstSectorID">The first.</param>
+    /// <param name="secondSectorID">The second.</param>
+    /// <returns></returns>
+    public float GetDistanceInSectors(IntVector3 firstSectorID, IntVector3 secondSectorID) {
+        D.AssertNotDefault(firstSectorID);
+        D.AssertNotDefault(secondSectorID);
+        Vector3 firstCellGridCoordinates = GetCellGridCoordinatesFor(firstSectorID);
+        Vector3 secondCellGridCoordindates = GetCellGridCoordinatesFor(secondSectorID);
+        return Vector3.Distance(firstCellGridCoordinates, secondCellGridCoordindates);
+    }
+
+    /// <summary>
+    /// Returns a SectorID that can be used as a Home Sector for a player based on playerSeparation
+    /// </summary>
+    /// <param name="playerSeparation">The player separation.</param>
+    /// <param name="existingHomeSectorIDs">The existing SectorIDs being used by other players for their Home.</param>
+    /// <param name="excludedSectorIDs">The excluded SectorIDs.</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public IntVector3 GetHomeSectorID(PlayerSeparation playerSeparation, IEnumerable<IntVector3> existingHomeSectorIDs,
+        IEnumerable<IntVector3> excludedSectorIDs) {
+        // the term ..GridCells refers to the Vector3 center of cell in the grid coordinate system, aka (0.5, 1.5, -0.5)
+        int uSectorRadius = _gameMgr.GameSettings.UniverseSize.RadiusInSectors();
+        float minOriginToGridCellDistance;
+        float maxOriginToGridCellDistance;
+        switch (playerSeparation) {
+            case PlayerSeparation.Close:
+                minOriginToGridCellDistance = Constants.ZeroF;
+                maxOriginToGridCellDistance = uSectorRadius / Constants.OneThird;
+                break;
+            case PlayerSeparation.Normal:
+                minOriginToGridCellDistance = uSectorRadius / Constants.OneThird;
+                maxOriginToGridCellDistance = uSectorRadius / Constants.TwoThirds;
+                break;
+            case PlayerSeparation.Distant:
+                minOriginToGridCellDistance = uSectorRadius * Constants.TwoThirds;
+                maxOriginToGridCellDistance = uSectorRadius;
+                break;
+            case PlayerSeparation.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(playerSeparation));
+        }
+        float minOriginToGridCellDistanceSqrd = minOriginToGridCellDistance * minOriginToGridCellDistance;
+        float maxOriginToGridCellDistanceSqrd = maxOriginToGridCellDistance * maxOriginToGridCellDistance;
+
+        var allCandidateSectorIDs = _coreSectorIDs.Except(existingHomeSectorIDs).Except(excludedSectorIDs);
+        var allCandidateGridCells = _sectorIdToCellGridCoordinatesLookup.Where(kvp => allCandidateSectorIDs.Contains(kvp.Key))
+            .Select(kvp => kvp.Value);
+
+        IList<Vector3> candidateGridCells = new List<Vector3>();
+        foreach (var gridCell in allCandidateGridCells) {
+            float originToGridCellDistanceSqrd = Vector3.SqrMagnitude(gridCell - GameConstants.UniverseOrigin);
+            if (Utility.IsInRange(originToGridCellDistanceSqrd, minOriginToGridCellDistanceSqrd, maxOriginToGridCellDistanceSqrd)) {
+                candidateGridCells.Add(gridCell);
+            }
+        }
+        D.Assert(candidateGridCells.Any());
+
+        var existingHomeGridCells = _sectorIdToCellGridCoordinatesLookup.Where(kvp => existingHomeSectorIDs.Contains(kvp.Key))
+            .Select(kvp => kvp.Value);
+
+        Vector3 chosenGridCell;
+        if (!existingHomeGridCells.Any()) {
+            // First SectorID choice: choose candidateGridCell that is furthest away from origin
+            chosenGridCell = candidateGridCells.MaxBy(cCell => Vector3.SqrMagnitude(cCell - GameConstants.UniverseOrigin));
+        }
+        else {
+            chosenGridCell = MyMath.ChooseFurthestFrom(candidateGridCells, existingHomeGridCells);
+        }
+
+        var chosenHomeSectorID = _cellGridCoordinatesToSectorIdLookup[chosenGridCell];
+        return chosenHomeSectorID;
+    }
+
+    /// <summary>
+    /// Gets the distance in sectors from the origin, aka the location of the UniverseCenter.
+    /// </summary>
+    /// <param name="sectorID">ID of the sector.</param>
+    /// <returns></returns>
+    public float GetDistanceInSectorsFromOrigin(IntVector3 sectorID) {
+        Vector3 cellGridCoordinates = GetCellGridCoordinatesFor(sectorID);
+        return Vector3.Distance(cellGridCoordinates, GameConstants.UniverseOrigin);
+    }
+
+    /// <summary>
+    /// Gets the half value (1.5, 2.5, 1.5) location (in the grid coordinate system)
+    /// associated with this sectorID. This will be the center of the cell in the
+    /// GridCoordinate system.
+    /// </summary>
+    /// <param name="sectorID">The sectorID.</param>
+    /// <returns></returns>
+    private Vector3 GetCellGridCoordinatesFor(IntVector3 sectorID) {
+        Vector3 cellGridCoordinates;
+        if (!_sectorIdToCellGridCoordinatesLookup.TryGetValue(sectorID, out cellGridCoordinates)) {
+            D.Error("{0}: No CellGridCoordinates recorded for SectorID {1}.", DebugName, sectorID.DebugName);
+        }
+        return cellGridCoordinates;
+    }
+
+    private Vector3 CalculateCellGridCoordinatesFrom(IntVector3 sectorID) {
+        int xID = sectorID.x, yID = sectorID.y, zID = sectorID.z;
+        D.AssertNotDefault(sectorID);
+        float x = xID > Constants.Zero ? xID - 1F : xID;
+        float y = yID > Constants.Zero ? yID - 1F : yID;
+        float z = zID > Constants.Zero ? zID - 1F : zID;
+        return new Vector3(x, y, z);
+    }
+
+    /// <summary>
+    /// Returns the corners of the cell in Grid Coordinate space whose center is at cellGridCoordinates.
+    /// </summary>
+    /// <param name="cellGridCoordinates">The cell grid coordinates, aka (0.5, 1.0, -2).</param>
+    /// <returns></returns>
+    private Vector3[] GetGridCellCorners(Vector3 cellGridCoordinates) {
+        Vector3[] gridCellCorners = new Vector3[8];
+        for (int i = 0; i < 8; i++) {
+            gridCellCorners[i] = cellGridCoordinates + GridCellCornerOffsets[i];
+        }
+        return gridCellCorners;
+    }
+
+    private Sector MakeSectorInstance(IntVector3 sectorID, Vector3 worldLocation) {
+        Sector sector = new Sector(worldLocation);
+        SectorData data = new SectorData(sector, sectorID) {
+            Name = SectorNameFormat.Inject(sectorID)
+            //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
+        };
+        sector.Data = data;
+        return sector;
+    }
+
+    private RimSector MakeRimSectorInstance(Vector3 positionPropValue, float radiusPropValue, IntVector3 sectorID) {
+        return new RimSector(positionPropValue, radiusPropValue, sectorID);
+    }
+
+    #region Debug
+
+    private float __universeRadiusSqrd;
+    private IList<int> __rimCellValidCornerCount;
+
+    private void __RecordRimCornerCount(int validCornerCount) {
+        //D.Log("{0}: Rim valid corners = {1}.", DebugName, validCornerCount);
+        Utility.ValidateForRange(validCornerCount, _rimCellVertexThreshold, 7);
+        __rimCellValidCornerCount = __rimCellValidCornerCount ?? new List<int>();
+        // no need to clear as SectorGrid will always be new with new game
+        __rimCellValidCornerCount.Add(validCornerCount);
+    }
+
+    private void __LogRimSectorCornerCount() {
+        for (int vertexCount = _rimCellVertexThreshold; vertexCount < 8; vertexCount++) {
+            int cellCount = __rimCellValidCornerCount.Where(cellValidCornerCount => cellValidCornerCount == vertexCount).Count();
+            D.Log("{0}: Number of RimSectors with {1} valid corners = {2}.", DebugName, vertexCount, cellCount);
+            // Small: 1:56, 2:48, 3:24, 4:96, 5:0, 6:24, 7:24, Total 272 Rim
+        }
+    }
+
+    /// <summary>
+    /// Returns a random sectorID including IDs for RimSectors.
+    /// <remarks>Debug to place fleets in RimSectors.</remarks>
+    /// </summary>
+    /// <param name="sectorID">The sector identifier.</param>
+    /// <param name="excludedIDs">The excluded IDs.</param>
+    /// <returns></returns>
+    public bool __TryGetRandomSectorID(out IntVector3 sectorID, IEnumerable<IntVector3> excludedIDs = null) {
+        IEnumerable<IntVector3> idsToChooseFrom = _sectorIdToSectorLookup.Keys;
+        if (excludedIDs != null) {
+            idsToChooseFrom = idsToChooseFrom.Except(excludedIDs);
+        }
+        if (idsToChooseFrom.Any()) {
+            sectorID = RandomExtended.Choice(idsToChooseFrom);
+            return true;
+        }
+        sectorID = default(IntVector3);
+        return false;
+    }
+
+    /// <summary>
+    /// Validates that no world sector corner is a duplicate
+    /// or almost duplicate of another. 
+    /// <remarks>Warning! 1300 corners takes 8+ secs.</remarks>
+    /// </summary>
+    private void __ValidateWorldSectorCorners() {
+        __RecordDurationStartTime();
+        // verify no duplicate corners
+        var worldCorners = _cellVertexWorldLocations;
+        int cornerCount = worldCorners.Count;
+        Vector3 iCorner, jCorner;
+        for (int i = 0; i < cornerCount; i++) {
+            iCorner = worldCorners[i];
+            for (int j = i; j < cornerCount; j++) {
+                if (i == j) { continue; }
+                jCorner = worldCorners[j];
+                if (Mathfx.Approx(iCorner, jCorner, 10F)) {
+                    D.Error("Duplicate Corners: {0} & {1}.", iCorner.ToPreciseString(), jCorner.ToPreciseString());
+                }
+            }
+        }
+        D.Log("{0} validated {1} sector corners.", DebugName, cornerCount);
+        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(DebugName));
+    }
+
+    #endregion
+
+    #region Obsolete Archive
+
+    /// <summary>
+    /// Gets the sectorIDs that surround centerSectorID that reside between minDistance and maxDistance sectors away
+    /// from centerSector.
+    /// <remarks>7.5.18 The returned SectorIDs do not distinguish between CoreSectors and RimSectors.</remarks>
+    /// </summary>
+    /// <param name="centerSectorID">The center SectorID.</param>
+    /// <param name="minDistance">The minimum distance in sectors from centerSectorID.</param>
+    /// <param name="maxDistance">The maximum distance in sectors from centerSectorID.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public IList<IntVector3> GetSurroundingSectorIDsBetween(IntVector3 centerSectorID, int minDistance, int maxDistance) {
+        D.AssertNotDefault(centerSectorID);
+        D.Assert(_sectorIdToSectorLookup.ContainsKey(centerSectorID));
+        Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
+        Utility.ValidateForRange(maxDistance, minDistance + 1, _gameMgr.GameSettings.UniverseSize.RadiusInSectors() * 2);
+
+        __RecordDurationStartTime();
+
+        int minDistanceSqrd = minDistance * minDistance;
+        int maxDistanceSqrd = maxDistance * maxDistance;
+
+        Vector3 centerGridCellCoordinates = _sectorIdToCellGridCoordinatesLookup[centerSectorID];
+
+        Vector3[] allCandidateGridCellCoordinates = _cellGridCoordinatesToSectorIdLookup.Keys.Except(centerGridCellCoordinates).ToArray();
+        int gridCellQty = allCandidateGridCellCoordinates.Length;
+        IList<IntVector3> resultingSectorIDs = new List<IntVector3>(gridCellQty);
+
+        for (int i = 0; i < gridCellQty; i++) {
+            Vector3 candidateGridCellCoordinates = allCandidateGridCellCoordinates[i];
+            Vector3 vectorFromCenterToCandidateGridCell = candidateGridCellCoordinates - centerGridCellCoordinates;
+            float vectorSqrMagnitude = vectorFromCenterToCandidateGridCell.sqrMagnitude;
+            if (Utility.IsInRange(vectorSqrMagnitude, minDistanceSqrd, maxDistanceSqrd)) {
+                IntVector3 candidateSectorID = _cellGridCoordinatesToSectorIdLookup[candidateGridCellCoordinates];
+                resultingSectorIDs.Add(candidateSectorID);
+            }
+        }
+
+        if ((Utility.SystemTime - __durationStartTime).TotalSeconds > 0.1F) {
+            __LogDuration("{0}.GetSurroundingSectorIdsBetween()".Inject(DebugName));
+        }
+        return resultingSectorIDs;
+    }
+
+    /// <summary>
+    /// Gets the nearest SectorID to the provided <c>worldLocation</c>.
+    /// <remarks>Expensive.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <returns></returns>
+    [Obsolete]
+    private IntVector3 GetNearestSectorIDTo(Vector3 worldLocation) {
+        Vector3 nearestCellToWorldLocation = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        Vector3 nearestUCell = default(Vector3);    // the nearest cell grid coordinates within the universe defined by universeRadius
+        float smallestSqrDistanceToUCell = float.MaxValue;
+
+        // all the cell grid coordinates located within the universe defined by universeRadius
+        var allUniverseCells = _cellGridCoordinatesToSectorIdLookup.Keys;
+        float sqrDistance;
+        foreach (var uCell in allUniverseCells) {
+            if ((sqrDistance = Vector3.SqrMagnitude(nearestCellToWorldLocation - uCell)) < smallestSqrDistanceToUCell) {
+                nearestUCell = uCell;
+                smallestSqrDistanceToUCell = sqrDistance;
+            }
+        }
+        D.Assert(nearestUCell != default(Vector3));
+        return _cellGridCoordinatesToSectorIdLookup[nearestUCell];
     }
 
     [Obsolete]
@@ -583,471 +1124,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         return isCellValidSector;
     }
 
-    /// <summary>
-    /// Calculates the sectorID from the provided cellGridCoordinates, aka the center of a cell in
-    /// the GridCoordinate system.
-    /// </summary>
-    /// <param name="cellGridCoordinates">The cell's coordinates in the GridCoordindate System.</param>
-    /// <returns></returns>
-    private IntVector3 CalculateSectorIDFromCellGridCoordindates(Vector3 cellGridCoordinates) {
-        // SectorIDs will contain no 0 value. The sectorID to the left of the origin is -1, to the right +1
-        float x = cellGridCoordinates.x, y = cellGridCoordinates.y, z = cellGridCoordinates.z;
-        int xID = x.ApproxEquals(Constants.ZeroF) ? 1 : (x > Constants.ZeroF ? Mathf.CeilToInt(x) : Mathf.FloorToInt(x));
-        int yID = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y) : Mathf.FloorToInt(y));
-        int zID = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z) : Mathf.FloorToInt(z));
-        var sectorID = new IntVector3(xID, yID, zID);
-        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorID = {2}.", DebugName, cellGridCoordinates, sectorID);
-        return sectorID;
-    }
-
-    private void AddCoreSector(IntVector3 sectorID, Vector3 worldLocation) {
-        Sector sector = MakeSectorInstance(sectorID, worldLocation);
-        _sectorIdToSectorLookup.Add(sectorID, sector);
-        _coreSectorIDs.Add(sectorID);
-        D.Assert(!__universeCellWorldLocations.Contains(worldLocation));
-        __universeCellWorldLocations.Add(worldLocation);
-    }
-
-    private void AddRimSector(Vector3 worldLocation, Vector3 positionPropValue, float radiusPropValue, IntVector3 sectorID) {
-        RimSector sector = MakeRimSectorInstance(positionPropValue, radiusPropValue, sectorID);
-        _sectorIdToSectorLookup.Add(sectorID, sector);
-        D.Assert(!__universeCellWorldLocations.Contains(worldLocation));
-        __universeCellWorldLocations.Add(worldLocation);
-    }
-
-    #endregion
-
-    /// <summary>
-    /// Returns the SectorID that contains the provided world location.
-    /// Throws an error if <c>worldLocation</c> is not within the universe or there is no Sector at that location.
-    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a ASector.
-    /// If this is not certain, use TryGetSectorIDContaining(worldLocation) instead.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <returns></returns>
-    public IntVector3 GetSectorIDContaining(Vector3 worldLocation) {
-        GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
-        IntVector3 sectorID;
-        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
-        bool isSectorIDPresent = _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
-        if (!isSectorIDPresent) {
-            D.Error("@{0} found cell {1} using _grid.NearestCell that is a RimCell without a Sector for WorldLocation {2}. " +
-                "Use TryGetSectorIDContaining instead.", DebugName, nearestCellGridCoordinates, worldLocation);
-        }
-        return sectorID;
-    }
-
-    /// <summary>
-    /// Gets the world space position of the sector indicated by the provided sectorID.
-    /// Throws an error if no sector is present at that sectorID.
-    /// </summary>
-    /// <param name="sectorID">ID of the sector.</param>
-    /// <returns></returns>
-    public Vector3 GetSectorPosition(IntVector3 sectorID) {
-        D.AssertNotDefault(sectorID);
-        Vector3 worldPosition;
-        bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
-        D.Assert(isSectorFound, sectorID.DebugName);
-        return worldPosition;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if a sectorID has been assigned containing this worldLocation, <c>false</c> otherwise.
-    /// <remarks>Locations inside the universe have assigned SectorIDs, while those outside do not.</remarks>
-    /// <remarks>5.22.17 This version allows the use of worldLocations outside the Universe.
-    /// Current known users that use locations outside the Universe are SectorExaminer and MainCameraControl.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <param name="sectorID">The resulting sectorID.</param>
-    /// <returns></returns>
-    public bool TryGetSectorIDContaining(Vector3 worldLocation, out IntVector3 sectorID) {
-        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
-        return _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
-    }
-
-    /// <summary>
-    /// Gets the sector associated with this sectorID. 
-    /// </summary>
-    /// <param name="sectorID">The sectorID.</param>
-    /// <returns></returns>
-    public ASector GetSector(IntVector3 sectorID) {
-        D.AssertNotDefault(sectorID);
-        ASector sector;
-        if (!_sectorIdToSectorLookup.TryGetValue(sectorID, out sector)) {
-            D.Error("{0}: No Sector at {1}.", DebugName, sectorID.DebugName);
-        }
-        return sector;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if a sector has been assigned containing this worldLocation, <c>false</c> otherwise.
-    /// <remarks>Throws an error if worldLocation is outside the Universe.</remarks>
-    /// <remarks>Not all locations inside the universe are in Sectors as some locations are inside RimCells.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <param name="sector">The sector.</param>
-    /// <returns></returns>
-    public bool TryGetSectorContaining(Vector3 worldLocation, out ASector sector) {
-        GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
-        IntVector3 sectorID;
-        if (TryGetSectorIDContaining(worldLocation, out sectorID)) {
-            sector = GetSector(sectorID);
-            return true;
-        }
-        sector = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Gets the nearest SectorID to the provided <c>worldLocation</c>.
-    /// <remarks>Expensive.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <returns></returns>
-    [Obsolete]
-    private IntVector3 GetNearestSectorIDTo(Vector3 worldLocation) {
-        Vector3 nearestCellToWorldLocation = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
-        Vector3 nearestUCell = default(Vector3);    // the nearest cell grid coordinates within the universe defined by universeRadius
-        float smallestSqrDistanceToUCell = float.MaxValue;
-
-        // all the cell grid coordinates located within the universe defined by universeRadius
-        var allUniverseCells = _cellGridCoordinatesToSectorIdLookup.Keys;
-        float sqrDistance;
-        foreach (var uCell in allUniverseCells) {
-            if ((sqrDistance = Vector3.SqrMagnitude(nearestCellToWorldLocation - uCell)) < smallestSqrDistanceToUCell) {
-                nearestUCell = uCell;
-                smallestSqrDistanceToUCell = sqrDistance;
-            }
-        }
-        D.Assert(nearestUCell != default(Vector3));
-        return _cellGridCoordinatesToSectorIdLookup[nearestUCell];
-    }
-
-    /// <summary>
-    /// Gets the sector containing the provided worldLocation.
-    /// Throws an error if <c>worldLocation</c> is not within the universe or not within a Sector.
-    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a Sector.
-    /// If this is not certain, use TryGetSectorContaining(worldLocation) instead.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <returns></returns>
-    public ASector GetSectorContaining(Vector3 worldLocation) {
-        var sectorID = GetSectorIDContaining(worldLocation);
-        return GetSector(sectorID);
-    }
-
-    public bool TryGetRandomCoreSectorID(out IntVector3 sectorID, IEnumerable<IntVector3> excludedIDs = null) {
-        IEnumerable<IntVector3> idsToChooseFrom = _coreSectorIDs;
-        if (excludedIDs != null) {
-            idsToChooseFrom = idsToChooseFrom.Except(excludedIDs);
-        }
-        if (idsToChooseFrom.Any()) {
-            sectorID = RandomExtended.Choice(idsToChooseFrom);
-            return true;
-        }
-        sectorID = default(IntVector3);
-        return false;
-
-    }
-
-    public IList<IntVector3> GetSurroundingSectorIDsBetween(IntVector3 centerID, int minDistance, int maxDistance) {
-        D.AssertNotDefault(centerID);
-        D.Assert(_sectorIdToSectorLookup.ContainsKey(centerID));
-        Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
-        Utility.ValidateForRange(maxDistance, minDistance + 1, _gameMgr.GameSettings.UniverseSize.RadiusInSectors() * 2);
-
-        __RecordDurationStartTime();
-
-        int minDistanceSqrd = minDistance * minDistance;
-        int maxDistanceSqrd = maxDistance * maxDistance;
-
-        Vector3 centerCell = _sectorIdToCellGridCoordinatesLookup[centerID];
-
-        Vector3[] allCandidateGridCells = _cellGridCoordinatesToSectorIdLookup.Keys.Except(centerCell).ToArray();
-        int gridCellQty = allCandidateGridCells.Length;
-        IList<IntVector3> resultingSectorIDs = new List<IntVector3>(gridCellQty);
-
-        for (int i = 0; i < gridCellQty; i++) {
-            Vector3 candidateCell = allCandidateGridCells[i];
-            Vector3 vectorFromCenterToCandidateCell = candidateCell - centerCell;
-            float vectorSqrMagnitude = vectorFromCenterToCandidateCell.sqrMagnitude;
-            if (vectorSqrMagnitude >= minDistanceSqrd && vectorSqrMagnitude <= maxDistanceSqrd) {
-                IntVector3 candidateSectorID = _cellGridCoordinatesToSectorIdLookup[candidateCell];
-                resultingSectorIDs.Add(candidateSectorID);
-            }
-        }
-
-        if ((Utility.SystemTime - __durationStartTime).TotalSeconds > 0.1F) {
-            __LogDuration("{0}.GetSurroundingSectorIdsBetween()".Inject(DebugName));
-        }
-        return resultingSectorIDs;
-    }
-
-    /// <summary>
-    /// Gets the IDs of the neighbors to the sector indicated by centerSectorID including RimSectors.
-    /// The centerSectorID is not included.
-    /// <remarks>Provided as a convenience when you know you are in a Sector.
-    /// Use GetNeighboringSectorIDs(worldLocation) if you may be over a Cell without a Sector.</remarks>
-    /// </summary>
-    /// <param name="centerSectorID">The center SectorID.</param>
-    /// <returns></returns>
-    public IList<IntVector3> GetNeighboringSectorIDs(IntVector3 centerSectorID) {
-        D.AssertNotDefault(centerSectorID);
-        IList<IntVector3> neighbors = new List<IntVector3>();
-        int[] xValuePair = CalcSectorIDNeighborPair(centerSectorID.x);
-        int[] yValuePair = CalcSectorIDNeighborPair(centerSectorID.y);
-        int[] zValuePair = CalcSectorIDNeighborPair(centerSectorID.z);
-        foreach (var x in xValuePair) {
-            foreach (var y in yValuePair) {
-                foreach (var z in zValuePair) {
-                    IntVector3 sectorID = new IntVector3(x, y, z);
-                    if (_sectorIdToSectorLookup.ContainsKey(sectorID)) {
-                        neighbors.Add(sectorID);
-                    }
-                }
-            }
-        }
-        return neighbors;
-    }
-
-    public IList<IntVector3> GetNeighboringCoreSectorIDs(IntVector3 centerSectorID) {
-        D.AssertNotDefault(centerSectorID);
-        IList<IntVector3> neighbors = new List<IntVector3>();
-        int[] xValuePair = CalcSectorIDNeighborPair(centerSectorID.x);
-        int[] yValuePair = CalcSectorIDNeighborPair(centerSectorID.y);
-        int[] zValuePair = CalcSectorIDNeighborPair(centerSectorID.z);
-        foreach (var x in xValuePair) {
-            foreach (var y in yValuePair) {
-                foreach (var z in zValuePair) {
-                    IntVector3 sectorID = new IntVector3(x, y, z);
-                    if (_coreSectorIDs.Contains(sectorID)) {
-                        neighbors.Add(sectorID);
-                    }
-                }
-            }
-        }
-        return neighbors;
-    }
-
-    private int[] CalcSectorIDNeighborPair(int centerIdAxisValue) {
-        int[] neighborValuePair = new int[2];
-        // no 0 value in my sectorIDs
-        neighborValuePair[0] = centerIdAxisValue - 1 == 0 ? centerIdAxisValue - 2 : centerIdAxisValue - 1;
-        neighborValuePair[1] = centerIdAxisValue + 1 == 0 ? centerIdAxisValue + 2 : centerIdAxisValue + 1;
-        return neighborValuePair;
-    }
-
-    /// <summary>
-    /// Gets the IDs of the Sectors neighboring the provided worldLocation.
-    /// The SectorID of the Sector, if any, containing worldLocation is not included.
-    /// Use GetNeighboringSectorIDs(centerSectorID) if you know you are in a Sector.</remarks>
-    /// </summary>
-    /// <param name="worldLocation">The world location.</param>
-    /// <returns></returns>
-    public IEnumerable<IntVector3> GetNeighboringSectorIDs(Vector3 worldLocation) {
-        GameUtility.__ValidateLocationContainedInUniverse(worldLocation, __universeRadiusSqrd);
-        Vector3 gridCellCoordinates = _grid.WorldToGrid(worldLocation);
-        IList<IntVector3> neighbors = new List<IntVector3>();
-        float[] xValuePair = CalcGridCellNeighborPair(gridCellCoordinates.x);
-        float[] yValuePair = CalcGridCellNeighborPair(gridCellCoordinates.y);
-        float[] zValuePair = CalcGridCellNeighborPair(gridCellCoordinates.z);
-        foreach (var x in xValuePair) {
-            foreach (var y in yValuePair) {
-                foreach (var z in zValuePair) {
-                    Vector3 neighborGridCoordinates = new Vector3(x, y, z);
-                    IntVector3 neighborSectorID;
-                    if (_cellGridCoordinatesToSectorIdLookup.TryGetValue(neighborGridCoordinates, out neighborSectorID)) {
-                        neighbors.Add(neighborSectorID);
-                    }
-                }
-            }
-        }
-        D.AssertNotEqual(Constants.Zero, neighbors.Count);
-        return neighbors;
-    }
-
-    private float[] CalcGridCellNeighborPair(float gridCellAxisValue) {
-        float[] neighborValuePair = new float[2];
-        neighborValuePair[0] = gridCellAxisValue - 1F;
-        neighborValuePair[1] = gridCellAxisValue + 1F;
-        return neighborValuePair;
-    }
-
-    /// <summary>
-    /// Gets the neighboring sectors to the sector at centerID including RimSectors.
-    /// The sector at centerID is not included.
-    /// </summary>
-    /// <param name="centerID">The centerID.</param>
-    /// <returns></returns>
-    public IEnumerable<ISector_Ltd> GetNeighboringSectors(IntVector3 centerID) {
-        IList<ISector_Ltd> neighborSectors = new List<ISector_Ltd>();
-        foreach (var sectorID in GetNeighboringSectorIDs(centerID)) {
-            neighborSectors.Add(GetSector(sectorID));
-        }
-        return neighborSectors;
-    }
-
-    public IEnumerable<ISector_Ltd> GetNeighboringCoreSectors(IntVector3 centerID) {
-        IList<ISector_Ltd> neighborSectors = new List<ISector_Ltd>();
-        foreach (var sectorID in GetNeighboringCoreSectorIDs(centerID)) {
-            neighborSectors.Add(GetSector(sectorID));
-        }
-        return neighborSectors;
-    }
-
-    /// <summary>
-    /// Gets the distance in sectors between the center of the sectors located at these two sectorIDs.
-    /// Example: the distance between (1, 1, 1) and (1, 1, 2) is 1.0. The distance between 
-    /// (1, 1, 1) and (1, 2, 2) is 1.414, and the distance between (-1, 1, 1) and (1, 1, 1) is 1.0
-    /// as sectorIDs have no 0 value.
-    /// </summary>
-    /// <param name="firstSectorID">The first.</param>
-    /// <param name="secondSectorID">The second.</param>
-    /// <returns></returns>
-    public float GetDistanceInSectors(IntVector3 firstSectorID, IntVector3 secondSectorID) {
-        D.AssertNotDefault(firstSectorID);
-        D.AssertNotDefault(secondSectorID);
-        Vector3 firstCellGridCoordinates = GetCellGridCoordinatesFor(firstSectorID);
-        Vector3 secondCellGridCoordindates = GetCellGridCoordinatesFor(secondSectorID);
-        return Vector3.Distance(firstCellGridCoordinates, secondCellGridCoordindates);
-    }
-
-    /// <summary>
-    /// Gets the distance in sectors from the origin, aka the location of the UniverseCenter.
-    /// </summary>
-    /// <param name="sectorID">ID of the sector.</param>
-    /// <returns></returns>
-    public float GetDistanceInSectorsFromOrigin(IntVector3 sectorID) {
-        Vector3 cellGridCoordinates = GetCellGridCoordinatesFor(sectorID);
-        return Vector3.Distance(cellGridCoordinates, GameConstants.UniverseOrigin);
-    }
-
-    /// <summary>
-    /// Gets the half value (1.5, 2.5, 1.5) location (in the grid coordinate system)
-    /// associated with this sectorID. This will be the center of the cell in the
-    /// GridCoordinate system.
-    /// </summary>
-    /// <param name="sectorID">The sectorID.</param>
-    /// <returns></returns>
-    private Vector3 GetCellGridCoordinatesFor(IntVector3 sectorID) {
-        Vector3 cellGridCoordinates;
-        if (!_sectorIdToCellGridCoordinatesLookup.TryGetValue(sectorID, out cellGridCoordinates)) {
-            D.Warn("{0} could not find CellGridCoordinates for SectorID {1}??? Fixing.", DebugName, sectorID.DebugName);
-            cellGridCoordinates = CalculateCellGridCoordinatesFrom(sectorID);
-            _sectorIdToCellGridCoordinatesLookup.Add(sectorID, cellGridCoordinates);
-            _cellGridCoordinatesToSectorIdLookup.Add(cellGridCoordinates, sectorID);
-        }
-        return cellGridCoordinates;
-    }
-
-    private Vector3 CalculateCellGridCoordinatesFrom(IntVector3 sectorID) {
-        int xID = sectorID.x, yID = sectorID.y, zID = sectorID.z;
-        D.AssertNotDefault(sectorID);
-        float x = xID > Constants.Zero ? xID - 1F : xID;
-        float y = yID > Constants.Zero ? yID - 1F : yID;
-        float z = zID > Constants.Zero ? zID - 1F : zID;
-        return new Vector3(x, y, z);
-    }
-
-    /// <summary>
-    /// Returns the corners of the cell in Grid Coordinate space whose center is at cellGridCoordinates.
-    /// </summary>
-    /// <param name="cellGridCoordinates">The cell grid coordinates, aka (0.5, 1.0, -2).</param>
-    /// <returns></returns>
-    private Vector3[] GetGridCellCorners(Vector3 cellGridCoordinates) {
-        Vector3[] gridCellCorners = new Vector3[8];
-        for (int i = 0; i < 8; i++) {
-            gridCellCorners[i] = cellGridCoordinates + GridCellCornerOffsets[i];
-        }
-        return gridCellCorners;
-    }
-
-    private Sector MakeSectorInstance(IntVector3 sectorID, Vector3 worldLocation) {
-        Sector sector = new Sector(worldLocation);
-        SectorData data = new SectorData(sector, sectorID) {
-            Name = SectorNameFormat.Inject(sectorID)
-            //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
-        };
-        sector.Data = data;
-        return sector;
-    }
-
-    private RimSector MakeRimSectorInstance(Vector3 positionPropValue, float radiusPropValue, IntVector3 sectorID) {
-        return new RimSector(positionPropValue, radiusPropValue, sectorID);
-    }
-
-    #region Debug
-
-    private float __universeRadiusSqrd;
-
-    private IList<int> __rimCellValidCornerCount;
-
-    private void __RecordRimCornerCount(int validCornerCount) {
-        //D.Log("{0}: Rim valid corners = {1}.", DebugName, validCornerCount);
-        Utility.ValidateForRange(validCornerCount, 3, 7);
-        __rimCellValidCornerCount = __rimCellValidCornerCount ?? new List<int>();
-        // no need to clear as SectorGrid will always be new with new game
-        __rimCellValidCornerCount.Add(validCornerCount);
-    }
-
-    private void __LogRimSectorCornerCount() {
-        for (int vertexCount = 3; vertexCount < 8; vertexCount++) {
-            int cellCount = __rimCellValidCornerCount.Where(cellValidCornerCount => cellValidCornerCount == vertexCount).Count();
-            D.Log("{0}: Number of RimSectors with {1} valid corners = {2}.", DebugName, vertexCount, cellCount);
-            // Small: 1:56, 2:48, 3:24, 4:96, 5:0, 6:24, 7:24, Total 272 Rim
-        }
-    }
-
-    /// <summary>
-    /// Returns a random sectorID including IDs for RimSectors.
-    /// <remarks>Debug to place fleets in RimSectors.</remarks>
-    /// </summary>
-    /// <param name="sectorID">The sector identifier.</param>
-    /// <param name="excludedIDs">The excluded IDs.</param>
-    /// <returns></returns>
-    public bool __TryGetRandomSectorID(out IntVector3 sectorID, IEnumerable<IntVector3> excludedIDs = null) {
-        IEnumerable<IntVector3> idsToChooseFrom = _sectorIdToSectorLookup.Keys;
-        if (excludedIDs != null) {
-            idsToChooseFrom = idsToChooseFrom.Except(excludedIDs);
-        }
-        if (idsToChooseFrom.Any()) {
-            sectorID = RandomExtended.Choice(idsToChooseFrom);
-            return true;
-        }
-        sectorID = default(IntVector3);
-        return false;
-    }
-
-    /// <summary>
-    /// Validates that no world sector corner is a duplicate
-    /// or almost duplicate of another. 
-    /// <remarks>Warning! 1300 corners takes 8+ secs.</remarks>
-    /// </summary>
-    private void __ValidateWorldSectorCorners() {
-        __RecordDurationStartTime();
-        // verify no duplicate corners
-        var worldCorners = _cellVertexWorldLocations;
-        int cornerCount = worldCorners.Count;
-        Vector3 iCorner, jCorner;
-        for (int i = 0; i < cornerCount; i++) {
-            iCorner = worldCorners[i];
-            for (int j = i; j < cornerCount; j++) {
-                if (i == j) { continue; }
-                jCorner = worldCorners[j];
-                if (Mathfx.Approx(iCorner, jCorner, 10F)) {
-                    D.Error("Duplicate Corners: {0} & {1}.", iCorner.ToPreciseString(), jCorner.ToPreciseString());
-                }
-            }
-        }
-        D.Log("{0} validated {1} sector corners.", DebugName, cornerCount);
-        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(DebugName));
-    }
-
-    #endregion
-
-    #region Obsolete Archive
-
-
     #endregion
 
     protected override void Cleanup() {
@@ -1092,10 +1168,27 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     public enum UniverseCellCategory {
         None,
 
+        /// <summary>
+        /// A cell that is completely inside the universe.
+        /// </summary>
         Core,
+        /// <summary>
+        /// A cell that is mostly inside the universe.
+        /// </summary>
         Rim,
+        /// <summary>
+        /// A cell that was a candidate to become a RimSector but failed to 
+        /// find a Position and Radius property that would allow it to operate as one.
+        /// </summary>
         FailedRim,
+        /// <summary>
+        /// A cell mostly outside the universe whose portion inside is not
+        /// deemed sufficient to attempt to make it a RimSector.
+        /// </summary>
         Dross,
+        /// <summary>
+        /// A cell completely outside the universe.
+        /// </summary>
         Out
     }
 

@@ -38,7 +38,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
         base.AssignValueToLocationGuiElement();
         var report = Report as AUnitCmdReport;
         _locationGuiElement.SectorID = report.SectorID;
-        _locationGuiElement.Position = report.Position;
+        _locationGuiElement.Location = report.Position;
     }
 
     protected sealed override void AssignValueToHeroGuiElement() {

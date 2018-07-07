@@ -32,6 +32,14 @@ namespace Pathfinding {
     [JsonOptIn]
     public class MyNGPathfindingGraph : NavGraph, IUpdatableGraph {
 
+        /// <summary>
+        /// The multiplier to apply to the item radius value used when determining the
+        /// radius of the inscribed sphere used to generate the item's surrounding waypoints.
+        /// </summary>
+        private const float UniverseCenterRadiusMultiplierForWaypointInscribedSphere = 2.5F;
+
+
+
         public string DebugName { get { return GetType().Name; } }
 
         /** Max distance for a connection to be valid.
@@ -115,7 +123,8 @@ namespace Pathfinding {
         }
 
         public override NNInfoInternal GetNearestForce(Vector3 position, NNConstraint constraint) {
-            if (nodes == null) return new NNInfoInternal();
+            if (nodes == null)
+                return new NNInfoInternal();
 
             if (optimizeForSparseGraph) {
                 return new NNInfoInternal(_lookupTree.GetNearest((Int3)position, constraint));
@@ -247,6 +256,8 @@ namespace Pathfinding {
             var walkableSystemWaypoints = GenerateWalkableInteriorSystemWaypoints();
             AddNodes(walkableSystemWaypoints, Topography.System.AStarTagValue()/*, ref nextNodeIndex*/);    // SystemTagMask
 
+            AddNodesFromInitialStarbases();
+
             if (optimizeForSparseGraph) {
                 yield return new Progress(0.2F, "Building node lookup");
                 RebuildNodeLookup();
@@ -259,10 +270,10 @@ namespace Pathfinding {
 
         private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
 #pragma warning disable 0219
-            System.DateTime startTime = Utility.SystemTime;
+            System.DateTime localStartTime = Utility.SystemTime;
+            System.DateTime walkableOpenSpaceWaypointsStartTime = localStartTime;
 #pragma warning restore 0219
             GameManager gameMgr = GameManager.Instance;
-            List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>();
 
             // Generate System approach waypoints surrounding systems, deriving maxNodeDistance
             List<Vector3> systemApproachWaypoints = new List<Vector3>();
@@ -294,7 +305,7 @@ namespace Pathfinding {
                 maxNodeDistance = 282.6F;
             }
             //D.Log("Added {0} SystemApproachWaypoints. Icosahedron EdgeLength = {1:0.#}, MaxAllowedNodeDistance = {2:0.#}.",
-            //    systemApproachWaypoints.Count, distanceBetweenSystemApproachWaypoints, maxNodeDistance);
+            //systemApproachWaypoints.Count, distanceBetweenSystemApproachWaypoints, maxNodeDistance);
 
             _nodeSeparationDistance = Mathf.Floor(maxNodeDistance) - 7F;       // HACK 275F
             float proposedMaxDistance = _nodeSeparationDistance + 5F;                 // HACK 280F
@@ -303,312 +314,140 @@ namespace Pathfinding {
                 maxDistance = proposedMaxDistance;
             }
 
-            //D.Log("{0} took {1:0.##} secs generating {2} SystemApproachWaypoints for {3} Systems.",
-            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count());
-            startTime = Utility.SystemTime;
+            //D.Log("{0} took {1:0.##} secs generating {2} SystemApproachWaypoints for {3} Systems.", DebugName,
+            //(Utility.SystemTime - localStartTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count());
+            localStartTime = Utility.SystemTime;
 
-            // populate all space with UniverseCell navigation waypoints separated by nodeSeparationDistance
-            IEnumerable<Vector3> allUniverseCellWorldLocations = SectorGrid.Instance.UniverseCellWorldLocations;
-            int allUniverseCellCount = allUniverseCellWorldLocations.Count();
-            D.Log("{0}: UniverseCells to scan = {1}.", DebugName, allUniverseCellCount);
-            List<Vector3> universeCellNavWaypoints = new List<Vector3>(allUniverseCellCount * 37);
-            float distanceToCellCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
-            float distanceToCellFaces = TempGameValues.SectorSideLength / 2F;   // 600
+            // populate all space containing ASectors with navigation waypoints separated by nodeSeparationDistance
+            IEnumerable<Vector3> allSectorCenterLocations = SectorGrid.Instance.SectorCenters; ////UniverseCellWorldLocations;
+            int sectorQty = allSectorCenterLocations.Count();
+            D.Log("{0}: ASectors to scan = {1}.", DebugName, sectorQty);
+            List<Vector3> allSectorWaypoints = new List<Vector3>(sectorQty * 37);
+            float sectorCenterToCornerDistance = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
+            float sectorCenterToFaceDistance = TempGameValues.SectorSideLength / 2F;   // 600
             int outsideOfUniverseWaypointCount = Constants.Zero;
 
             float universeRadius = gameMgr.GameSettings.UniverseSize.Radius();
             float universeRadiusSqrd = universeRadius * universeRadius;
-            //D.Log("{0}: Distance to UniverseCell Corners = {1:0.#}.", DebugName, distanceToCellCorners);
-            IList<Vector3> aUniverseCellWaypoints = new List<Vector3>(37);
-            List<Vector3> aUniverseCellCornerWaypoints = new List<Vector3>(24);
-            List<Vector3> aUniverseCellFaceWaypoints = new List<Vector3>(12);
-            foreach (var cellLoc in allUniverseCellWorldLocations) {
-                aUniverseCellWaypoints.Clear();
-                if (GameUtility.IsLocationContainedInUniverse(cellLoc, universeRadiusSqrd)) {
-                    aUniverseCellWaypoints.Add(cellLoc);
+            //D.Log("{0}: Distance from SectorCenter to a Corner = {1:0.#}.", DebugName, sectorCenterToCornerDistance);
+            IList<Vector3> aSectorWaypoints = new List<Vector3>(37);
+            List<Vector3> aSectorCornerWaypoints = new List<Vector3>(24);
+            List<Vector3> aSectorFaceWaypoints = new List<Vector3>(12);
+            foreach (var sectorCenterLoc in allSectorCenterLocations) {
+                aSectorWaypoints.Clear();
+                if (GameUtility.IsLocationContainedInUniverse(sectorCenterLoc, universeRadiusSqrd)) {
+                    aSectorWaypoints.Add(sectorCenterLoc);
                 }
                 else {
                     outsideOfUniverseWaypointCount++;
                 }
 
-                float distanceFromCenter = _nodeSeparationDistance;
-                while (distanceFromCenter < distanceToCellCorners) {    // 275, 550, 825
-                    // propagate cell navWaypoints outward along direction to corners    // 24 per cell
-                    aUniverseCellCornerWaypoints.Clear();
-                    aUniverseCellCornerWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(cellLoc, distanceFromCenter));
-                    foreach (var aCornerWaypoint in aUniverseCellCornerWaypoints) {
+                float currentDistanceFromSectorCenter = _nodeSeparationDistance;
+                while (currentDistanceFromSectorCenter < sectorCenterToCornerDistance) {    // 275, 550, 825
+                    // propagate sector navWaypoints outward from center to corners    // up to 24 per cell
+                    aSectorCornerWaypoints.Clear();
+                    aSectorCornerWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(sectorCenterLoc, currentDistanceFromSectorCenter));
+                    foreach (var aCornerWaypoint in aSectorCornerWaypoints) {
                         if (GameUtility.IsLocationContainedInUniverse(aCornerWaypoint, universeRadiusSqrd)) {
-                            aUniverseCellWaypoints.Add(aCornerWaypoint);
+                            aSectorWaypoints.Add(aCornerWaypoint);
                         }
                         else {
                             outsideOfUniverseWaypointCount++;
                         }
                     }
 
-                    // propagate cell navWaypoints outward along direction to face centers    // 12 per cell 
-                    if (distanceFromCenter < distanceToCellFaces) {   // 275, 550 
-                        aUniverseCellFaceWaypoints.Clear();
-                        aUniverseCellFaceWaypoints.AddRange(MyMath.CalcCubeFaceCenters(cellLoc, distanceFromCenter));
-                        foreach (var aCellFaceWaypoint in aUniverseCellFaceWaypoints) {
+                    // propagate sector navWaypoints outward from center to face centers    // up to 12 per cell 
+                    if (currentDistanceFromSectorCenter < sectorCenterToFaceDistance) {   // 275, 550 
+                        aSectorFaceWaypoints.Clear();
+                        aSectorFaceWaypoints.AddRange(MyMath.CalcCubeFaceCenters(sectorCenterLoc, currentDistanceFromSectorCenter));
+                        foreach (var aCellFaceWaypoint in aSectorFaceWaypoints) {
                             if (GameUtility.IsLocationContainedInUniverse(aCellFaceWaypoint, universeRadiusSqrd)) {
-                                aUniverseCellWaypoints.Add(aCellFaceWaypoint);
+                                aSectorWaypoints.Add(aCellFaceWaypoint);
                             }
                             else {
                                 outsideOfUniverseWaypointCount++;
                             }
                         }
                     }
-                    distanceFromCenter += _nodeSeparationDistance;
+                    currentDistanceFromSectorCenter += _nodeSeparationDistance;
                 }
-                universeCellNavWaypoints.AddRange(aUniverseCellWaypoints);
+                allSectorWaypoints.AddRange(aSectorWaypoints);
             }
-#pragma warning disable 0219
-            int cellNavWaypointCount = universeCellNavWaypoints.Count;
-#pragma warning restore 0219
-            D.Log("{0} took {1:0.##} secs generating {2} CellNavWaypoints for {3} cells.",
-                DebugName, (Utility.SystemTime - startTime).TotalSeconds, cellNavWaypointCount, allUniverseCellCount);
-            startTime = Utility.SystemTime;
-
+            //D.Log("{0} took {1:0.##} secs generating {2} SectorWaypoints for {3} sectors.", DebugName, (Utility.SystemTime - localStartTime).TotalSeconds,
+            //allSectorWaypoints.Count, sectorQty);
+            localStartTime = Utility.SystemTime;
             //D.Log("{0} filtered out {1} waypoints which were outside of the universe.", DebugName, outsideOfUniverseWaypointCount);
 
-            //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
             // With Call Radius of 600 and NodeSeparationDistance of 275, expect cell to cell waypoint distance ~ 90
-
-            // Remove CellNavWaypoints present inside sphere containing SystemApproachWaypoints    
-            // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
-            float systemApproachWaypointsCircumscribedSphereRadius = distanceBetweenSystemApproachWaypoints * 0.9510565163F;
-            float radiusOfSphereContainingSystemApproachWaypoints = systemApproachWaypointsCircumscribedSphereRadius + 1F;
+            //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
 
             if (hasSystems) {
+                // Remove SectorWaypoints present inside sphere containing SystemApproachWaypoints    
+                // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
+                float systemApproachWaypointsCircumscribedSphereRadius = distanceBetweenSystemApproachWaypoints * 0.9510565163F;
+                float radiusOfSphereContainingSystemApproachWaypoints = systemApproachWaypointsCircumscribedSphereRadius + 1F;
+                int sectorWaypointsRemovedBySystemCount = 0;
+                List<Vector3> sectorWaypointsRetainedOutsideSystems = new List<Vector3>(allSectorWaypoints.Count);
                 foreach (var system in allSystems) {
-                    List<Vector3> cellNavWaypointsOutsideOfSystemApproachWaypoints = new List<Vector3>(cellNavWaypointCount);
-                    foreach (var cellNavWaypoint in universeCellNavWaypoints) {
-                        if (!MyMath.IsPointOnOrInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, cellNavWaypoint)) {
-                            cellNavWaypointsOutsideOfSystemApproachWaypoints.Add(cellNavWaypoint);
+                    foreach (var sectorWaypoint in allSectorWaypoints) {
+                        if (!MyMath.IsPointOnOrInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, sectorWaypoint)) {
+                            sectorWaypointsRetainedOutsideSystems.Add(sectorWaypoint);
+                        }
+                        else {
+                            sectorWaypointsRemovedBySystemCount++;
                         }
                     }
-                    universeCellNavWaypoints = cellNavWaypointsOutsideOfSystemApproachWaypoints;
                 }
+                allSectorWaypoints = sectorWaypointsRetainedOutsideSystems;
+                //D.Log("{0} took {1:0.##} secs removing {2} Sector Waypoints from {3} Systems.", DebugName, (Utility.SystemTime - localStartTime).TotalSeconds,
+                //sectorWaypointsRemovedBySystemCount, allSystems.Count());
             }
-            D.Log("{0} took {1:0.##} secs removing {2} UniverseCell NavWaypoints from {3} Systems.",
-                DebugName, (Utility.SystemTime - startTime).TotalSeconds, cellNavWaypointCount - universeCellNavWaypoints.Count, allSystems.Count());
-            startTime = Utility.SystemTime;
-            cellNavWaypointCount = universeCellNavWaypoints.Count;
+            localStartTime = Utility.SystemTime;
 
-            float uCenterWaypointsInscribedSphereRadius = Constants.ZeroF;
             IEnumerable<Vector3> universeCenterWaypoints = Enumerable.Empty<Vector3>();
-            var universeCenter = UniverseFolder.Instance.GetComponentInChildren<UniverseCenterItem>();
+            var universeCenter = GameManager.Instance.UniverseCreator.UniverseCenter;
             if (universeCenter != null) {
                 float distanceBetweenUCenterWaypoints;
-                uCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterItem.RadiusMultiplierForWaypointInscribedSphere;
-                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
+                float universeCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterRadiusMultiplierForWaypointInscribedSphere;
+                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(universeCenter.Position, universeCenterWaypointsInscribedSphereRadius,
+                    out distanceBetweenUCenterWaypoints);
                 if (distanceBetweenUCenterWaypoints > _nodeSeparationDistance) {
                     D.Error("{0} should be <= {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
                 }
-                D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", DebugName, distanceBetweenUCenterWaypoints);
+                //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", DebugName, distanceBetweenUCenterWaypoints);
 
-                // remove CellNavWaypoints present inside sphere containing UniverseCenterWaypoints
+                // remove SectorWaypoints present inside sphere containing UniverseCenterWaypoints
                 float uCenterWaypointsCircumscribedSphereRadius = distanceBetweenUCenterWaypoints * 0.9510565163F;
                 float radiusOfSphereContainingUCenterWaypoints = uCenterWaypointsCircumscribedSphereRadius + 1F;
-                List<Vector3> cellNavWaypointsOutsideOfUniverseCenterApproachWaypoints = new List<Vector3>(universeCellNavWaypoints.Count);
-                foreach (var cellNavWaypoint in universeCellNavWaypoints) {
-                    if (!MyMath.IsPointOnOrInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, cellNavWaypoint)) {
-                        cellNavWaypointsOutsideOfUniverseCenterApproachWaypoints.Add(cellNavWaypoint);
+                List<Vector3> sectorWaypointsRetainedOutsideOfUniverseCenter = new List<Vector3>(allSectorWaypoints.Count);
+                int sectorWaypointsRemovedByUniverseCenter = 0;
+                foreach (var sectorWaypoint in allSectorWaypoints) {
+                    if (!MyMath.IsPointOnOrInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, sectorWaypoint)) {
+                        sectorWaypointsRetainedOutsideOfUniverseCenter.Add(sectorWaypoint);
+                    }
+                    else {
+                        sectorWaypointsRemovedByUniverseCenter++;
                     }
                 }
-                universeCellNavWaypoints = cellNavWaypointsOutsideOfUniverseCenterApproachWaypoints;
+                allSectorWaypoints = sectorWaypointsRetainedOutsideOfUniverseCenter;
+                //D.Log("{0} took {1:0.##} secs removing {2} SectorWaypoints around UniverseCenter.", DebugName,
+                //(Utility.SystemTime - localStartTime).TotalSeconds, sectorWaypointsRemovedByUniverseCenter);
             }
 
-            D.Log("{0} took {1:0.##} secs removing {2} CellNavWaypoints around UniverseCenter.",
-                DebugName, (Utility.SystemTime - startTime).TotalSeconds, cellNavWaypointCount - universeCellNavWaypoints.Count);
-            startTime = Utility.SystemTime;
-
-            walkableOpenSpaceWaypoints.AddRange(universeCellNavWaypoints);
-            ////__ValidateWaypointsInsideUniverse(universeCellNavWaypoints, universeRadiusSqrd);
-
+            List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>(allSectorWaypoints);
             walkableOpenSpaceWaypoints.AddRange(universeCenterWaypoints);
-            ////__ValidateWaypointsInsideUniverse(universeCenterWaypoints, universeRadiusSqrd);
             walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
-            ////__ValidateWaypointsInsideUniverse(systemApproachWaypoints, universeRadiusSqrd);
 
-            D.Log("{0} took {1:0.##} secs generating {2} WalkableOpenSpaceWaypoints for {3} UniverseCells.",
-               DebugName, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allUniverseCellCount);
+            D.Log("{0} took {1:0.##} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.", DebugName,
+                (Utility.SystemTime - walkableOpenSpaceWaypointsStartTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, sectorQty);
 
-            startTime = Utility.SystemTime;
+            localStartTime = Utility.SystemTime;
             __ValidateWaypointsInsideUniverse(walkableOpenSpaceWaypoints, universeRadiusSqrd);
-            D.Log("{0} took {1:0.##} secs validating {2} WalkableOpenSpaceWaypoints are inside the Universe.",
-                DebugName, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count);
+            //D.Log("{0} took {1:0.##} secs validating {2} WalkableOpenSpaceWaypoints are inside the Universe.", DebugName,
+            //(Utility.SystemTime - localStartTime).TotalSeconds, walkableOpenSpaceWaypoints.Count);
 
             return walkableOpenSpaceWaypoints;
         }
-        ////        private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
-        ////#pragma warning disable 0219
-        ////            System.DateTime startTime = Utility.SystemTime;
-        ////#pragma warning restore 0219
-        ////            GameManager gameMgr = GameManager.Instance;
-        ////            List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>();
-
-        ////            // Generate System approach waypoints surrounding systems, deriving maxNodeDistance
-        ////            List<Vector3> systemApproachWaypoints = new List<Vector3>();
-        ////            float distanceBetweenSystemApproachWaypoints = Constants.ZeroF;         // 174.7
-        ////            float maxNodeDistance = Constants.ZeroF;    // 282.6 // max distance allowed before waypoints are skipped
-        ////            var allSystems = gameMgr.GameKnowledge.Systems;
-        ////            bool hasSystems = allSystems.Any();
-        ////            if (hasSystems) {
-        ////                foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whose edges are all the same length
-        ////                    float previousDistanceBetweenWaypoints = distanceBetweenSystemApproachWaypoints;
-        ////                    float previousMaxNodeDistance = maxNodeDistance;
-        ////                    float systemApproachWaypointsInscribedSphereRadius = system.Radius * SystemItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
-        ////                    var aSystemApproachWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(system.Position,
-        ////                        systemApproachWaypointsInscribedSphereRadius, out distanceBetweenSystemApproachWaypoints, out maxNodeDistance);
-        ////                    if (previousMaxNodeDistance > Constants.ZeroF) {
-        ////                        if (!Mathfx.Approx(previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints, .1F)) {
-        ////                            D.Error("{0} != {1}.", previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints);
-        ////                        }
-        ////                        if (!Mathfx.Approx(previousMaxNodeDistance, maxNodeDistance, .1F)) {
-        ////                            D.Error("{0} != {1}.", previousMaxNodeDistance, maxNodeDistance);
-        ////                        }
-        ////                    }
-        ////                    systemApproachWaypoints.AddRange(aSystemApproachWaypoints);
-        ////                }
-        ////            }
-        ////            else {
-        ////                // HACK for no systems
-        ////                distanceBetweenSystemApproachWaypoints = 174.7F;
-        ////                maxNodeDistance = 282.6F;
-        ////            }
-        ////            //D.Log("Added {0} SystemApproachWaypoints. Icosahedron EdgeLength = {1:0.#}, MaxAllowedNodeDistance = {2:0.#}.",
-        ////            //    systemApproachWaypoints.Count, distanceBetweenSystemApproachWaypoints, maxNodeDistance);
-
-        ////            _nodeSeparationDistance = Mathf.Floor(maxNodeDistance) - 7F;       // HACK 275F
-        ////            float proposedMaxDistance = _nodeSeparationDistance + 5F;                 // HACK 280F
-        ////            if (!Mathfx.Approx(maxDistance, proposedMaxDistance, 1F)) {
-        ////                D.Warn("{0}: Changing MaxNodeSeparationDistance, aka 'MaxDistance' from {1:0.#} to {2:0.#}.", GetType().Name, maxDistance, proposedMaxDistance);
-        ////                maxDistance = proposedMaxDistance;
-        ////            }
-
-        ////            //D.Log("{0} took {1:0.##} secs generating {2} SystemApproachWaypoints for {3} Systems.",
-        ////            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count());
-        ////            //startTime = Utility.SystemTime;
-
-        ////            // populate all space with sector navigation waypoints separated by nodeSeparationDistance
-        ////            IList<Sector> allSectors = SectorGrid.Instance.AllSectors.ToList();
-        ////            //D.Log("{0}: Sectors to scan = {1}.", DebugName, allSectors.Count);
-        ////            List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 37);
-        ////            float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
-        ////            float distanceToFaces = TempGameValues.SectorSideLength / 2F;   // 600
-        ////            int outsideOfUniverseWaypointCount = Constants.Zero;
-
-        ////            float universeRadiusSqrd = gameMgr.GameSettings.UniverseSize.Radius() * gameMgr.GameSettings.UniverseSize.Radius();
-        ////            //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", DebugName, distanceToCorners);
-        ////            IList<Vector3> aSectorWaypoints = new List<Vector3>(37);
-        ////            List<Vector3> aSectorCornerWaypoints = new List<Vector3>(24);
-        ////            List<Vector3> aSectorFaceWaypoints = new List<Vector3>(12);
-        ////            foreach (var sector in allSectors) {
-        ////                aSectorWaypoints.Clear();
-        ////                aSectorWaypoints.Add(sector.Position);
-
-        ////                float distanceFromCenter = _nodeSeparationDistance;
-        ////                while (distanceFromCenter < distanceToCorners) {    // 275, 550, 825
-        ////                    // propagate sector navWaypoints outward along direction to corners    // 24 per sector
-        ////                    aSectorCornerWaypoints.Clear();
-        ////                    aSectorCornerWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(sector.Position, distanceFromCenter));
-        ////                    foreach (var aCornerWaypoint in aSectorCornerWaypoints) {
-        ////                        if (GameUtility.IsLocationContainedInUniverse(aCornerWaypoint, universeRadiusSqrd)) {
-        ////                            aSectorWaypoints.Add(aCornerWaypoint);
-        ////                        }
-        ////                        else {
-        ////                            outsideOfUniverseWaypointCount++;
-        ////                        }
-        ////                    }
-
-        ////                    // propagate sector navWaypoints outward along direction to face centers    // 12 per sector 
-        ////                    if (distanceFromCenter < distanceToFaces) {   // 275, 550 
-        ////                        aSectorFaceWaypoints.Clear();
-        ////                        aSectorFaceWaypoints.AddRange(MyMath.CalcCubeFaceCentersAroundPoint(sector.Position, distanceFromCenter));
-        ////                        foreach (var aFaceWaypoint in aSectorFaceWaypoints) {
-        ////                            if (GameUtility.IsLocationContainedInUniverse(aFaceWaypoint, universeRadiusSqrd)) {
-        ////                                aSectorWaypoints.Add(aFaceWaypoint);
-        ////                            }
-        ////                            else {
-        ////                                outsideOfUniverseWaypointCount++;
-        ////                            }
-        ////                        }
-        ////                    }
-        ////                    distanceFromCenter += _nodeSeparationDistance;
-        ////                }
-        ////                sectorNavWaypoints.AddRange(aSectorWaypoints);
-        ////            }
-        ////#pragma warning disable 0219
-        ////            int sectorNavWaypointCount = sectorNavWaypoints.Count;
-        ////#pragma warning restore 0219
-        ////            //D.Log("{0} took {1:0.##} secs generating {2} SectorNavWaypoints for {3} sectors.",
-        ////            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
-        ////            //startTime = Utility.SystemTime;
-
-        ////            //D.Log("{0} filtered out {1} waypoints which were outside of the universe.", DebugName, outsideOfUniverseWaypointCount);
-
-        ////            //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
-        ////            // With Sector Radius of 600 and NodeSeparationDistance of 275, expect sector to sector waypoint distance ~ 90
-
-        ////            // Remove SectorNavWaypoints present inside sphere containing SystemApproachWaypoints    
-        ////            // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
-        ////            float systemApproachWaypointsCircumscribedSphereRadius = distanceBetweenSystemApproachWaypoints * 0.9510565163F;
-        ////            float radiusOfSphereContainingSystemApproachWaypoints = systemApproachWaypointsCircumscribedSphereRadius + 1F;
-
-        ////            if (hasSystems) {
-        ////                foreach (var system in allSystems) {
-        ////                    List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
-        ////                    foreach (var sectorNavWaypoint in sectorNavWaypoints) {
-        ////                        if (!MyMath.IsPointOnOrInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, sectorNavWaypoint)) {
-        ////                            tmpSectorNavWaypoints.Add(sectorNavWaypoint);
-        ////                        }
-        ////                    }
-        ////                    sectorNavWaypoints = tmpSectorNavWaypoints;
-        ////                }
-        ////            }
-        ////            //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints from {3} Systems.",
-        ////            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count());
-        ////            //startTime = Utility.SystemTime;
-        ////            sectorNavWaypointCount = sectorNavWaypoints.Count;
-
-        ////            float uCenterWaypointsInscribedSphereRadius = Constants.ZeroF;
-        ////            IEnumerable<Vector3> universeCenterWaypoints = Enumerable.Empty<Vector3>();
-        ////            var universeCenter = UniverseFolder.Instance.GetComponentInChildren<UniverseCenterItem>();
-        ////            if (universeCenter != null) {
-        ////                float distanceBetweenUCenterWaypoints;
-        ////                uCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterItem.RadiusMultiplierForWaypointInscribedSphere;
-        ////                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
-        ////                if (distanceBetweenUCenterWaypoints > _nodeSeparationDistance) {
-        ////                    D.Error("{0} should be <= {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
-        ////                }
-        ////                //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", DebugName, distanceBetweenUCenterWaypoints);
-
-        ////                // remove SectorNavigationWaypoints present inside sphere containing UniverseCenterWaypoints
-        ////                float uCenterWaypointsCircumscribedSphereRadius = distanceBetweenUCenterWaypoints * 0.9510565163F;
-        ////                float radiusOfSphereContainingUCenterWaypoints = uCenterWaypointsCircumscribedSphereRadius + 1F;
-        ////                List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
-        ////                foreach (var sectorNavWaypoint in sectorNavWaypoints) {
-        ////                    if (!MyMath.IsPointOnOrInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, sectorNavWaypoint)) {
-        ////                        tmpSectorNavWaypoints.Add(sectorNavWaypoint);
-        ////                    }
-        ////                }
-        ////                sectorNavWaypoints = tmpSectorNavWaypoints;
-        ////            }
-
-        ////            //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints around UniverseCenter.",
-        ////            //DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
-        ////            //startTime = Utility.SystemTime;
-
-        ////            walkableOpenSpaceWaypoints.AddRange(sectorNavWaypoints);
-        ////            walkableOpenSpaceWaypoints.AddRange(universeCenterWaypoints);
-        ////            walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
-
-        ////            //D.Log("{0} took {1:0.##} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.",
-        ////            //   DebugName, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
-
-        ////            return walkableOpenSpaceWaypoints;
-        ////        }
 
         private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
             D.AssertNotDefault(_nodeSeparationDistance);   // method should follow GenerateWalkableOpenSpaceWaypoints
@@ -625,14 +464,27 @@ namespace Pathfinding {
             float universeRadius = GameManager.Instance.GameSettings.UniverseSize.Radius();
             float universeRadiusSqrd = universeRadius * universeRadius;
             __ValidateWaypointsInsideUniverse(allSystemInteriorWaypoints, universeRadiusSqrd);
-            D.Log("{0} took {1:0.##} secs validating {2} WalkableInteriorSystemWaypoints are inside the Universe.",
-                DebugName, (Utility.SystemTime - startTime).TotalSeconds, allSystemInteriorWaypoints.Count);
+            //D.Log("{0} took {1:0.##} secs validating {2} WalkableInteriorSystemWaypoints are inside the Universe.",
+            //DebugName, (Utility.SystemTime - startTime).TotalSeconds, allSystemInteriorWaypoints.Count);
 
             return allSystemInteriorWaypoints;
         }
 
+        private void AddNodesFromInitialStarbases() {
+            var initialStarbases = StarbasesFolder.Instance.GetComponentsInChildren<StarbaseCmdItem>();
+            if (initialStarbases.Any()) {
+                foreach (var starbase in initialStarbases) {
+                    HandleStarbaseAdded(starbase);
+                }
+            }
+            else {
+                D.Warn("{0}: No initial starbases?", DebugName);
+            }
+        }
+
         private void MakeConnections() {
-            if (maxDistance >= 0) {
+            if (maxDistance >= 0F) {
+                var startTime = Utility.SystemTime;
                 // To avoid too many allocations, these lists are reused for each node
                 var connections = new List<Connection>();
                 var candidateConnections = new List<GraphNode>();
@@ -693,7 +545,8 @@ namespace Pathfinding {
                     }
                     node.connections = connections.ToArray();
                 }
-                //D.Log("{0}: ValidConnections = {1}, Invalid = {2}.", DebugName, connectionCount, invalidConnectionCount);
+                //D.Log("{0} took {1:0.##} secs connecting {2} waypoints. Invalid connections = {3}.", DebugName,
+                //(Utility.SystemTime - startTime).TotalSeconds, connectionCount, invalidConnectionCount);
             }
         }
 
@@ -798,13 +651,11 @@ namespace Pathfinding {
         }
 
         /// <summary>
-        /// Updates the graph during runtime adding approach waypoints for this starbase,
+        /// Updates the graph during runtime adding approach waypoints for this starbase
         /// and makes any waypoints located inside the new approach waypoints unwalkable, then reconnects.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        /// <param name="sectorID">The sector ID where the Starbase is located. Note that the StarbaseCmdItem
-        /// itself does not know its sectorID until FinalInitialize.</param>
-        public void AddToGraph(StarbaseCmdItem baseCmd, IntVector3 sectorID) {
+        public void AddToGraph(StarbaseCmdItem baseCmd) {
             //D.Log("{0}.AddToGraph({1}) called. Frame = {2}.", DebugName, baseCmd.DebugName, Time.frameCount);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). 
             // I've replaced UpdateGraphs(GUO) with WorkItems.
@@ -812,7 +663,7 @@ namespace Pathfinding {
             // ctxProcessor and forceCompletion are assigned by AstarPath internally 
             var handleStarbaseAddedWorkItem = new AstarWorkItem(update: (ctxProcessor, forceCompletion) => {
                 ctxProcessor.QueueFloodFill();
-                HandleStarbaseAdded(baseCmd, sectorID);
+                HandleStarbaseAdded(baseCmd);
                 // 7.24.17 Per Aron, no need to rebuild lookupTable as AddNode() adds the node to the table. Table does not care about walkable
                 return true;
             });
@@ -864,7 +715,7 @@ namespace Pathfinding {
         // NOTE: For now, no Add/Remove(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
         // surrounding them with waypoints makes no sense if I allow them to orbit
 
-        private void HandleStarbaseAdded(StarbaseCmdItem starbaseCmd, IntVector3 sectorID) {
+        private void HandleStarbaseAdded(StarbaseCmdItem starbaseCmd) {
             D.Assert(!_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
             D.Assert(!_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
 
@@ -897,26 +748,25 @@ namespace Pathfinding {
             IList<Vector3> approachWaypointsToRemove = new List<Vector3>(); // avoids modifying approachWaypoints while iterating
             approachWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(starbaseCmd.Position, _nodeSeparationDistance));
 
-            float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
+            float universeRadius = GameManager.Instance.GameSettings.UniverseSize.Radius();
+            float universeRadiusSqrd = universeRadius * universeRadius;
             foreach (var waypoint in approachWaypoints) {
                 if (!GameUtility.IsLocationContainedInUniverse(waypoint, universeRadiusSqrd)) {
-                    //D.Log("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
+                    D.Warn("{0} is excluding {1}'s proposed approach waypoint {2} that is outside the universe?", DebugName, starbaseCmd.DebugName,
+                        waypoint);
                     approachWaypointsToRemove.Add(waypoint);
                 }
             }
 
-            foreach (var waypoint in approachWaypointsToRemove) {
-                approachWaypoints.Remove(waypoint);
-            }
-            approachWaypointsToRemove.Clear();
-
             ISystem systemInSector;
-            bool doesSectorContainSystem = GameManager.Instance.GameKnowledge.TryGetSystem(sectorID, out systemInSector);
+            IntVector3 starbaseSectorID = starbaseCmd.SectorID;
+            bool doesSectorContainSystem = GameManager.Instance.GameKnowledge.TryGetSystem(starbaseSectorID, out systemInSector);
             if (doesSectorContainSystem) {
                 foreach (var waypoint in approachWaypoints) {
                     if (MyMath.IsPointOnOrInsideSphere(systemInSector.Position, systemInSector.Radius, waypoint)) {
                         // FIXME warn for now as I should preclude locating a Starbase close to a system
-                        D.Warn("{0} is excluding {1}'s proposed approach waypoint that is inside adjacent System {2}.", DebugName, starbaseCmd.DebugName, systemInSector.DebugName);
+                        D.Warn("{0} is excluding {1}'s proposed approach waypoint {2} that is inside adjacent System {3}.", DebugName,
+                            starbaseCmd.DebugName, waypoint, systemInSector.DebugName);
                         approachWaypointsToRemove.Add(waypoint);
                     }
                 }
@@ -1103,7 +953,8 @@ namespace Pathfinding {
                     List<Connection> conn = null;
 
                     for (int j = 0; j < nodeCount; j++) {
-                        if (j == i) continue;
+                        if (j == i)
+                            continue;
 
                         var otherNodePos = (Vector3)nodes[j].position;
                         // Check if this connection intersects the bounding box.

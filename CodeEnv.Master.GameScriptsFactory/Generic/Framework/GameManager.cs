@@ -1010,30 +1010,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void BuildingSystems_UponProgressState() {
         LogEvent();
-        CurrentState = GameState.GeneratingPathGraphs;
-    }
-
-    void BuildingSystems_ExitState() {
-        LogEvent();
-        D.AssertEqual(GameState.GeneratingPathGraphs, CurrentState);
-        __LogDuration();
-    }
-
-    #endregion
-
-    #region GeneratingPathGraphs
-
-    void GeneratingPathGraphs_EnterState() {
-        LogEvent();
-        __RecordDurationStartTime();
-    }
-
-    void GeneratingPathGraphs_UponProgressState() {
-        LogEvent();
         CurrentState = GameState.DesigningInitialUnits;
     }
 
-    void GeneratingPathGraphs_ExitState() {
+    void BuildingSystems_ExitState() {
         LogEvent();
         D.AssertEqual(GameState.DesigningInitialUnits, CurrentState);
         __LogDuration();
@@ -1074,10 +1054,30 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void BuildingAndDeployingInitialUnits_UponProgressState() {
         LogEvent();
-        CurrentState = GameState.PreparingToRun;
+        CurrentState = GameState.GeneratingPathGraphs;
     }
 
     void BuildingAndDeployingInitialUnits_ExitState() {
+        LogEvent();
+        D.AssertEqual(GameState.GeneratingPathGraphs, CurrentState);
+        __LogDuration();
+    }
+
+    #endregion
+
+    #region GeneratingPathGraphs
+
+    void GeneratingPathGraphs_EnterState() {
+        LogEvent();
+        __RecordDurationStartTime();
+    }
+
+    void GeneratingPathGraphs_UponProgressState() {
+        LogEvent();
+        CurrentState = GameState.PreparingToRun;
+    }
+
+    void GeneratingPathGraphs_ExitState() {
         LogEvent();
         D.AssertEqual(GameState.PreparingToRun, CurrentState);
         __LogDuration();

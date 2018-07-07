@@ -40,21 +40,21 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         }
     }
 
-    private bool _isPositionSet;
-    private Vector3? _position;
-    public Vector3? Position {
-        get { return _position; }
+    private bool _isLocationSet;
+    private Vector3? _location;
+    public Vector3? Location {
+        get { return _location; }
         set {
-            D.Assert(!_isPositionSet);  // only occurs once between Resets
-            _position = value;
-            PositionPropSetHandler();  // SetProperty() only calls handler when changed
+            D.Assert(!_isLocationSet);  // only occurs once between Resets
+            _location = value;
+            LocationPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    public override bool IsInitialized { get { return _isPositionSet && SectorID != default(IntVector3); } }
+    public override bool IsInitialized { get { return _isLocationSet && SectorID != default(IntVector3); } }
 
     private float? _closestBaseDistanceInSectors;
     private UILabel _label;
@@ -71,8 +71,8 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         }
     }
 
-    private void PositionPropSetHandler() {
-        _isPositionSet = true;
+    private void LocationPropSetHandler() {
+        _isLocationSet = true;
         if (IsInitialized) {
             PopulateMemberWidgetValues();
         }
@@ -82,18 +82,18 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        Vector3 position;
-        if (Position.HasValue) {
-            position = Position.Value;
+        Vector3 location;
+        if (Location.HasValue) {
+            location = Location.Value;
         }
         else {
-            position = SectorGrid.Instance.GetSectorPosition(SectorID);
+            location = SectorGrid.Instance.GetSectorWorldLocation(SectorID);
         }
 
         IUnitBaseCmd myClosestBase = null;
         string distanceText = Unknown;
         // can return false if there are no bases currently owned by the user
-        if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
+        if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(location, out myClosestBase)) {
             _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorID, myClosestBase.SectorID);
             distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
         }
@@ -104,7 +104,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     }
 
     public override void ResetForReuse() {
-        _isPositionSet = false;
+        _isLocationSet = false;
         _sectorID = default(IntVector3);
     }
 

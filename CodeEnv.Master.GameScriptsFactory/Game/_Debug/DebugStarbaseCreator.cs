@@ -146,8 +146,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
 
     protected override void HandleUnitPositioned() {
         base.HandleUnitPositioned();
-        PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
-        ////SectorGrid.Instance.GetSector(SectorID).RecordStarbaseStationAsOccupied(_command);
+        // 7.5.18 MyNGPathfindingGraph addition now handled by MyNGPathfindingGraph
         SectorGrid.Instance.GetSector(SectorID).Add(_command);
     }
 

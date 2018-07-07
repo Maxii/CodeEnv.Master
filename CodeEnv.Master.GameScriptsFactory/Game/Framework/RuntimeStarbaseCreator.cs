@@ -73,7 +73,7 @@ public class RuntimeStarbaseCreator : ARuntimeUnitCreator {
 
     protected override void HandleUnitPositioned() {
         base.HandleUnitPositioned();
-        PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
+        PathfindingManager.Instance.Graph.AddToGraph(_command);
         var sector = SectorGrid.Instance.GetSector(SectorID);
         sector.Add(_command);
     }

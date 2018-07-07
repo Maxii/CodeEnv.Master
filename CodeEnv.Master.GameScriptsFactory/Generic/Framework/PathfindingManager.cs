@@ -102,11 +102,8 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void GraphScansCompletedEventHandler(AstarPath astarPath) {
-        Graph = astarPath.graphs[0] as MyNGPathfindingGraph;  // as MyPathfindingGraph
-
-        ////Graph = astarPath.graphs[0] as MyPathfindingGraph;  // as MyAStarPointGraph
+        Graph = astarPath.graphs[0] as MyNGPathfindingGraph;
         //D.Log("{0} AstarPath.Scan has completed on Frame {1}.", DebugName, Time.frameCount);
-
         _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to GameStateChanged may not have been called yet. 
         // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.

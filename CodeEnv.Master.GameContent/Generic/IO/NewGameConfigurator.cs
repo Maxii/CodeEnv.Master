@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Singleton. Makes various new game configuration settings available via XML.
+    /// TODO Consolidate into/with GameEnumExtensions.
     /// </summary>
     public class NewGameConfigurator : AGenericSingleton<NewGameConfigurator> {
 
