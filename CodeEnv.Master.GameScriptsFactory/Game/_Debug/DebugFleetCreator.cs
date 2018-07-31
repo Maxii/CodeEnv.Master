@@ -209,7 +209,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     private void SetFtlDamagedState(ShipItem element) {
         if (element.IsFtlCapable) {
-            element.Data.IsFtlDamaged = _ftlStartsDamaged;
+            element.Data.__SetFtlEngineToStart(_ftlStartsDamaged);
         }
     }
 

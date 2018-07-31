@@ -26,6 +26,13 @@ public class FleetTableRowForm : ACommandTableRowForm {
 
     public override FormID FormID { get { return FormID.FleetTableRow; } }
 
+    protected override void AssignValueToLocationGuiElement() {
+        base.AssignValueToLocationGuiElement();
+        var report = Report as FleetCmdReport;
+        _locationGuiElement.SectorID = report.SectorID;
+        _locationGuiElement.Location = report.Position;
+    }
+
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
         var report = Report as FleetCmdReport;

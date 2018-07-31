@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FtlDampenerRangeMonitor.cs
-// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL dampening field.
+// File: FtlDamperRangeMonitor.cs
+// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL damping field.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,12 +24,12 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL dampening field. Notifies the
+/// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL damping field. Notifies the
 /// IManeuverable ships that are FTL capable that their FTL engines have been damped or undamped depending on whether entering 
 /// or exiting.
-/// <remarks>3.2.17 Currently there is no interaction with the FtlDampener equipment.</remarks>
+/// <remarks>3.2.17 Currently there is no interaction with the FtlDamper equipment.</remarks>
 /// </summary>
-public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, FtlDampener>, IFtlDampenerRangeMonitor {
+public class FtlDamperRangeMonitor : ADetectableRangeMonitor<IManeuverable, FtlDamper>, IFtlDamperRangeMonitor {
 
     private static LayerMask FtlCapableObjectLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
 
@@ -46,23 +46,23 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
 
     /// <summary>
     /// The IManeuverable targets that are being tracked as targets that either have their FTL already
-    /// dampened, or will shortly.
+    /// damped, or will shortly.
     /// </summary>
-    private HashSet<IManeuverable> _trackedDampenableTargets = new HashSet<IManeuverable>();
+    private HashSet<IManeuverable> _trackedDampableTargets = new HashSet<IManeuverable>();
 
     /// <summary>
-    /// The IManeuverable targets that were being tracked just prior to _trackedDampenableTargets being cleared.
+    /// The IManeuverable targets that were being tracked just prior to _trackedDampableTargets being cleared.
     /// Essentially memory used by ReviewKnowledgeOfAllDetectedObjects to record the
-    /// contents of _trackedDampenableTargets before it is cleared.
+    /// contents of _trackedDampableTargets before it is cleared.
     /// </summary>
-    private List<IManeuverable> _targetsPreviouslyTrackedAsDampenable;
+    private List<IManeuverable> _targetsPreviouslyTrackedAsDampable;
 
-    protected override void AssignMonitorTo(FtlDampener dampener) {
-        dampener.RangeMonitor = this;
+    protected override void AssignMonitorTo(FtlDamper damper) {
+        damper.RangeMonitor = this;
     }
 
-    protected override void RemoveMonitorFrom(FtlDampener dampener) {
-        dampener.RangeMonitor = null;
+    protected override void RemoveMonitorFrom(FtlDamper damper) {
+        damper.RangeMonitor = null;
     }
 
     protected override void HandleDetectedObjectAdded(IManeuverable newlyDetectedManeuverable) {
@@ -73,20 +73,20 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             Profiler.BeginSample("Event Subscription allocation", gameObject);
             newlyDetectedManeuverable.ownerChanged += DetectedItemOwnerChangedEventHandler;
             newlyDetectedManeuverable.deathOneShot += DetectedItemDeathEventHandler;
-            // 5.10.17 IMPROVE Will need InfoAccessChgEvent when toDampen criteria more complex than just our ship
+            // 5.10.17 IMPROVE Will need InfoAccessChgEvent when toDamp criteria more complex than just our ship
             Profiler.EndSample();
 
-            bool wasItemPreviouslyCategorizedAsDampenable = _trackedDampenableTargets.Contains(newlyDetectedManeuverable);
-            if (wasItemPreviouslyCategorizedAsDampenable) {
+            bool wasItemPreviouslyCategorizedAsDampable = _trackedDampableTargets.Contains(newlyDetectedManeuverable);
+            if (wasItemPreviouslyCategorizedAsDampable) {
                 // 5.11.17 If this occurs, the previous approach of always using wasItemPreviouslyCategorizedAsAttackableEnemy = false was wrong.
                 // If this never happens, I can safely always set it to false which is logical as adding an object should not be previously recorded
                 // as anything. The only question really was it needed during Reacquisition of targets.
-                D.Error("{0}.HandleDetectedObjectAdded({1}) found previously categorized as dampenableTarget.", DebugName, newlyDetectedManeuverable.DebugName);
+                D.Error("{0}.HandleDetectedObjectAdded({1}) found previously categorized as dampableTarget.", DebugName, newlyDetectedManeuverable.DebugName);
             }
 
             AssessKnowledgeOfItemAndAdjustRecord(newlyDetectedManeuverable);
 
-            HandleTargetDampening(newlyDetectedManeuverable, wasItemPreviouslyCategorizedAsDampenable);
+            HandleTargetDamping(newlyDetectedManeuverable, wasItemPreviouslyCategorizedAsDampable);
         }
     }
 
@@ -98,11 +98,11 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             lostManeuverable.deathOneShot -= DetectedItemDeathEventHandler;
             Profiler.EndSample();
 
-            bool wasItemPreviouslyCategorizedAsAttackableEnemy = _trackedDampenableTargets.Contains(lostManeuverable);
+            bool wasItemPreviouslyCategorizedAsAttackableEnemy = _trackedDampableTargets.Contains(lostManeuverable);
             RemoveRecord(lostManeuverable);
 
             // isOperational filter?
-            HandleTargetDampening(lostManeuverable, wasItemPreviouslyCategorizedAsAttackableEnemy);
+            HandleTargetDamping(lostManeuverable, wasItemPreviouslyCategorizedAsAttackableEnemy);
         }
     }
 
@@ -133,26 +133,26 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
 
     /// <summary>
     /// Called when a detected item's owner has changed.
-    /// <remarks>Determines whether to dampen the FTL engine of this item, given its new owner.</remarks>
+    /// <remarks>Determines whether to damp the FTL engine of this item, given its new owner.</remarks>
     /// </summary>
     private void HandleDetectedItemOwnerChanged(IManeuverable ownerChangedItem) {
         D.Assert(!ownerChangedItem.IsDead);
 
-        bool wasItemPreviouslyCategorizedAsDampenable = _trackedDampenableTargets.Contains(ownerChangedItem);
-        D.Log(ShowDebugLog, "{0}.HandleDetectedItemOwnerChanged({1}) called in Frame {2}. WasPreviouslyDampenable = {3}.",
-            DebugName, ownerChangedItem.DebugName, Time.frameCount, wasItemPreviouslyCategorizedAsDampenable);
+        bool wasItemPreviouslyCategorizedAsDampable = _trackedDampableTargets.Contains(ownerChangedItem);
+        D.Log(ShowDebugLog, "{0}.HandleDetectedItemOwnerChanged({1}) called in Frame {2}. WasPreviouslyDampable = {3}.",
+            DebugName, ownerChangedItem.DebugName, Time.frameCount, wasItemPreviouslyCategorizedAsDampable);
         AssessKnowledgeOfItemAndAdjustRecord(ownerChangedItem);
 
-        HandleTargetDampening(ownerChangedItem, wasItemPreviouslyCategorizedAsDampenable);
+        HandleTargetDamping(ownerChangedItem, wasItemPreviouslyCategorizedAsDampable);
     }
 
     /// <summary>
     /// Called when [parent owner changed].
-    /// <remarks>This IsOperational cycling results in loss of detection and therefore potential loss of dampened state 
-    /// and immediate (if any equipment is operational) re-acquisition and potential dampening of detectable items. 
+    /// <remarks>This IsOperational cycling results in loss of detection and therefore potential loss of damped state 
+    /// and immediate (if any equipment is operational) re-acquisition and potential damping of detectable items. 
     /// If no equipment is operational, the re-acquisition is deferred until a pieceOfEquipment becomes operational again. 
-    /// When the re-acquisition occurs, each newly detected item will be potentially dampened by this item.</remarks>
-    /// <remarks>The loss of and re-dampening all occur after the ParentItem(Cmd)'s Owner has changed to avoid
+    /// When the re-acquisition occurs, each newly detected item will be potentially damped by this item.</remarks>
+    /// <remarks>The loss of and re-damping all occur after the ParentItem(Cmd)'s Owner has changed to avoid
     /// the situation where this Cmd's Owner has not yet changed, yet its single Element already has, aka the Cmd/Element
     /// sync issue.</remarks>
     /// </summary>
@@ -164,7 +164,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     protected override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
         if (IsOperational) {
-            D.Log(ShowDebugLog, "{0} is now activated and operational, dampening surrounding FTL drives.", DebugName);
+            D.Log(ShowDebugLog, "{0} is now activated and operational, damping surrounding FTL drives.", DebugName);
         }
     }
 
@@ -175,18 +175,18 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     /// </summary>
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
         // record previous categorization state before clearing and re-categorizing 
-        _targetsPreviouslyTrackedAsDampenable = _targetsPreviouslyTrackedAsDampenable ?? new List<IManeuverable>();
-        _targetsPreviouslyTrackedAsDampenable.Clear();
-        _targetsPreviouslyTrackedAsDampenable.AddRange(_trackedDampenableTargets);
+        _targetsPreviouslyTrackedAsDampable = _targetsPreviouslyTrackedAsDampable ?? new List<IManeuverable>();
+        _targetsPreviouslyTrackedAsDampable.Clear();
+        _targetsPreviouslyTrackedAsDampable.AddRange(_trackedDampableTargets);
 
-        _trackedDampenableTargets.Clear();
+        _trackedDampableTargets.Clear();
 
         // 5.18.17 No need to use a copy of _objectsDetected as this AssessKnowledge does not modify _objectsDetected
         foreach (var objectDetected in _objectsDetected) {
             AssessKnowledgeOfItemAndAdjustRecord(objectDetected);
-            bool wasTargetPreviouslyTrackedAsDampenable = _targetsPreviouslyTrackedAsDampenable.Contains(objectDetected);
+            bool wasTargetPreviouslyTrackedAsDampable = _targetsPreviouslyTrackedAsDampable.Contains(objectDetected);
 
-            HandleTargetDampening(objectDetected, wasTargetPreviouslyTrackedAsDampenable);
+            HandleTargetDamping(objectDetected, wasTargetPreviouslyTrackedAsDampable);
         }
     }
 
@@ -197,16 +197,16 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             // Item owner known
             bool isOurItem = maneuverableItemOwner == Owner;
             if (!isOurItem) {
-                // belongs in bucket to dampen
-                _trackedDampenableTargets.Add(maneuverableItem);
+                // belongs in bucket to damp
+                _trackedDampableTargets.Add(maneuverableItem);
             }
             else {
-                _trackedDampenableTargets.Remove(maneuverableItem);
+                _trackedDampableTargets.Remove(maneuverableItem);
             }
         }
         else {
             // Item owner is unknown
-            bool isRemoved = _trackedDampenableTargets.Remove(maneuverableItem);
+            bool isRemoved = _trackedDampableTargets.Remove(maneuverableItem);
             if (isRemoved) {
                 // 5.6.18 Occurred so added distances and sensor detection info
                 D.Warn("{0} unexpectedly found {1} without access to owner. Removing. TargetDistance: {2:0.#}.",
@@ -229,7 +229,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     }
 
     private void RemoveRecord(IManeuverable lostDetectionItem) {
-        bool isRemovedFromDampenableTgts = _trackedDampenableTargets.Remove(lostDetectionItem);
+        bool isRemovedFromDampableTgts = _trackedDampableTargets.Remove(lostDetectionItem);
 
         if (IsApplicationQuiting) {
             // Many of the debug confirmations below will fail when quiting
@@ -248,33 +248,33 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             if (Vector3.SqrMagnitude(lostDetectionItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
                 D.Warn("{0}.RemoveRecord({1}) found target owner unaccessible. TargetDistance: {2:0.}, TargetIsDead: {3}, IsRemoved: {4}.",
                     DebugName, lostDetectionItem.DebugName, Vector3.Distance(transform.position, lostDetectionItem.Position),
-                    lostDetectionItem.IsDead, isRemovedFromDampenableTgts);
+                    lostDetectionItem.IsDead, isRemovedFromDampableTgts);
             }
         }
     }
 
-    private void HandleTargetDampening(IManeuverable target, bool wasTargetPreviouslyTrackedAsDampenable) {
-        if (wasTargetPreviouslyTrackedAsDampenable) {
-            if (!_trackedDampenableTargets.Contains(target)) {
-                // categorization changed from dampen-able to non-dampen-able
-                target.HandleFtlUndampenedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
+    private void HandleTargetDamping(IManeuverable target, bool wasTargetPreviouslyTrackedAsDampable) {
+        if (wasTargetPreviouslyTrackedAsDampable) {
+            if (!_trackedDampableTargets.Contains(target)) {
+                // categorization changed from damp-able to non-damp-able
+                target.HandleFtlUndampedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
             }
         }
         else {
-            if (_trackedDampenableTargets.Contains(target)) {
-                // categorization changed from non-dampen-able (or no categorization) to dampen-able
-                target.HandleFtlDampenedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
+            if (_trackedDampableTargets.Contains(target)) {
+                // categorization changed from non-damp-able (or no categorization) to damp-able
+                target.HandleFtlDampedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
             }
         }
     }
 
     protected override float RefreshRangeDistance() {
-        return RangeCategory.__GetBaselineFtlDampenerRange();
+        return RangeCategory.__GetBaselineFtlDamperRange();
     }
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
-    /// <remarks>Deactivates and removes the FtlDampener, preparing the monitor for the addition of a new FtlDampener.</remarks>
+    /// <remarks>Deactivates and removes the FtlDamper, preparing the monitor for the addition of a new FtlDamper.</remarks>
     /// </summary>
     public new void ResetForReuse() {
         base.ResetForReuse();
@@ -282,9 +282,9 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.AssertEqual(Constants.Zero, _trackedDampenableTargets.Count);
-        if (_targetsPreviouslyTrackedAsDampenable != null) {
-            _targetsPreviouslyTrackedAsDampenable.Clear();
+        D.AssertEqual(Constants.Zero, _trackedDampableTargets.Count);
+        if (_targetsPreviouslyTrackedAsDampable != null) {
+            _targetsPreviouslyTrackedAsDampable.Clear();
         }
     }
 

@@ -69,6 +69,8 @@ namespace CodeEnv.Master.GameContent {
                     // However, a 'defacto' rescind could theoretically take place if 1) one or more planetoid(s) was the source of the grant 
                     // of access, 2) all those planetoids were destroyed, and 3) the HasAccessToInfo approach below was used without 
                     // the memory of the dictionary. That is why the memory of the dictionary is used, to remedy that corner case.
+
+                    // 7.29.18 player has access to the system owner if player has access to any of its members. The inverse is not necessarily true
                     bool hasBasicAccessToOwner;
                     if (!_hasBasicAccessToOwnerLookup.TryGetValue(player, out hasBasicAccessToOwner)) {
                         hasBasicAccessToOwner = false;

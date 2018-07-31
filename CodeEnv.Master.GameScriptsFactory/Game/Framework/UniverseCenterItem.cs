@@ -384,7 +384,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer;
-        ;
     }
 
     #endregion

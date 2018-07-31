@@ -17,12 +17,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
     using System.Collections.Generic;
 
     /// <summary>
     /// limited InfoAccess Interface for easy access to MonoBehaviours that are AUnitBaseCmdItems.
     /// </summary>
     public interface IUnitBaseCmd_Ltd : IUnitCmd_Ltd {
+
+        IntVector3 SectorID { get; }
 
         /// <summary>
         /// A collection of assembly stations that are local to the item.

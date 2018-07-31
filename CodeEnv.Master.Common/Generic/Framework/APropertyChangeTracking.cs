@@ -50,16 +50,16 @@ namespace CodeEnv.Master.Common {
         /// <param name="onChanged">Optional local method to call when the property is changed.</param>
         /// <param name="onChanging">Optional local method to call before the property is changed. The proposed new value is provided as the parameter.</param>
         protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
-            ////Profiler.BeginSample("Debug SetProperty Checks");
+            //Profiler.BeginSample("Debug SetProperty Checks");
             __VerifyCallerIsProperty(propertyName);
             if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
                 if (!CheckForDestroyedMonobehaviourInterface(backingStore)) {
                     __TryWarn<T>(backingStore, value, propertyName);
-                    ////Profiler.EndSample();
+                    //Profiler.EndSample();
                     return;
                 }
             }
-            ////Profiler.EndSample();
+            //Profiler.EndSample();
             //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }

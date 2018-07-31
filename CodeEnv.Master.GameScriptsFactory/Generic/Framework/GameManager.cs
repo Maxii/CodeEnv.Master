@@ -262,9 +262,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void RefreshStaticReferences(bool isBeingInitialized = false) {
         // MonoBehaviour Singletons set their References field themselves when they are first called
 #pragma warning disable 0168
-        // HACK these two MonoBehaviour Singleton References fields get called immediately so make sure they are set
+        // HACK these three MonoBehaviour Singleton References fields get called immediately so make sure they are set
         var dummy1 = InputManager.Instance;
         var dummy2 = SFXManager.Instance;
+        //var dummy3 = DebugControls.Instance;  // 7.18.18 Initially needed then changed code so no longer needed
 #pragma warning restore 0168
 
         // Non-persistent (by definition) Generic Singletons need to be newly instantiated to refresh their References field
@@ -440,6 +441,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         IList<Player> allPlayers = new List<Player>(GameSettings.AIPlayers);
         allPlayers.Add(GameSettings.UserPlayer);
+        __ValidatePlayers(allPlayers);
         AllPlayers = allPlayers;
         UserPlayer = GameSettings.UserPlayer;
     }
@@ -1094,6 +1096,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         RecordGameStateProgressionReadiness(Instance, GameState.PreparingToRun, isReady: false);
         UniverseCreator.CompleteInitializationOfAllCelestialItems();
         MainCameraControl.Instance.PrepareForActivation(GameSettings);
+        GameKnowledge.__LogSectorsWithSystems();
         RecordGameStateProgressionReadiness(Instance, GameState.PreparingToRun, isReady: true);
     }
 
@@ -1246,6 +1249,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     private void DisposeOfGlobals() {
         _gameTime.Dispose();
+        _playerPrefsMgr.Dispose();
         GameInputHelper.Instance.Dispose();
 
         if (CurrentSceneID == SceneID.GameScene) {
@@ -1257,6 +1261,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             LeaderFactory.Instance.Dispose();
             SystemNameFactory.Instance.Dispose();
             FormationGenerator.Instance.Dispose();
+            UnitFactory.Instance.Dispose();
         }
     }
 
@@ -1309,8 +1314,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidatePlayers(IEnumerable<Player> allPlayers) {
+        D.Assert(allPlayers.All(player => player != TempGameValues.NoPlayer));
+    }
 
     protected override string __DurationLogIntroText { get { return "{0}.{1}".Inject(typeof(GameState).Name, LastState); } }
+
+    public GameState __CurrentGameState { get { return CurrentState; } }
 
     #endregion
 

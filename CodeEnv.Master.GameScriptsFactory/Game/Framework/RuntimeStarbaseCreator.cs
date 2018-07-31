@@ -45,7 +45,8 @@ public class RuntimeStarbaseCreator : ARuntimeUnitCreator {
 
     protected override void MakeCommand() {
         __ValidateColonyShipState();
-        _command = _factory.MakeStarbaseCmdInstance(Owner, CmdModDesign, gameObject, UnitName);
+        Formation randomFormation = RandomExtended.Choice(TempGameValues.AcceptableBaseFormations);
+        _command = _factory.MakeStarbaseCmdInstance(Owner, CmdModDesign, gameObject, UnitName, randomFormation);
     }
 
     protected override void AddElementsToCommand() {
@@ -117,6 +118,7 @@ public class RuntimeStarbaseCreator : ARuntimeUnitCreator {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateColonyShipState() {
         D.AssertNotNull(ColonyShip);
         D.AssertEqual(ShipHullCategory.Colonizer, ColonyShip.HullCategory);

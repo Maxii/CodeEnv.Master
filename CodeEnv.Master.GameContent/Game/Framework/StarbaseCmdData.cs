@@ -66,11 +66,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper,
             StarbaseCmdModuleDesign cmdModDesign)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDamper, cmdModDesign) {
         }
 
         /// <summary>
@@ -80,11 +80,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleDesign cmdModDesign)
-            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper, StarbaseCmdModuleDesign cmdModDesign)
+            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
             __PopulatePropertyValuesFromSector();
         }
 
@@ -127,8 +127,9 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDampener);
+        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, 
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper) {
+            base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDamper);
             // CmdModuleDesign does have StarbaseCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
         }
 

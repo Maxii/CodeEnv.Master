@@ -597,7 +597,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
         if (isButtonToggledIn) {
             // OPTIMIZE reqdHangerSlots = pickedUnit.ElementCount?
-            int reqdHangerSlots = pickedUnit.Elements.Where(e => (e as ShipItem).IsAuthorizedForNewOrder(ShipDirective.Disband)).Count();
+            int reqdHangerSlots = pickedUnit.Elements.Cast<ShipItem>().Where(s => s.IsAuthorizedForNewOrder(ShipDirective.Disband)).Count();
             IUnitBaseCmd closestDisbandBase;
             bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestDisbandBase);
             D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
@@ -744,7 +744,7 @@ public abstract class AFleetUnitHudForm : AForm {
             bool isOrderedToFoundStarbase = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.FoundStarbase);
             iconColor = isOrderedToFoundStarbase ? TempGameValues.SelectedColor : GameColor.White;
             _unitFoundStarbaseButton.SetToggledState(isOrderedToFoundStarbase, iconColor);
-            if(HasBeenUsedThisSession(_unitFoundStarbaseButton)) {
+            if (HasBeenUsedThisSession(_unitFoundStarbaseButton)) {
                 _unitFoundStarbaseButton.IsEnabled = true;
             }
             else {
@@ -959,19 +959,21 @@ public abstract class AFleetUnitHudForm : AForm {
         IList<FleetCmdItem> fleetsToMerge = new List<FleetCmdItem>(shipsByCmdLookup.Count);
         foreach (var cmd in shipsByCmdLookup.Keys) {
             var cmdsPickedShips = shipsByCmdLookup[cmd];
-            FleetCmdItem formedFleet = cmd.FormFleetFrom("UserCreatedFleet", cmdsPickedShips);
+            FleetCmdItem formedFleet = cmd.FormFleetFrom("MergingFleet", chosenDesign, cmdsPickedShips);
             fleetsToMerge.Add(formedFleet);
         }
 
         FleetCmdItem resultingFleet;
         if (fleetsToMerge.Count > Constants.One) {
             resultingFleet = GameScriptsUtility.Merge(fleetsToMerge);
+            resultingFleet.UnitName = AUnitCreator.__GetUniqueUnitName("UnitHudMergedFleet");
         }
         else {
             resultingFleet = fleetsToMerge.Single();
+            resultingFleet.UnitName = AUnitCreator.__GetUniqueUnitName("UnitHudFormedFleet");
         }
 
-        UnitFactory.Instance.ReplaceCmdModuleWith(chosenDesign, resultingFleet);
+        ////UnitFactory.Instance.ReplaceCmdModuleWith(chosenDesign, resultingFleet);
 
         var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
         bool isAdded = allFleets.Add(resultingFleet);
@@ -1112,7 +1114,7 @@ public abstract class AFleetUnitHudForm : AForm {
         D.AssertNotEqual(Constants.Zero, _pickedUnitIcons.Count);
         IList<IList<ShipItem>> unitElementLists = new List<IList<ShipItem>>();
         foreach (var unitIcon in _pickedUnitIcons) {
-            var operationalElements = unitIcon.Unit.Elements.Where(e => !e.IsDead).Cast<ShipItem>();
+            var operationalElements = unitIcon.Unit.Elements.Cast<ShipItem>().Where(s => !s.IsDead);
             IList<ShipItem> elements = new List<ShipItem>(operationalElements);
             unitElementLists.Add(elements);
         }
@@ -1128,7 +1130,6 @@ public abstract class AFleetUnitHudForm : AForm {
 
         UIEventListener.Get(unitIconGo).onClick += UnitIconClickedEventHandler;
         unit.deathOneShot += UnitDeathEventHandler;
-        //unit.ownerChanged += UnitOwnerChangedEventHandler;
         _unitIconLookup.Add(unit, unitIcon);
         _sortedUnitIconTransforms.Add(unitIconGo.transform);
     }

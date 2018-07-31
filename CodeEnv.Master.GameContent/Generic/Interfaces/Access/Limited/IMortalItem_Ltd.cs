@@ -30,8 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsDead { get; }
 
-        IntVector3 SectorID { get; }
-
         void __LogDeathEventSubscribers();
 
 

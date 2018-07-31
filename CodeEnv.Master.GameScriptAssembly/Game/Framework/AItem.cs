@@ -134,7 +134,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     protected IInputManager _inputMgr;
     protected IGameManager _gameMgr;
     protected IJobManager _jobMgr;
-    protected IDebugControls __debugCntls;
 
     #region Initialization
 
@@ -357,6 +356,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     #endregion
 
     #region Debug
+
+    protected IDebugControls __debugCntls;
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected virtual void __ValidateFollowingOwnerChange() {

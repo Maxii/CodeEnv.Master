@@ -62,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.SectorID:
                         isSuccess = true;
+                        D.AssertNotDefault(report.SectorID);
                         colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
                         break;
                     case ItemInfoID.Capacity:
@@ -72,22 +73,6 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
                         break;
-                    ////case ItemInfoID.CommonResources:
-                    ////    isSuccess = true;
-                    ////    colorizedText = GetColorizedTextFor(ResourceCategory.Common, report.Resources);
-                    ////    break;
-                    ////case ItemInfoID.Titanium:
-                    ////    isSuccess = true;
-                    ////    colorizedText = GetColorizedTextFor(ResourceID.Titanium, report.Resources);
-                    ////    break;
-                    ////case ItemInfoID.Duranium:
-                    ////    isSuccess = true;
-                    ////    colorizedText = GetColorizedTextFor(ResourceID.Duranium, report.Resources);
-                    ////    break;
-                    ////case ItemInfoID.Unobtanium:
-                    ////    isSuccess = true;
-                    ////    colorizedText = GetColorizedTextFor(ResourceID.Unobtanium, report.Resources);
-                    ////    break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }

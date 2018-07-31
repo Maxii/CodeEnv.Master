@@ -152,8 +152,9 @@ public class FleetMoveHelper : IDisposable {
 
     /// <summary>
     /// The ships that have not yet arrived at the next waypoint, aka CurrentDestination.
+    /// <remarks>HashSet due to lots of removing.</remarks>
     /// </summary>
-    private HashSet<AUnitElementItem> _shipsExpectedToArrive = new HashSet<AUnitElementItem>();
+    private HashSet<ShipItem> _shipsExpectedToArrive = new HashSet<ShipItem>();
 
     /// <summary>
     /// Indicates whether the Target could be uncatchable.
@@ -181,21 +182,27 @@ public class FleetMoveHelper : IDisposable {
     private Job _apNavJob;
 
     private Seeker _seeker;
+    private FleetCmdItem _fleet;
+    private FleetCmdData _fleetData;
     private GameTime _gameTime;
     private GameManager _gameMgr;
     private JobManager _jobMgr;
-    private FleetCmdItem _fleet;
-    private FleetCmdData _fleetData;
+    private SectorGrid _sectorGrid;
 
     public FleetMoveHelper(FleetCmdItem fleet, FleetCmdData data, Seeker seeker) {
-        ApCourse = new List<IFleetNavigableDestination>();
-        _gameTime = GameTime.Instance;
-        _gameMgr = GameManager.Instance;
-        _jobMgr = JobManager.Instance;
+        InitializeValuesAndReferences();
         _fleet = fleet;
         _fleetData = data;
         _seeker = InitializeSeeker(seeker);
         Subscribe();
+    }
+
+    private void InitializeValuesAndReferences() {
+        ApCourse = new List<IFleetNavigableDestination>();
+        _gameTime = GameTime.Instance;
+        _gameMgr = GameManager.Instance;
+        _jobMgr = JobManager.Instance;
+        _sectorGrid = SectorGrid.Instance;
     }
 
     private Seeker InitializeSeeker(Seeker seeker) {
@@ -229,6 +236,8 @@ public class FleetMoveHelper : IDisposable {
     /// <param name="apSpeed">The speed the autopilot should travel at.</param>
     /// <param name="apTgtStandoffDistance">The target standoff distance.</param>
     internal void PlotPilotCourse(IFleetNavigableDestination apTgt, Speed apSpeed, float apTgtStandoffDistance) {
+        D.Assert(!IsPilotEngaged);
+        __ValidateStateWhenPilotDisengaged();   // 7.28.18 DisengagePilot always called before a new plot?
         D.AssertNotNull(apTgt);
         D.Assert(!InvalidApSpeeds.Contains(apSpeed), apSpeed.GetValueName());
         ApTarget = apTgt;
@@ -291,9 +300,7 @@ public class FleetMoveHelper : IDisposable {
                 return true;
             }
 
-            IntVector3 fleetSectorID = _fleet.SectorID;
-            var localSectorIDs = SectorGrid.Instance.GetNeighboringSectorIDs(fleetSectorID);
-            localSectorIDs.Add(fleetSectorID);
+            var localSectorIDs = _sectorGrid.GetLocalSectorIDs(Position);
             IList<ISystem_Ltd> localSystems = new List<ISystem_Ltd>(9);
             foreach (var sectorID in localSectorIDs) {
                 ISystem_Ltd system;
@@ -321,10 +328,8 @@ public class FleetMoveHelper : IDisposable {
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
     /// </summary>
-    internal void EngagePilot(IEnumerable<AUnitElementItem> shipsToMove) {
-        D.AssertEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+    internal void EngagePilot() {
         //D.Log(ShowDebugLog, "{0} Pilot engaging.", DebugName);
-        _shipsExpectedToArrive.UnionWith(shipsToMove);
         IsPilotEngaged = true;
         EngagePilot_Internal();
     }
@@ -340,27 +345,37 @@ public class FleetMoveHelper : IDisposable {
     /// Primary exposed control for disengaging the AutoPilot from handling movement.
     /// </summary>
     internal void DisengagePilot() {
-        //D.Log(ShowDebugLog, "{0} Pilot disengaging.", DebugName);
-        IsPilotEngaged = false;
-        CleanupAnyRemainingApJobs();
-        RefreshApCourse(CourseRefreshMode.ClearCourse);
-        ApSpeedSetting = Speed.Stop;
+        if (IsPilotEngaged) {
+            //D.Log(ShowDebugLog, "{0} Pilot disengaging.", DebugName);
+            IsPilotEngaged = false;
+            CleanupAnyRemainingApJobs();
+            RefreshApCourse(CourseRefreshMode.ClearCourse);
+            ApSpeedSetting = Speed.Stop;
 
-        _shipsExpectedToArrive.Clear();
+            _shipsExpectedToArrive.Clear();
 
-        _fleetData.CurrentHeading = default(Vector3);
-        _apTgtStandoffDistance = Constants.ZeroF;
-        _isAStarPathReplotting = false;
-        _apTgtPositionAtLastPathPlot = default(Vector3);
-        _isApCourseFromPath = false;
-        _currentApCourseIndex = Constants.Zero;
-        ApTarget = null;
-        _isApTargetPotentiallyUncatchable = false;
-        __previousSqrDistanceToApTgtFleet = Constants.ZeroF;
+            _fleetData.CurrentHeading = default(Vector3);   // UNCLEAR why?
+            _apTgtStandoffDistance = Constants.ZeroF;
+            _isAStarPathReplotting = false;
+            _apTgtPositionAtLastPathPlot = default(Vector3);
+            _isApCourseFromPath = false;
+            _currentApCourseIndex = Constants.Zero;
+            ApTarget = null;
+            _isApTargetPotentiallyUncatchable = false;
+            __previousSqrDistanceToApTgtFleet = Constants.ZeroF;
+        }
+        else {
+            __ValidateStateWhenPilotDisengaged();
+        }
     }
 
     internal void HandleOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         if (!IsPilotEngaged) {
+            if (outcome == OrderOutcome.OrdersChange) {
+                D.Error("{0}.Pilot not engaged and {1}.{2}? Check ExitState sequence!", DebugName, typeof(OrderOutcome).Name, outcome.GetValueName());
+                // 7.27.18 Error is commonly caused by ExitState disengaging this helper before clearing element orders. 
+                // ShipState_UponResetOrderAndState() can callback with OrdersChange outcome as a result of canceling Ship orders
+            }
             string tgtMsg = target != null ? target.DebugName : "None";
             D.Error("{0}.Pilot should be engaged. Ship: {1}, Target: {2}, Outcome: {3}.", DebugName, ship.DebugName, tgtMsg, outcome.GetValueName());
         }
@@ -380,12 +395,13 @@ public class FleetMoveHelper : IDisposable {
                 isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
                 break;
+            case OrderOutcome.Disqualified:
             case OrderOutcome.NeedsRepair:
             case OrderOutcome.Ownership:
                 isRemoved = _shipsExpectedToArrive.Remove(ship);
                 D.Assert(isRemoved, ship.DebugName);
                 break;
-            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.OrdersChange:
                 // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
                 // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
                 // 4.30.18 Occurred again but unclear whether User order. Added CurrentOrder debug info
@@ -418,8 +434,6 @@ public class FleetMoveHelper : IDisposable {
 
     private void InitiateApCourseToTarget() {
         D.AssertNull(_apNavJob);
-        D.AssertNotEqual(Constants.Zero, _shipsExpectedToArrive.Count);
-        D.Assert(_shipsExpectedToArrive.All(ship => !ship.IsDead));
         if (ShowDebugLog) {
             //string courseText = _isApCourseFromPath ? "multiple waypoint" : "direct";
             //D.Log("{0} initiating a {1} course to target {2}. Distance: {3:0.#}, Speed: {4}({5:0.##}).",
@@ -464,9 +478,12 @@ public class FleetMoveHelper : IDisposable {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageCourse() {
+        D.AssertEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+
         //D.Log(ShowDebugLog, "{0}.EngageCourse() has begun.", _fleet.DebugName);
         int apTgtCourseIndex = ApCourse.Count - 1;
         D.AssertEqual(Constants.One, _currentApCourseIndex);  // already set prior to the start of the Job
+
         IFleetNavigableDestination currentWaypoint = ApCourse[_currentApCourseIndex];
         float waypointTransitDistanceSqrd = Vector3.SqrMagnitude(currentWaypoint.Position - Position);
         //D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
@@ -476,7 +493,9 @@ public class FleetMoveHelper : IDisposable {
         if (_currentApCourseIndex == apTgtCourseIndex) {
             waypointStandoffDistance = _apTgtStandoffDistance;
         }
+
         IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
+        yield return null;  // 7.28.18 allowing 2 atomically sequential Move orders can result in a Ship Move_UponNewOrderReceived error
 
         int fleetTgtRecedingWaypointCount = Constants.Zero;
         __RecordWaypointTransitStart(toCalcLastTransitDuration: false, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
@@ -485,12 +504,6 @@ public class FleetMoveHelper : IDisposable {
         while (_currentApCourseIndex <= apTgtCourseIndex) {
             if (_shipsExpectedToArrive.Count == Constants.Zero) {
                 // Fleet move leg complete
-
-                // 6.21.18 If ship has removed itself from _shipsExpectedToArrive via an outcome callback from Ship.ExecuteMoveOrder,
-                // it has also removed itself from Fleet.Elements -> needs repair detaches to repair, losing ownership detaches
-                // into own fleet, dead dies, etc.
-                _shipsExpectedToArrive.UnionWith(_fleet.Elements);
-
                 __RecordWaypointTransitStart(toCalcLastTransitDuration: true, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
 
                 _currentApCourseIndex++;
@@ -504,13 +517,17 @@ public class FleetMoveHelper : IDisposable {
                 //_currentApCourseIndex - 1, currentWaypoint.DebugName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].DebugName);
 
                 if (_isApTargetPotentiallyUncatchable) {
-                    bool isUncatchable = __IsFleetTgtUncatchable(ref fleetTgtRecedingWaypointCount);
+                    bool isUncatchable = IsFleetTgtUncatchable(ref fleetTgtRecedingWaypointCount);
                     if (isUncatchable) {
                         HandleApTgtUncatchable();
+                        yield return null;
+                        D.Error("{0} should not get here.", DebugName);
                     }
                 }
 
+                // 7.28.18 Got an ArgumentOutOfRangeException preceded by an Uncatchable warning -> FleetState._UponApTargetUncatchable misspelled
                 currentWaypoint = ApCourse[_currentApCourseIndex];
+
                 if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
                     // there is an obstacle en-route to the next waypoint, so use the detour provided instead
                     RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
@@ -521,6 +538,11 @@ public class FleetMoveHelper : IDisposable {
 
                 if (IsPathReplotNeeded) {
                     ReplotPath();
+                    // 7.28.18 Plots can take more than 1 frame
+                    while (true) {
+                        // wait here until re-engaged with replot. Will end when job is killed
+                        yield return null;
+                    }
                 }
                 else {
                     IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
@@ -538,7 +560,7 @@ public class FleetMoveHelper : IDisposable {
     /// when that ship is issued a move order to 'catch up'.</remarks>
     /// </summary>
     /// <param name="ship">The ship.</param>
-    internal void AddShipToExpectedArrivals(AUnitElementItem ship) {
+    internal void AddShipToExpectedArrivals(ShipItem ship) {
         D.AssertNotEqual(Constants.Zero, _shipsExpectedToArrive.Count);
         bool isAdded = _shipsExpectedToArrive.Add(ship);
         if (!isAdded) {
@@ -553,7 +575,7 @@ public class FleetMoveHelper : IDisposable {
     /// <param name="recedingWayptCount">The number of consecutive waypoints where the target is found further away.</param>
     /// <returns>
     /// </returns>
-    private bool __IsFleetTgtUncatchable(ref int recedingWayptCount) {
+    private bool IsFleetTgtUncatchable(ref int recedingWayptCount) {
         D.Assert(ApTarget is IFleetCmd_Ltd);
         if (recedingWayptCount > 3) {
             return true;
@@ -578,7 +600,7 @@ public class FleetMoveHelper : IDisposable {
     /// Checks for an obstacle en-route to the provided <c>destination</c>. Returns true if one
     /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
     /// </summary>
-    /// <param name="destination">The current destination. May be the ApTarget or an obstacle detour.</param>
+    /// <param name="destination">The current destination. May be the ApTarget, a waypoint or an obstacle detour.</param>
     /// <param name="detour">The resulting obstacle detour.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
@@ -864,17 +886,8 @@ public class FleetMoveHelper : IDisposable {
 
     private void HandlePathPlotCompleted(Path path) {
         if (path.error) {
-            var sectorGrid = SectorGrid.Instance;
-            IntVector3 fleetSectorID = sectorGrid.GetSectorIDContaining(Position);  ////sectorGrid.GetSectorIDThatContains(Position);
-            ////Sector fleetSector = sectorGrid.GetSector(fleetSectorID);
-            ////string fleetSectorIDMsg = fleetSector.Category.GetValueName();
-
-            IntVector3 apTgtSectorID = sectorGrid.GetSectorIDContaining(ApTarget.Position); ////sectorGrid.GetSectorIDThatContains(ApTarget.Position);
-            ////Sector apTgtSector = sectorGrid.GetSector(apTgtSectorID);
-            ////string apTgtSectorIDMsg = apTgtSector.Category.GetValueName();
-
-            ////D.Warn("{0} in {1} Sector {2} encountered error plotting course to {3} in {4} Sector {5}.",
-            ////    DebugName, fleetSectorIDMsg, fleetSectorID, ApTarget.DebugName, apTgtSectorIDMsg, apTgtSectorID);
+            IntVector3 fleetSectorID = _sectorGrid.__GetSectorIDContaining(Position);
+            IntVector3 apTgtSectorID = _sectorGrid.__GetSectorIDContaining(ApTarget.Position);
             D.Warn("{0} in Sector {1} encountered error plotting course to {2} in Sector {3}.", DebugName, fleetSectorID,
                 ApTarget.DebugName, apTgtSectorID);
             HandleApCoursePlotFailure();
@@ -904,7 +917,7 @@ public class FleetMoveHelper : IDisposable {
     }
 
     private void HandleApCourseChanged() {
-        _fleet.UpdateDebugCoursePlot();
+        _fleet.__RefreshCoursePlotCourse();
     }
 
     /// <summary>
@@ -917,8 +930,8 @@ public class FleetMoveHelper : IDisposable {
     /// </summary>
     /// <param name="path">The path.</param>
     private void HandleModifiersPriorToPathPostProcessing(Path path) {
-        var modifier = _seeker.startEndModifier;
-        modifier.addPoints = false; // reset to my default setting which replaces first node with current position
+        var startEndModifier = _seeker.startEndModifier;
+        startEndModifier.addPoints = false; // my default -> replace first node with fleet position
 
         GraphNode firstNode = path.path[0];
         Vector3 firstNodeLocation = (Vector3)firstNode.position;
@@ -927,35 +940,45 @@ public class FleetMoveHelper : IDisposable {
         if (_fleet.Topography == Topography.System) {
             // starting in system
             var ownerKnowledge = _fleet.OwnerAiMgr.Knowledge;
-            ISystem_Ltd fleetSystem;
-            bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
-            if (!isFleetSystemFound) {
-                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID,
-                    SectorGrid.Instance.GetSectorIDContaining(Position));
-                ////SectorGrid.Instance.GetSectorIDThatContains(Position));
-                // 8.18.16 Failure of Assert here has been caused in the past by a missed Topography change when leaving a System
-                return; // 11.26.17 Occurred again so since not 'really' in system, simply return
+
+            ISystem_Ltd fleetSystem = null;
+            IntVector3 fleetCoreSectorID;
+            if (_sectorGrid.TryGetCoreSectorIDContaining(Position, out fleetCoreSectorID)) {
+                if (!ownerKnowledge.TryGetSystem(fleetCoreSectorID, out fleetSystem)) {
+                    D.Warn("{0} should find a System in its current CoreSector {1}.", DebugName, fleetCoreSectorID.DebugName);
+                    // 8.18.16 Failure of Assert here has been caused in the past by a missed Topography change when leaving a System
+                    return; // 11.26.17 Occurred again so since not 'really' in system, simply return
+                }
+            }
+            else {
+                D.Error("{0}: How can {1} not be in a CoreSector when its Topography is System?", DebugName, _fleet.DebugName);
             }
 
             if (ApTarget.Topography == Topography.System) {
-                IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDContaining(ApTarget.Position);
-                ////IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
-                ISystem_Ltd tgtSystem;
-                bool isTgtSystemFound = ownerKnowledge.TryGetSystem(tgtSectorID, out tgtSystem);
-                if (!isTgtSystemFound) {
-                    // 11.27.17 Occurred so since not 'really' in system, simply return
-                    D.Warn("{0}'s target {1} should be in a System in Sector {2}.", DebugName, ApTarget.DebugName, tgtSectorID);
-                    return;
+                ISystem_Ltd tgtSystem = null;
+                IntVector3 tgtCoreSectorID;
+                if (_sectorGrid.TryGetCoreSectorIDContaining(ApTarget.Position, out tgtCoreSectorID)) {
+                    if (!ownerKnowledge.TryGetSystem(tgtCoreSectorID, out tgtSystem)) {
+                        // 11.27.17 Occurred so since not 'really' in system, simply return
+                        D.Warn("{0}'s target {1} should be in a System in Sector {2}.", DebugName, ApTarget.DebugName, tgtCoreSectorID);
+                        return;
+                    }
                 }
+                else {
+                    D.Error("{0}: How can ApTarget {1} not be in a CoreSector when its Topography is System?", DebugName, ApTarget.DebugName);
+                }
+
+                D.AssertNotNull(fleetSystem);   // these can't be null if it gets here without an error
+                D.AssertNotNull(tgtSystem);
                 if (fleetSystem == tgtSystem) {
-                    // fleet and target are in same system so whichever first node is found should be replaced by fleet location
+                    // fleet and target are in same system so first node should be replaced by fleet position
                     return;
                 }
             }
             Topography firstNodeTopography = _gameMgr.GameKnowledge.GetSpaceTopography(firstNodeLocation);
             if (firstNodeTopography == Topography.OpenSpace) {
-                // first node outside of system so keep node
-                modifier.addPoints = true;
+                // first node is outside of system so keep first node in path to quickly exit system
+                startEndModifier.addPoints = true;
                 //D.Log(ShowDebugLog, "{0} has retained first AStarNode in path to quickly exit System.", DebugName);
             }
         }
@@ -968,14 +991,14 @@ public class FleetMoveHelper : IDisposable {
     private void HandleApTgtReached() {
         //D.Log(ShowDebugLog, "{0} at {1} reached Target {2} \nat {3}. Actual proximity: {4:0.0000} units.", 
         //Name, Position, ApTarget.DebugName, ApTarget.Position, ApTgtDistance);
-        RefreshApCourse(CourseRefreshMode.ClearCourse);
+        RefreshApCourse(CourseRefreshMode.ClearCourse); // OPTIMIZE superfluous
         _fleet.UponApTargetReached();
     }
 
     private void HandleApTgtUncatchable() {
         D.Warn("FYI. {0} is continuing to fall behind {1} and is now deemed uncatchable.", DebugName, ApTarget.DebugName);
-        RefreshApCourse(CourseRefreshMode.ClearCourse);
-        _fleet.UponApTargetUncatchable();
+        RefreshApCourse(CourseRefreshMode.ClearCourse); // OPTIMIZE superfluous
+        _fleet.UponApTgtUncatchable();
     }
 
     private void HandleApCoursePlotFailure() {
@@ -998,21 +1021,25 @@ public class FleetMoveHelper : IDisposable {
 
     /// <summary>
     /// Removes the specified ship from any collections in this FleetMoveHelper, if it is present.
-    /// <remarks>Intended for use when the ship is removed from the Cmd. In most circumstances, 
-    /// when a ship is removed from Cmd while it is executing Cmd's order, it will already have provided 
+    /// <remarks>Intended for use when the ship is removed from the Cmd. Obsolete because in all cases, 
+    /// when a ship is removed from Cmd while it is executing Cmd's Move order, it will already have provided 
     /// Cmd with its OrderOutcome, and will therefore already be removed from these collections. 
-    /// However, when the ship is executing an order from this Cmd involving a move, and it is removed
-    /// as a result of splitting off another fleet from this Cmd, the ship will still be present in 
-    /// these collections. This is because the act of splitting a fleet is not executed via order 
-    /// to either the fleet or ships involved. As a result, there is no order outcome, 
-    /// just a removal of the ship from the Cmd.</remarks>
     /// </summary>
     /// <param name="ship">The ship.</param>
+    [Obsolete]
     internal void Remove(ShipItem ship) {
         _shipsExpectedToArrive.Remove(ship);
     }
 
+    /// <summary>
+    /// Issues a move order to all ships, populating _shipsExpectedToArrive before it does so.
+    /// </summary>
+    /// <param name="fleetTgt">The target to move to.</param>
+    /// <param name="tgtStandoffDistance">The target standoff distance.</param>
     private void IssueMoveOrderToAllShips(IFleetNavigableDestination fleetTgt, float tgtStandoffDistance) {
+        D.AssertEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+        _shipsExpectedToArrive.UnionWith(_fleet.Elements.Cast<ShipItem>());
+
         bool isFleetwideMove = true;
         var fleetOrderSource = _fleet.CurrentOrder.Source;
         var fleetOrderID = _fleet.CurrentOrder.OrderID;
@@ -1165,6 +1192,30 @@ public class FleetMoveHelper : IDisposable {
     }
 
     #region Debug
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    internal void __ValidateNotPresent(ShipItem ship) {
+        D.Assert(!_shipsExpectedToArrive.Contains(ship));
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateStateWhenPilotDisengaged() {
+        D.AssertNull(_apNavJob);
+        D.AssertEqual(Constants.Zero, ApCourse.Count);
+        if (ApSpeedSetting != default(Speed)) {
+            D.AssertEqual(Speed.Stop, ApSpeedSetting);
+        }
+        D.AssertEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+        D.AssertEqual(Constants.ZeroF, _apTgtStandoffDistance);
+
+        D.Assert(!_isAStarPathReplotting);
+        D.Assert(_apTgtPositionAtLastPathPlot == default(Vector3));
+        D.Assert(!_isApCourseFromPath);
+        D.AssertEqual(Constants.Zero, _currentApCourseIndex);
+        D.AssertNull(ApTarget);
+        D.Assert(!_isApTargetPotentiallyUncatchable);
+        D.AssertEqual(Constants.ZeroF, __previousSqrDistanceToApTgtFleet);
+    }
 
     #region Transit Duration Debug System
 

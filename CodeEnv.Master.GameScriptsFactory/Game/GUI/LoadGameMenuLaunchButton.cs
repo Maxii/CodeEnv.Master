@@ -69,8 +69,8 @@ public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
     ////    }
     ////}
 
-    protected override void ValidateStateOnCapture() {
-        base.ValidateStateOnCapture();
+    protected override void __ValidateCapturedState() {
+        base.__ValidateCapturedState();
         // selectedGameCaption can be empty if there are no saved games
         if (_selectedGameCaption == string.Empty) {
             D.Warn("Selected Game Caption to Load is empty.");

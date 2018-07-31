@@ -225,7 +225,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd> fleetsInSector) {
             D.AssertNotDefault(sectorID);
-            fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
+            fleetsInSector = Fleets.Where(fleet => fleet.IsLocatedIn(sectorID));
             if (fleetsInSector.Any()) {
                 return true;
             }
@@ -233,7 +233,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the SpaceTopography value associated with this location in worldspace.
+        /// Gets the Topography value associated with this location in worldspace.
         /// </summary>
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
@@ -251,18 +251,6 @@ namespace CodeEnv.Master.GameContent {
             //TODO add Nebula and DeepNebula
             return Topography.OpenSpace;
         }
-        ////public Topography GetSpaceTopography(Vector3 worldLocation) {
-        ////    IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(worldLocation);
-        ////    ISystem system;
-        ////    if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
-        ////        // the sector containing worldLocation has a system
-        ////        if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
-        ////            return Topography.System;
-        ////        }
-        ////    }
-        ////    //TODO add Nebula and DeepNebula
-        ////    return Topography.OpenSpace;
-        ////}
 
         private void AddStar(IStar star) {
             D.Assert(!_stars.Contains(star));
@@ -419,6 +407,12 @@ namespace CodeEnv.Master.GameContent {
         #region Debug 
 
         private DebugSettings __debugSettings;
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void __LogSectorsWithSystems() {
+            var sectorIDsWithASystem = _systemLookupBySectorID.Keys;
+            D.Log("{0}: Sectors with Systems = {1}.", DebugName, sectorIDsWithASystem.Select(sID => sID.DebugName).Concatenate());
+        }
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __InitializeValidateKnowledge() {

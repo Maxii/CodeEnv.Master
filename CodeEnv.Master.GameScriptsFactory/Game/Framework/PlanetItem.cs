@@ -144,6 +144,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         HandleMoonDeathEffectFinished();
     }
 
+    #endregion
+
     private void HandleMoonDeathEffectFinished() {
         //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", DebugName, ChildMoons.Count);
         if (ChildMoons.Count() == Constants.Zero) {
@@ -151,8 +153,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
             DestroyMe();
         }
     }
-
-    #endregion
 
     protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         if (ChildMoons.Any()) {
@@ -423,21 +423,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         return !Owner.IsEnemyOf(player);
     }
 
-    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
-        if (IsRepairingAllowedBy(cmdOwner)) {
-            float orbitFactor = 1F;
-            IShip_Ltd ship = hqElement as IShip_Ltd;
-            if (ship != null) {
-                orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
-                    : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
-            }
-            float basicValue = TempGameValues.RepairCapacityBaseline_Planet_CmdModule;
-            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
-            return basicValue * relationsFactor * orbitFactor;
-        }
-        return Constants.ZeroF;
-    }
-
     #endregion
 
     #region IShipRepairCapable Members
@@ -448,6 +433,18 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
             float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
             float orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
                 : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
+            return basicValue * relationsFactor * orbitFactor;
+        }
+        return Constants.ZeroF;
+    }
+
+    public float GetAvailableRepairCapacityFor(IFleetCmd_Ltd unusedFleetCmd, IShip_Ltd flagship, Player cmdOwner) {
+        D.Assert(flagship.IsHQ);
+        if (IsRepairingAllowedBy(cmdOwner)) {
+            float orbitFactor = IsInCloseOrbit(flagship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
+                    : IsInHighOrbit(flagship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
+            float basicValue = TempGameValues.RepairCapacityBaseline_Planet_CmdModule;
+            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
             return basicValue * relationsFactor * orbitFactor;
         }
         return Constants.ZeroF;

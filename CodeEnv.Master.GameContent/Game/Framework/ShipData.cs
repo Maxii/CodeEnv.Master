@@ -31,48 +31,43 @@ namespace CodeEnv.Master.GameContent {
         #region FTL
 
         /// <summary>
-        /// Indicates whether this ship has FTL capability. If <c>true</c> it does not imply
-        /// that capability is currently operational. If <c>false</c> the ship does not have an FTL engine installed.
+        /// Indicates whether this ship has an FTL engine installed. If <c>false</c> the ship is not capable of traveling at FTL speeds.
+        /// <remarks>Returning <c>true</c> says nothing about the operational state of the engines.</remarks>
         /// </summary>
         public bool IsFtlCapable { get { return _ftlEngine != null; } }
 
+        private bool _isFtlOperational;
         /// <summary>
         /// Indicates whether the FTL engines are operational, aka activated, undamaged and not damped by an FTL damping field.
-        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
+        /// <remarks>Test IsFtlCapable before using this property. If <c>false</c> this property will always return false.</remarks>
+        /// <remarks>Subscribable.</remarks>
         /// </summary>
-        public bool IsFtlOperational { get { return _ftlEngine != null && _ftlEngine.IsOperational; } }
+        public bool IsFtlOperational {
+            get { return _isFtlOperational; }
+            private set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational"); }
+        }
 
+        private bool _isFtlDamaged = false;
         /// <summary>
         /// Indicates whether the FTL engines are damaged. 
-        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
+        /// <remarks>Test IsFtlCapable before using this property. If <c>false</c> this property will always return false.</remarks>
+        /// <remarks>Subscribable.</remarks>
         /// </summary>
         public bool IsFtlDamaged {
-            get { return _ftlEngine != null && _ftlEngine.IsDamaged; }
-            set {
-                if (_ftlEngine == null) {
-                    D.Warn("{0}: Attempting to change the damage state of an FtlEngine that is not present.", DebugName);
-                    return;
-                }
-                _ftlEngine.IsDamaged = value;
-            }
+            get { return _isFtlDamaged; }
+            private set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged"); }
         }
 
+        private bool _isFtlDampedByField;
         /// <summary>
         /// Indicates whether the FTL engines are damped by an FTL Damping Field. 
-        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
+        /// <remarks>Test IsFtlCapable before using this property. If <c>false</c> this property will always return false.</remarks>
+        /// <remarks>Subscribable.</remarks>
         /// </summary>
         public bool IsFtlDampedByField {
-            get { return _ftlEngine != null && _ftlEngine.IsDampedByField; }
-            set {
-                if (_ftlEngine == null) {
-                    D.Warn("{0}: Attempting to change the damped state of an FtlEngine that is not present.", DebugName);
-                    return;
-                }
-                _ftlEngine.IsDampedByField = value;
-            }
+            get { return _isFtlDampedByField; }
+            set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField", IsFtlDampedByFieldPropChangedHandler); }
         }
-
-        ////public float FtlEngineHitPoints { get { return _ftlEngine != null ? _ftlEngine.MaxHitPoints : Constants.ZeroF; } }
 
         #endregion
 
@@ -180,9 +175,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDContaining(Position); } }
-        ////public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
-
         public new ShipDesign Design { get { return base.Design as ShipDesign; } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
@@ -193,12 +185,11 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Indicates and controls whether the FTL engines are activated. 
-        /// <remarks>Throws an error if no FtlEngine is present, so use IsFtlCapable to test for it.</remarks>
-        /// <remarks>Used to deactivate/reactivate the engine when entering/leaving Attacking state.</remarks>
         /// </summary>
+        [Obsolete("Not currently used")]
         public bool IsFtlActivated {
             get { return _ftlEngine != null && _ftlEngine.IsActivated; }
-            set {
+            private set {
                 D.AssertNotNull(_ftlEngine);
                 _ftlEngine.IsActivated = value;
             }
@@ -218,7 +209,8 @@ namespace CodeEnv.Master.GameContent {
             _stlEngine = stlEngine;
             _ftlEngine = ftlEngine;
             if (ftlEngine != null) {
-                ftlEngine.isOperationalChanged += IsFtlOperationalChangedEventHandler;
+                ftlEngine.isOperationalChanged += FtlEngineIsOperationalChangedEventHandler;
+                ftlEngine.isDamagedChanged += FtlEngineIsDamagedChangedEventHandler;
             }
             __ValidateTurnRate();
 
@@ -253,6 +245,10 @@ namespace CodeEnv.Master.GameContent {
             InitializeEngines();
         }
 
+        public bool TryGetSectorID(out IntVector3 sectorID) {
+            return GameReferences.SectorGrid.TryGetSectorIDContaining(Position, out sectorID);
+        }
+
         protected override float CalculateMass() {
             float mass = base.CalculateMass();
             mass += _stlEngine.Mass;
@@ -276,12 +272,16 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void IsFtlOperationalChangedEventHandler(object sender, EventArgs e) {
-            HandleIsFtlOperationalChanged();
+        private void IsFtlDampedByFieldPropChangedHandler() {
+            _ftlEngine.IsDampedByField = IsFtlDampedByField;
         }
 
-        private void HandleIsFtlOperationalChanged() {
-            //D.Log(ShowDebugLog, "{0} FTL is {1} operational.", DebugName, IsFtlOperational ? "now" : "no longer");
+        private void FtlEngineIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            IsFtlDamaged = _ftlEngine.IsDamaged;
+        }
+
+        private void FtlEngineIsOperationalChangedEventHandler(object sender, EventArgs e) {
+            IsFtlOperational = _ftlEngine.IsOperational;
             RefreshFullSpeedValue();
         }
 
@@ -289,12 +289,12 @@ namespace CodeEnv.Master.GameContent {
             RefreshFullSpeedValue();
         }
 
+        #endregion
+
         protected override void HandleTopographyChanged() {
             base.HandleTopographyChanged();
             CurrentDrag = OpenSpaceDrag * Topography.GetRelativeDensity();
         }
-
-        #endregion
 
         public override void RestoreInitialConstructionValues() {
             base.RestoreInitialConstructionValues();
@@ -408,11 +408,18 @@ namespace CodeEnv.Master.GameContent {
         protected override void Unsubscribe() {
             base.Unsubscribe();
             if (_ftlEngine != null) {
-                _ftlEngine.isOperationalChanged -= IsFtlOperationalChangedEventHandler;
+                _ftlEngine.isOperationalChanged -= FtlEngineIsOperationalChangedEventHandler;
+                _ftlEngine.isDamagedChanged -= FtlEngineIsDamagedChangedEventHandler;
             }
         }
 
         #region Debug
+
+        public void __SetFtlEngineToStart(bool isDamaged) {
+            D.AssertNotNull(_ftlEngine);
+            _ftlEngine.IsDamaged = isDamaged;
+            D.AssertEqual(isDamaged, IsFtlDamaged); // confirm subscription in place to make the property value change
+        }
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateTurnRate() {

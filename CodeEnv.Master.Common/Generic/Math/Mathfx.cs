@@ -147,14 +147,33 @@ namespace CodeEnv.Master.Common {
         /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
         /// <returns></returns>
         public static bool Approx(float value, float targetValue, float acceptableRange) {
+            float unusedDelta;
+            return Approx(value, targetValue, acceptableRange, out unusedDelta);
+        }
+
+        /// <summary>
+        /// Tests if <c>value</c> is within <c>acceptableRange</c> of the <c>targetValue</c>.
+        /// Useful in dealing with floating point imprecision.
+        /// <remarks>Works to within float precision which is 7-8 significant digits. If the separation between
+        /// value and acceptableRange is &gt; 7-8 significant digits, acceptableRange will be automatically increased
+        /// to stay within the limits of float precision.</remarks>
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <param name="delta">The resulting delta between value and targetValue.</param>
+        /// <returns></returns>
+        public static bool Approx(float value, float targetValue, float acceptableRange, out float delta) {
+            Utility.ValidateNotNegative(acceptableRange);
             float acceptRange = acceptableRange;
-            float minAcceptRange = targetValue / 5000000F; // 6-7 significant digits
+            float minAcceptRange = Mathf.Abs(targetValue / 5000000F); // 6-7 significant digits
             if (acceptRange < minAcceptRange) {
-                // D.Warn("{0}.Approx(): {1:0.##} vs {2:0.######} separation exceeds float precision. Adjusting acceptRange.", typeof(Mathfx).Name, targetValue, acceptableRange);
+                //D.Warn("{0}.Approx() Float Precision: MinAcceptRange {1:0.######} > specified AcceptRange {2:0.######}. Adjusting AcceptRange.",
+                //typeof(Mathfx).Name, minAcceptRange, acceptableRange);
                 // Can start warning when value &gt; 5000 and acceptableRange &lt; 0.001. WILL warn with greater separation.
                 acceptRange = minAcceptRange;
             }
-            float delta = Mathf.Abs(value - targetValue);
+            delta = Mathf.Abs(value - targetValue);
             bool isEqual = delta <= acceptRange;
             if (!isEqual) {
                 isEqual = Mathf.Approximately(value, targetValue);  // IMPROVE Should really be an error
@@ -166,11 +185,24 @@ namespace CodeEnv.Master.Common {
             return isEqual;
         }
 
+        /// <summary>
+        ///  Tests if <c>value</c> is within <c>acceptableRange</c> of the <c>targetValue</c>. 
+        ///  Useful in dealing with floating point imprecision.
+        ///  <remarks>Works to within float precision which is 15-17 significant digits. If the separation between
+        ///  value and acceptableRange is > 15-17 significant digits, acceptableRange will be automatically increased
+        ///  to stay within the limits of float precision.</remarks>
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <returns></returns>
         public static bool Approx(double value, double targetValue, double acceptableRange) {
+            D.Assert(acceptableRange >= Constants.ZeroF);
             double acceptRange = acceptableRange;
-            double minAcceptRange = targetValue / 1000000000000000F; // 15-17 significant digits
+            double minAcceptRange = Math.Abs(targetValue / 1000000000000000F); // 15-17 significant digits
             if (acceptRange < minAcceptRange) {
-                D.Warn("{0}.Approx(): {1:0.##} vs {2:0.######} separation exceeds double precision. Adjusting acceptRange.", typeof(Mathfx).Name, targetValue, acceptableRange);
+                D.Warn("{0}.Approx() Double Precision: MinAcceptRange {1:0.######} > specified AcceptRange {2:0.######}. Adjusting AcceptRange.",
+                    typeof(Mathfx).Name, minAcceptRange, acceptableRange);
                 acceptRange = minAcceptRange;
             }
             double delta = Math.Abs(value - targetValue);
@@ -188,7 +220,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="acceptableRange">The acceptableRange.</param>
         /// <returns></returns>
         public static bool Approx(Vector3 vector, Vector3 targetVector, float acceptableRange) {
-            return ((vector - targetVector).sqrMagnitude <= acceptableRange * acceptableRange);
+            return (vector - targetVector).sqrMagnitude <= acceptableRange * acceptableRange;
         }
 
         /// <summary>

@@ -31,10 +31,10 @@ namespace CodeEnv.Master.GameContent {
         Success,
 
         /// <summary>
-        /// A new order has just been received, causing this unit member to attempt to execute the new order.
-        /// Successful completion of the previous order was not accomplished.
+        /// The CurrentOrder for this element or Cmd has changed, either because a new order has been received 
+        /// or CurrentOrder has been cleared. Successful completion of the previous order was not accomplished.
         /// </summary>
-        NewOrderReceived,
+        OrdersChange,
 
         /// <summary>
         /// The target has been determined to be uncatchable. 

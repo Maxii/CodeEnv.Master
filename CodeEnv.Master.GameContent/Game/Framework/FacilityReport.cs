@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory Category { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
+
         public FacilityReport(FacilityData data, Player player) : base(data, player) { }
 
         protected override void AssignValues(AItemData data) {

@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FollowableItemCameraStat : FocusableItemCameraStat {
 
-        public float FollowDistanceDampener { get; private set; }
+        public float FollowDistanceDamper { get; private set; }
 
-        public float FollowRotationDampener { get; private set; }
+        public float FollowRotationDamper { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FollowableItemCameraStat"/> class.
@@ -33,14 +33,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="minViewDistance">The minimum view distance.</param>
         /// <param name="optViewDistance">The opt view distance.</param>
         /// <param name="fov">The field of view.</param>
-        /// <param name="followDistanceDampener">The follow distance dampener. Default is 3F.</param>
-        /// <param name="followRotationDampener">The follow rotation dampener. Default is 1F.</param>
-        public FollowableItemCameraStat(float minViewDistance, float optViewDistance, float fov, float followDistanceDampener = 3F, float followRotationDampener = 1F)
+        /// <param name="followDistanceDamper">The follow distance damper. Default is 3F.</param>
+        /// <param name="followRotationDamper">The follow rotation damper. Default is 1F.</param>
+        public FollowableItemCameraStat(float minViewDistance, float optViewDistance, float fov, float followDistanceDamper = 3F,
+            float followRotationDamper = 1F)
             : base(minViewDistance, optViewDistance, fov) {
-            D.Assert(followDistanceDampener > Constants.OneF);
-            D.Assert(followRotationDampener > Constants.ZeroF);
-            FollowDistanceDampener = followDistanceDampener;
-            FollowRotationDampener = followRotationDampener;
+            D.Assert(followDistanceDamper > Constants.OneF);
+            D.Assert(followRotationDamper > Constants.ZeroF);
+            FollowDistanceDamper = followDistanceDamper;
+            FollowRotationDamper = followRotationDamper;
         }
 
     }

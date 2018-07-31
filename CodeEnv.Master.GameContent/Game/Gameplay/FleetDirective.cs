@@ -54,12 +54,6 @@ namespace CodeEnv.Master.GameContent {
         FullSpeedMove,
 
         /// <summary>
-        /// Fleets can go into close orbit around Bases, Stars, Planets and the UniverseCenter. 
-        /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
-        /// </summary>
-        ////CloseOrbit,
-
-        /// <summary>
         /// Fleets can patrol any IPatrollable target including Bases, Systems, Sectors and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be an enemy. When a fleet is ordered to patrol the 
         /// fleet will move to the target's closest patrol station and initiate a patrol pattern encompassing 

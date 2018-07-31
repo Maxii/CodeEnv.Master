@@ -30,7 +30,7 @@ public class UserFleetUnitHudForm : AFleetUnitHudForm {
     #region Pick Design Support
 
     protected override void ChooseCmdModuleDesignAndFormFleet() {
-        if (!DebugControls.Instance.AiChoosesUserCmdModInitialDesigns) {
+        if (!PlayerPrefsManager.Instance.IsAiHandlesUserCmdModuleInitialDesignsEnabled) {
             HaveUserPickCmdModDesign();
         }
         else {

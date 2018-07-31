@@ -38,6 +38,10 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
     private bool _isZoomOutOnCursorEnabled;
     private bool _isResetOnFocusEnabled;
     private bool _isPauseOnLoadEnabled;
+    private bool _isAiHandlesUserCmdModuleInitialDesignsEnabled;
+    private bool _isAiHandlesUserCmdModuleRefitDesignsEnabled;
+    private bool _isAiHandlesUserCentralHubInitialDesignsEnabled;
+    private bool _isAiHandlesUserElementRefitDesignsEnabled;
     private GameSpeed _gameSpeedOnLoad;
 
     protected override void RecordCheckboxState(GuiElementID checkboxID, bool isChecked) {
@@ -54,6 +58,18 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
                 break;
             case GuiElementID.ZoomOutOnCursorCheckbox:
                 _isZoomOutOnCursorEnabled = isChecked;
+                break;
+            case GuiElementID.AiHandlesUserCmdModuleInitialDesignsCheckbox:
+                _isAiHandlesUserCmdModuleInitialDesignsEnabled = isChecked;
+                break;
+            case GuiElementID.AiHandlesUserCmdModuleRefitDesignsCheckbox:
+                _isAiHandlesUserCmdModuleRefitDesignsEnabled = isChecked;
+                break;
+            case GuiElementID.AiHandlesUserCentralHubInitialDesignsCheckbox:
+                _isAiHandlesUserCentralHubInitialDesignsEnabled = isChecked;
+                break;
+            case GuiElementID.AiHandlesUserElementRefitDesignsCheckbox:
+                _isAiHandlesUserElementRefitDesignsEnabled = isChecked;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
@@ -78,6 +94,10 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
             IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled,
             IsResetOnFocusEnabled = _isResetOnFocusEnabled,
             IsPauseOnLoadEnabled = _isPauseOnLoadEnabled,
+            IsAiHandlesUserCmdModuleInitialDesignsEnabled = _isAiHandlesUserCmdModuleInitialDesignsEnabled,
+            IsAiHandlesUserCmdModuleRefitDesignsEnabled = _isAiHandlesUserCmdModuleRefitDesignsEnabled,
+            IsAiHandlesUserCentralHubInitialDesignsEnabled = _isAiHandlesUserCentralHubInitialDesignsEnabled,
+            IsAiHandlesUserElementRefitDesignsEnabled = _isAiHandlesUserElementRefitDesignsEnabled,
             GameSpeedOnLoad = _gameSpeedOnLoad
         };
         _playerPrefsMgr.RecordGamePlayOptions(settings);
@@ -87,8 +107,8 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     #endregion
 
-    protected override void ValidateStateOnCapture() {
-        base.ValidateStateOnCapture();
+    protected override void __ValidateCapturedState() {
+        base.__ValidateCapturedState();
         D.AssertNotDefault((int)_gameSpeedOnLoad);
     }
 

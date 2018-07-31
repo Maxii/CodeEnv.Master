@@ -51,16 +51,106 @@ namespace CodeEnv.Master.GameContent {
             return highestCoverage;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if worldLocation is located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <param name="universeNavRadiusSqrd">The universe nav radius SQRD.</param>
+        /// <returns></returns>
+        public static bool IsLocationContainedInNavigableUniverse(Vector3 worldLocation, float universeNavRadiusSqrd) {
+            bool isWithinNavigableUniverse = false;
+            float distanceToOriginSqrd = Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+            if (distanceToOriginSqrd.IsLessThan(universeNavRadiusSqrd)) {
+                isWithinNavigableUniverse = true;
+            }
+            else {
+                isWithinNavigableUniverse = distanceToOriginSqrd.ApproxEquals(universeNavRadiusSqrd);
+            }
+            return isWithinNavigableUniverse;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if worldLocation is located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <param name="universeNavRadiusSqrd">The universe nav radius SQRD.</param>
+        /// <param name="outsideDistance">The outside distance.</param>
+        /// <returns></returns>
+        public static bool IsLocationContainedInNavigableUniverse(Vector3 worldLocation, float universeNavRadiusSqrd, out float outsideDistance) {
+            bool isWithinNavigableUniverse = false;
+            float distanceToOriginSqrd = Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+            if (distanceToOriginSqrd.IsLessThan(universeNavRadiusSqrd)) {
+                outsideDistance = Constants.ZeroF;
+                isWithinNavigableUniverse = true;
+            }
+            else {
+                float outsideDistanceSqrd;
+                isWithinNavigableUniverse = Mathfx.Approx(distanceToOriginSqrd, universeNavRadiusSqrd, UnityConstants.FloatEqualityPrecision, out outsideDistanceSqrd);
+                outsideDistance = isWithinNavigableUniverse ? Constants.ZeroF : Mathf.Sqrt(outsideDistanceSqrd);
+
+            }
+            return isWithinNavigableUniverse;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if worldLocation is located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        public static bool IsLocationContainedInNavigableUniverse(Vector3 worldLocation, UniverseSize universeSize) {
+            float universeNavRadius = universeSize.NavigableRadius();
+            float universeNavRadiusSqrd = universeNavRadius * universeNavRadius;
+            return IsLocationContainedInNavigableUniverse(worldLocation, universeNavRadiusSqrd);
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if worldLocation is located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <returns></returns>
+        public static bool IsLocationContainedInNavigableUniverse(Vector3 worldLocation) {
+            var gameSettings = GameReferences.GameManager.GameSettings;
+            D.AssertNotNull(gameSettings);
+            float universeNavRadius = gameSettings.UniverseSize.NavigableRadius();
+            return IsLocationContainedInNavigableUniverse(worldLocation, universeNavRadius * universeNavRadius);
+        }
+
+        ////[Obsolete("?")]
         public static bool IsLocationContainedInUniverse(Vector3 worldLocation, UniverseSize universeSize) {
             float universeRadius = universeSize.Radius();
             float universeRadiusSqrd = universeRadius * universeRadius;
             return IsLocationContainedInUniverse(worldLocation, universeRadiusSqrd);
         }
 
+
+        ////[Obsolete("?")]
         public static bool IsLocationContainedInUniverse(Vector3 worldLocation, float universeRadiusSqrd) {
-            return universeRadiusSqrd > Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+            float distanceToOriginSqrd = Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+            if (distanceToOriginSqrd.IsLessThan(universeRadiusSqrd)) {
+                return true;
+            }
+            return distanceToOriginSqrd.ApproxEquals(universeRadiusSqrd);
         }
 
+        ////[Obsolete("?")]
+        public static bool IsLocationContainedInUniverse(Vector3 worldLocation, float universeRadiusSqrd, out float outsideDistance) {
+            float distanceToOriginSqrd = Vector3.SqrMagnitude(worldLocation - GameConstants.UniverseOrigin);
+            if (distanceToOriginSqrd.IsLessThan(universeRadiusSqrd)) {
+                outsideDistance = Constants.ZeroF;
+                return true;
+            }
+            float outsideDistanceSqrd;
+            bool isEqual = Mathfx.Approx(distanceToOriginSqrd, universeRadiusSqrd, UnityConstants.FloatEqualityPrecision, out outsideDistanceSqrd);
+            outsideDistance = isEqual ? Constants.ZeroF : Mathf.Sqrt(outsideDistanceSqrd);
+            return isEqual;
+        }
+
+        ////[Obsolete("?")]
         public static bool IsLocationContainedInUniverse(Vector3 worldLocation) {
             var gameSettings = GameReferences.GameManager.GameSettings;
             D.AssertNotNull(gameSettings);
@@ -68,12 +158,21 @@ namespace CodeEnv.Master.GameContent {
             return IsLocationContainedInUniverse(worldLocation, universeRadius * universeRadius);
         }
 
-        public static bool IsSphereCompletelyContainedInUniverse(Vector3 containedCenter, float containedRadius, float universeRadiusSqrd) {
-            // isContained = containingRadius >= distanceBetweenCenters + containedRadius ->
-            // isContained = containingRadius - containedRadius >= distanceBetweenCenters
-            float sqrDistanceBetweenCenters = Vector3.SqrMagnitude(GameConstants.UniverseOrigin - containedCenter);
-            float containedRadiusSqrd = containedRadius * containedRadius;
-            return universeRadiusSqrd - containedRadiusSqrd >= sqrDistanceBetweenCenters;
+        ////[Obsolete("?")]
+        public static bool IsSphereCompletelyContainedInUniverse(Vector3 sphereCenter, float sphereRadius, float universeRadius) {
+            // isContained = universeRadius >= distanceBetweenCenters + sphereRadius ->
+            // universeRadiusSqrd >= distanceBetweenCentersSqrd + 2 * (distanceBetweenCenters + sphereRadius) + sphereRadiusSqrd
+            // no advantage to using squared values as must still do a Sqrt to get distanceBetweenCenters
+            float distanceBetweenCenters = Vector3.Distance(sphereCenter, GameConstants.UniverseOrigin);
+            bool isContained = universeRadius >= distanceBetweenCenters + sphereRadius;
+            return isContained;
+        }
+
+        public static bool IsSphereCompletelyContainedInNavigableUniverse(Vector3 sphereCenter, float sphereRadius, float universeNavigableRadius) {
+            // isContained = universeNavRadius >= distanceBetweenCenters + sphereRadius
+            float distanceBetweenCenters = Vector3.Distance(sphereCenter, GameConstants.UniverseOrigin);
+            bool isContained = universeNavigableRadius >= distanceBetweenCenters + sphereRadius;
+            return isContained;
         }
 
         /// <summary>
@@ -224,6 +323,15 @@ namespace CodeEnv.Master.GameContent {
             return starbases.MinBy(sb => Vector3.SqrMagnitude(sb.Position - myPosition));
         }
 
+        public static IUnitBaseCmd_Ltd GetClosest(Vector3 myPosition, IEnumerable<IUnitBaseCmd_Ltd> bases) {
+            return bases.MinBy(sb => Vector3.SqrMagnitude(sb.Position - myPosition));
+        }
+
+        public static IPlanet_Ltd GetClosest(Vector3 myPosition, IEnumerable<IPlanet_Ltd> planets) {
+            return planets.MinBy(sb => Vector3.SqrMagnitude(sb.Position - myPosition));
+        }
+
+
 
         #endregion
 
@@ -312,6 +420,31 @@ namespace CodeEnv.Master.GameContent {
             float universeRadius = gameSettings.UniverseSize.Radius();
             __ValidateLocationContainedInUniverse(worldLocation, universeRadius * universeRadius);
         }
+
+        /// <summary>
+        /// Throws an error if worldLocation is not located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <param name="universeNavRadiusSqrd">The universe nav radius SQRD.</param>
+        /// <returns></returns>
+        public static void __ValidateLocationContainedInNavigableUniverse(Vector3 worldLocation, float universeNavRadiusSqrd) {
+            D.Assert(IsLocationContainedInNavigableUniverse(worldLocation, universeNavRadiusSqrd));
+        }
+
+        /// <summary>
+        /// Throws an error if worldLocation is not located within the fleet navigable universe.
+        /// <remarks>Ships can still go outside this navigable universe definition as their formation offsets can causes this to occur.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world location.</param>
+        /// <returns></returns>
+        public static void __ValidateLocationContainedInNavigableUniverse(Vector3 worldLocation) {
+            var gameSettings = GameReferences.GameManager.GameSettings;
+            D.AssertNotNull(gameSettings);
+            float universeNavRadius = gameSettings.UniverseSize.NavigableRadius();
+            __ValidateLocationContainedInNavigableUniverse(worldLocation, universeNavRadius * universeNavRadius);
+        }
+
     }
 }
 

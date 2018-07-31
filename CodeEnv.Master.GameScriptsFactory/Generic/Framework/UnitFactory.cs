@@ -28,8 +28,7 @@ using UnityEngine;
 /// Singleton factory that makes instances of Elements and Commands.
 /// It also can make a standalone Fleet encompassing a single ship.
 /// </summary>
-public class UnitFactory : AGenericSingleton<UnitFactory> {
-    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
+public class UnitFactory : AGenericSingleton<UnitFactory>, IDisposable {
 
     private AutoFleetCreator _fleetCreatorPrefab;
     private AutoStarbaseCreator _starbaseCreatorPrefab;
@@ -51,7 +50,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _countermeasureRangeMonitorPrefab;
     private GameObject _shieldPrefab;
     private GameObject _weaponRangeMonitorPrefab;
-    private GameObject _ftlDampenerRangeMonitorPrefab;
+    private GameObject _ftlDamperRangeMonitorPrefab;
     private GameObject _cmdSensorRangeMonitorPrefab;
     private GameObject _elementSensorRangeMonitorPrefab;
 
@@ -61,6 +60,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     private UnitFactory() {
         Initialize();
+        Subscribe();
     }
 
     protected sealed override void Initialize() {
@@ -79,7 +79,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _cmdSensorRangeMonitorPrefab = reqdPrefabs.cmdSensorRangeMonitor.gameObject;
         _elementSensorRangeMonitorPrefab = reqdPrefabs.elementSensorRangeMonitor.gameObject;
-        _ftlDampenerRangeMonitorPrefab = reqdPrefabs.ftlDampenerRangeMonitor.gameObject;
+        _ftlDamperRangeMonitorPrefab = reqdPrefabs.ftlDamperRangeMonitor.gameObject;
 
         _shipItemPrefab = reqdPrefabs.shipItem;
         _shipHullPrefabs = reqdPrefabs.shipHulls;
@@ -92,7 +92,25 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _gameMgr = GameManager.Instance;
     }
 
+    private void Subscribe() {
+        _gameMgr.sceneLoading += SceneLoadingEventHandler;
+    }
+
     #endregion
+
+    #region Event and Property Change Handlers
+
+    private void SceneLoadingEventHandler(object sender, EventArgs e) {
+        HandleSceneLoading();
+    }
+
+    #endregion
+
+    private void HandleSceneLoading() {
+        // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
+        __facilityNameCountLookup.Clear();
+        __shipNameCountLookup.Clear();
+    }
 
     #region Fleets
 
@@ -133,8 +151,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Immediately makes and commences operations of a fleet instance parented to a new Creator from the provided ships using the
-    /// provided CmdModule design.
+    /// Makes a FleetCmdItem instance made up of the provided ships at the designated creatorLocation
+    /// using a RuntimeCreator parented to the FleetsFolder.
     /// </summary>
     /// <param name="creatorLocation">The creator location.</param>
     /// <param name="cmdModDesign">The command module design.</param>
@@ -194,7 +212,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, string cmdModDesignName, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, string cmdModDesignName, GameObject unitContainer, string unitName, Formation formation) {
         FleetCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.__GetFleetCmdModDesign(cmdModDesignName);
         return MakeFleetCmdInstance(owner, design, unitContainer, unitName, formation);
     }
@@ -208,7 +226,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdModuleDesign design, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdModuleDesign design, GameObject unitContainer, string unitName, Formation formation) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _fleetCmdPrefab);
         D.AssertEqual((Layers)_fleetCmdPrefab.layer, (Layers)cmdGo.layer);
         FleetCmdItem cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
@@ -224,7 +242,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, string cmdModDesignName, ref FleetCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, string cmdModDesignName, ref FleetCmdItem cmd, string unitName, Formation formation) {
         FleetCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.__GetFleetCmdModDesign(cmdModDesignName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
@@ -238,7 +256,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, FleetCmdModuleDesign cmdModDesign, ref FleetCmdItem cmd, string unitName,
-        Formation formation = Formation.Globe) {
+        Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
@@ -246,8 +264,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         var passiveCMs = MakeCountermeasures(cmdModDesign);
         var sensors = MakeSensors(cmdModDesign, cmd);
-        var ftlDampener = MakeFtlDampener(cmdModDesign.FtlDampenerStat, cmd);
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+        var ftlDamper = MakeFtlDamper(cmdModDesign.FtlDamperStat, cmd);
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -345,7 +363,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Makes a StarbaseCmdItem instance at the location of a Sector's vacantStation using a 
-    /// RuntimeStarbaseCreator parented to the StarbasesFolder.
+    /// RuntimeCreator parented to the StarbasesFolder.
     /// </summary>
     /// <param name="cmdModDesign">The command mod design.</param>
     /// <param name="centralHubDesign">The central hub design.</param>
@@ -355,7 +373,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
     public StarbaseCmdItem MakeStarbaseInstance(StarbaseCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign, ShipItem colonyShip,
-        StationaryLocation vacantStation, Formation formation = Formation.Globe, string optionalRootUnitName = null) {
+        StationaryLocation vacantStation, Formation formation, string optionalRootUnitName = null) {
         var creator = MakeStarbaseCreator(cmdModDesign, centralHubDesign, colonyShip, vacantStation);
         if (optionalRootUnitName != null) {
             creator.RootUnitName = optionalRootUnitName;
@@ -391,7 +409,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, string cmdModDesignName, GameObject unitContainer, string unitName,
-        Formation formation = Formation.Globe) {
+        Formation formation) {
         StarbaseCmdModuleDesign cmdModDesign = _gameMgr.GetAIManagerFor(owner).Designs.__GetStarbaseCmdModDesign(cmdModDesignName);
         return MakeStarbaseCmdInstance(owner, cmdModDesign, unitContainer, unitName, formation);
     }
@@ -406,7 +424,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, StarbaseCmdModuleDesign cmdModDesign, GameObject unitContainer, string unitName,
-        Formation formation = Formation.Globe) {
+        Formation formation) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
         PopulateInstance(owner, cmdModDesign, ref cmd, unitName, formation);
@@ -421,7 +439,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The Cmd instance to populate.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, string cmdModDesignName, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, string cmdModDesignName, ref StarbaseCmdItem cmd, string unitName, Formation formation) {
         StarbaseCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.__GetStarbaseCmdModDesign(cmdModDesignName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
@@ -434,7 +452,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The Cmd instance to populate.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, StarbaseCmdModuleDesign cmdModDesign, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, StarbaseCmdModuleDesign cmdModDesign, ref StarbaseCmdItem cmd, string unitName, Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
@@ -442,8 +460,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         var passiveCMs = MakeCountermeasures(cmdModDesign);
         var sensors = MakeSensors(cmdModDesign, cmd);
-        var ftlDampener = MakeFtlDampener(cmdModDesign.FtlDampenerStat, cmd);
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+        var ftlDamper = MakeFtlDamper(cmdModDesign.FtlDamperStat, cmd);
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -477,7 +495,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Makes a settlement instance at the location of the SettlementStation using a 
-    /// RuntimeSettlementCreator parented to the designated system.
+    /// RuntimeCreator parented to the designated system.
     /// </summary>
     /// <param name="cmdModDesign">The command mod design.</param>
     /// <param name="centralHubDesign">The central hub design.</param>
@@ -488,7 +506,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementInstance(SettlementCmdModuleDesign cmdModDesign, FacilityDesign centralHubDesign, ShipItem colonyShip,
-        SystemItem system, StationaryLocation settlementStation, Formation formation = Formation.Globe, string optionalRootUnitName = null) {
+        SystemItem system, StationaryLocation settlementStation, Formation formation, string optionalRootUnitName = null) {
         var creator = MakeSettlementCreator(cmdModDesign, centralHubDesign, colonyShip, system, settlementStation.Position);
         if (optionalRootUnitName != null) {
             creator.RootUnitName = optionalRootUnitName;
@@ -522,7 +540,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementCmdInstance(Player owner, string cmdModDesignName, GameObject unitContainer, string unitName,
-    Formation formation = Formation.Globe) {
+    Formation formation) {
         SettlementCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.__GetSettlementCmdModDesign(cmdModDesignName);
         return MakeSettlementCmdInstance(owner, design, unitContainer, unitName, formation);
     }
@@ -537,7 +555,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, GameObject unitContainer,
-        string unitName, Formation formation = Formation.Globe) {
+        string unitName, Formation formation) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         //D.Log("{0}: {1}.localPosition = {2} after creation.", DebugName, design.CmdStat.UnitName, cmdGo.transform.localPosition);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
@@ -553,7 +571,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, string cmdModDesignName, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, string cmdModDesignName, ref SettlementCmdItem cmd, string unitName, Formation formation) {
         SettlementCmdModuleDesign design = _gameMgr.GetAIManagerFor(owner).Designs.__GetSettlementCmdModDesign(cmdModDesignName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
@@ -566,7 +584,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
+    public void PopulateInstance(Player owner, SettlementCmdModuleDesign cmdModDesign, ref SettlementCmdItem cmd, string unitName, Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         Utility.ValidateNotNullOrEmpty(unitName);
         if (cmd.transform.parent == null) {
@@ -574,8 +592,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         var passiveCMs = MakeCountermeasures(cmdModDesign);
         var sensors = MakeSensors(cmdModDesign, cmd);
-        var ftlDampener = MakeFtlDampener(cmdModDesign.FtlDampenerStat, cmd);
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+        var ftlDamper = MakeFtlDamper(cmdModDesign.FtlDamperStat, cmd);
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -652,7 +670,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Refits the provided instance of <c>cmd</c> to be consistent with the specifications in the provided <c>cmdModDesign</c>.
-    //// <remarks>Will throw an error if the Level of the new design is not greater than the level of the existing design.</remarks>
     /// </summary>
     /// <param name="cmdModDesign">The command module design.</param>
     /// <param name="cmd">The command instance to be refit.</param>
@@ -664,23 +681,25 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <summary>
     /// Replaces the CmdModule of <c>cmd</c> with the provided <c>cmdModDesign</c>.
     /// <remarks>Replacement will occur without regard to the Level of the two designs.</remarks>
+    /// <remarks>This replacement does not interfere with the ongoing operations of this Cmd. 
+    /// They can however create momentary changes in AlertStatus and FtlDamping before both are properly resumed.</remarks>
     /// </summary>
     /// <param name="cmdModDesign">The command module design.</param>
     /// <param name="cmd">The command instance to be modified.</param>
     public void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, AUnitCmdItem cmd) {
         D.AssertNotEqual(cmd.Data.CmdModuleDesign, cmdModDesign);
         //D.Log("{0}.ReplaceCmdModuleWith() called for {1} using {2}.", DebugName, cmd.DebugName, cmdModDesign.DebugName);
-        // Deactivate, decouple and remove all CmdSensors and the FtlDampener from their Monitors
+        // Deactivate, decouple and remove all CmdSensors and the FtlDamper from their Monitors
         cmd.SensorMonitors.ForAll(mon => mon.ResetForReuse());
-        cmd.FtlDampenerMonitor.ResetForReuse();
+        cmd.FtlDamperMonitor.ResetForReuse();
 
         // Generate the replacement equipment
         var passiveCmReplacements = MakeCountermeasures(cmdModDesign);
         var sensorReplacements = MakeSensors(cmdModDesign, cmd); // makes new sensors and attaches monitor(s) from Cmd
-        var ftlDampenerReplacement = MakeFtlDampener(cmdModDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
+        var ftlDamperReplacement = MakeFtlDamper(cmdModDesign.FtlDamperStat, cmd); // makes new FtlDamper and attaches monitor from Cmd
 
         // Apply the design and new equipment to the Cmd
-        cmd.ReplaceCmdModuleWith(cmdModDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
+        cmd.ReplaceCmdModuleWith(cmdModDesign, passiveCmReplacements, sensorReplacements, ftlDamperReplacement);
     }
 
     private FollowableItemCameraStat MakeElementCameraStat(FacilityHullStat hullStat) {
@@ -736,13 +755,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
-        float radius = hullCat.Dimensions().magnitude / 2F; ////hullStat.HullDimensions.magnitude / 2F;
+        float radius = hullCat.Dimensions().magnitude / 2F;
         //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
-        float distanceDampener = 3F;    // default
-        float rotationDampener = 10F;   // ships can change direction pretty fast
-        return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov, distanceDampener, rotationDampener);
+        float distanceDamper = 3F;    // default
+        float rotationDamper = 10F;   // ships can change direction pretty fast
+        return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov, distanceDamper, rotationDamper);
     }
 
     private FleetCmdCameraStat MakeFleetCmdCameraStat(float maxElementRadius) {
@@ -781,15 +800,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an FTL dampener.
+    /// Makes an FTL damper.
     /// </summary>
     /// <param name="stat">The stat.</param>
     /// <param name="name">The name.</param>
     /// <returns></returns>
-    private FtlDampener MakeFtlDampener(FtlDampenerStat stat, AUnitCmdItem cmd, string name = null) {
-        var dampener = new FtlDampener(stat, name);
-        AttachMonitor(dampener, cmd);
-        return dampener;
+    private FtlDamper MakeFtlDamper(FtlDamperStat stat, AUnitCmdItem cmd, string name = null) {
+        var damper = new FtlDamper(stat, name);
+        AttachMonitor(damper, cmd);
+        return damper;
     }
 
     /// <summary>
@@ -1114,21 +1133,34 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes or acquires an existing FtlDampenerRangeMonitor and pairs it with this ftlDampener.
+    /// Makes or acquires an existing FtlDamperRangeMonitor and pairs it with this ftlDamper.
     /// </summary>
-    /// <param name="ftlDampener">The command's FtlDampener.</param>
-    /// <param name="command">The command that has an FtlDampener monitor as a child.</param>
-    private void AttachMonitor(FtlDampener ftlDampener, AUnitCmdItem command) {
-        var monitor = command.gameObject.GetComponentInChildren<FtlDampenerRangeMonitor>();
+    /// <param name="ftlDamper">The command's FtlDamper.</param>
+    /// <param name="command">The command that has an FtlDamper monitor as a child.</param>
+    private void AttachMonitor(FtlDamper ftlDamper, AUnitCmdItem command) {
+        var monitor = command.gameObject.GetComponentInChildren<FtlDamperRangeMonitor>();
         if (monitor == null) {
-            D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_ftlDampenerRangeMonitorPrefab.layer);
-            GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _ftlDampenerRangeMonitorPrefab);
+            D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_ftlDamperRangeMonitorPrefab.layer);
+            GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _ftlDamperRangeMonitorPrefab);
             monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
-            monitor = monitorGo.GetComponent<FtlDampenerRangeMonitor>();
+            monitor = monitorGo.GetComponent<FtlDamperRangeMonitor>();
         }
         D.AssertDefault((int)monitor.RangeCategory);
         monitor.ParentItem = command;
-        monitor.Add(ftlDampener);
+        monitor.Add(ftlDamper);
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void Unsubscribe() {
+        _gameMgr.sceneLoading -= SceneLoadingEventHandler;
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+        CallOnDispose();
     }
 
     #endregion
@@ -1136,13 +1168,21 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Debug
 
     private const string __UnitElementUniqueNameFormat = "{0}#{1}";    // aka DesignName#1, distinguished from  DesignName1
+    [Obsolete]
+    private const string __UnitUniqueNameFormat = "{0}{1}";
 
     private IDictionary<string, int> __facilityNameCountLookup = new Dictionary<string, int>();
     private IDictionary<string, int> __shipNameCountLookup = new Dictionary<string, int>();
+    [Obsolete]
+    private int __fleetUnitNameCounter = Constants.One;
+    [Obsolete]
+    private int __starbaseUnitNameCounter = Constants.One;
+    [Obsolete]
+    private int __settlementUnitNameCounter = Constants.One;
 
     public string __GetUniqueFacilityName(string designName) {
         if (!__facilityNameCountLookup.ContainsKey(designName)) {
-            __facilityNameCountLookup.Add(designName, 1);
+            __facilityNameCountLookup.Add(designName, Constants.One);
         }
         int nameCount = __facilityNameCountLookup[designName];
         string name = __UnitElementUniqueNameFormat.Inject(designName, nameCount);
@@ -1152,12 +1192,73 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     public string __GetUniqueShipName(string designName) {
         if (!__shipNameCountLookup.ContainsKey(designName)) {
-            __shipNameCountLookup.Add(designName, 1);
+            __shipNameCountLookup.Add(designName, Constants.One);
         }
         int nameCount = __shipNameCountLookup[designName];
         string name = __UnitElementUniqueNameFormat.Inject(designName, nameCount);
         __shipNameCountLookup[designName] = ++nameCount;
         return name;
+    }
+
+    [Obsolete]
+    public string __GetUniqueFleetUnitName(string rootUnitName) {
+        string unitName = __UnitUniqueNameFormat.Inject(rootUnitName, __fleetUnitNameCounter);
+        __fleetUnitNameCounter++;
+        return unitName;
+    }
+
+    [Obsolete]
+    public string __GetUniqueStarbaseUnitName(string rootUnitName) {
+        string unitName = __UnitUniqueNameFormat.Inject(rootUnitName, __starbaseUnitNameCounter);
+        __starbaseUnitNameCounter++;
+        return unitName;
+    }
+
+    [Obsolete]
+    public string __GetUniqueSettlementUnitName(string rootUnitName) {
+        string unitName = __UnitUniqueNameFormat.Inject(rootUnitName, __settlementUnitNameCounter);
+        __settlementUnitNameCounter++;
+        return unitName;
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    private bool _alreadyDisposed = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+
+        Dispose(true);
+
+        // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+        // the finalization queue and prevent finalization code from 'disposing' a second time
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isExplicitlyDisposing) {
+        if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
+            D.Warn("{0} has already been disposed.", GetType().Name);
+            return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        }
+
+        if (isExplicitlyDisposing) {
+            // Dispose of managed resources here as you have called Dispose() explicitly
+            Cleanup();
+        }
+
+        // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+        // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+        // called Dispose(false) to cleanup unmanaged resources
+
+        _alreadyDisposed = true;
     }
 
     #endregion

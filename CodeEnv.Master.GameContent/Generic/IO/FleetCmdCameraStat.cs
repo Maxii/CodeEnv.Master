@@ -24,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdCameraStat : CmdCameraStat {
 
-        public float FollowDistanceDampener { get; private set; }
+        public float FollowDistanceDamper { get; private set; }
 
-        public float FollowRotationDampener { get; private set; }
+        public float FollowRotationDamper { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdCameraStat"/> class.
@@ -37,14 +37,15 @@ namespace CodeEnv.Master.GameContent {
         /// A FleetCmd's ICameraFollowable OptimalViewingDistance is overridden and based off of its UnitFormationRadius.
         /// As such, this value is used as an adder to the UnitFormationRadius rather than as the OptimalViewingDistance itself.</param>
         /// <param name="fov">The field of view.</param>
-        /// <param name="followDistanceDampener">The follow distance dampener. Default is 3F.</param>
-        /// <param name="followRotationDampener">The follow rotation dampener. Default is 10F as Fleets can change directions pretty fast.</param>
-        public FleetCmdCameraStat(float minViewDistance, float optViewDistanceAdder, float fov, float followDistanceDampener = 3F, float followRotationDampener = 10F)
+        /// <param name="followDistanceDamper">The follow distance damper. Default is 3F.</param>
+        /// <param name="followRotationDamper">The follow rotation damper. Default is 10F as Fleets can change directions pretty fast.</param>
+        public FleetCmdCameraStat(float minViewDistance, float optViewDistanceAdder, float fov, float followDistanceDamper = 3F,
+            float followRotationDamper = 10F)
             : base(minViewDistance, optViewDistanceAdder, fov) {
-            D.Assert(followDistanceDampener > Constants.OneF);
-            D.Assert(followRotationDampener > Constants.ZeroF);
-            FollowDistanceDampener = followDistanceDampener;
-            FollowRotationDampener = followRotationDampener;
+            D.Assert(followDistanceDamper > Constants.OneF);
+            D.Assert(followRotationDamper > Constants.ZeroF);
+            FollowDistanceDamper = followDistanceDamper;
+            FollowRotationDamper = followRotationDamper;
         }
 
     }

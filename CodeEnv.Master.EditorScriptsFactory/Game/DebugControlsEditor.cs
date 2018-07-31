@@ -34,7 +34,7 @@ public class DebugControlsEditor : Editor {
 
     void OnEnable() {
         _debugCntlTarget = target as DebugControls;
-        _chosenPlayerNameSP = serializedObject.FindProperty("_chosenPlayerName");
+        _chosenPlayerNameSP = serializedObject.FindProperty("_chosenPlayerDebugName");
     }
 
     public override void OnInspectorGUI() {
@@ -65,7 +65,7 @@ public class DebugControlsEditor : Editor {
                 NGUIEditorTools.EndContents();
             }
 
-            if (NGUIEditorTools.DrawHeader("AI Settings", detailed: true)) {
+            if (NGUIEditorTools.DrawHeader("Pre-game AI Settings", detailed: true)) {
                 NGUIEditorTools.BeginContents();
                 {
                     bool toDisableAutoExploreGroup = false;
@@ -92,34 +92,14 @@ public class DebugControlsEditor : Editor {
                     EditorGUI.EndDisabledGroup();
 
                     NGUIEditorTools.SetLabelWidth(140F);
-                    var autoFoundSettlementsSP = NGUIEditorTools.DrawProperty("Found Settlements", serializedObject, "_fleetsAutoFoundSettlements");
-                    var autoFoundStarbasesSP = NGUIEditorTools.DrawPaddedProperty("Found Starbases", serializedObject, "_fleetsAutoFoundStarbases");
-                    bool aiPicksInitialDesigns = autoFoundSettlementsSP.boolValue || autoFoundStarbasesSP.boolValue;
-
-                    if (aiPicksInitialDesigns) {
-                        _debugCntlTarget.__EnableAiPicksInitialDesigns();
-                    }
-                    EditorGUI.BeginDisabledGroup(aiPicksInitialDesigns);
-                    {
-                        NGUIEditorTools.SetLabelWidth(240F);
-                        NGUIEditorTools.DrawProperty("User CmdModInitialDesigns by AI", serializedObject, "_aiChoosesUserCmdModInitialDesigns");
-                        NGUIEditorTools.DrawProperty("User CentralHubInitialDesigns by AI", serializedObject, "_aiChoosesUserCentralHubInitialDesigns");
-                    }
-                    EditorGUI.EndDisabledGroup();
-
+                    NGUIEditorTools.DrawProperty("Found Settlements", serializedObject, "_fleetsAutoFoundSettlements");
+                    NGUIEditorTools.DrawPaddedProperty("Found Starbases", serializedObject, "_fleetsAutoFoundStarbases");
 
                     NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("Full Intel of Items & Players", serializedObject, "_allIntelCoverageIsComprehensive");
-
-
-                    NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("All Assaults Successful", serializedObject, "_areAssaultsAlwaysSuccessful");
                     NGUIEditorTools.DrawProperty("Ordnance Move Tech", serializedObject, "_unityMoveTech");
                     NGUIEditorTools.DrawProperty("AI UnitHud Buttons work", serializedObject, "_areAiUnitHudButtonsFunctional");
-
-                    NGUIEditorTools.SetLabelWidth(220F);
-                    NGUIEditorTools.DrawProperty("User CmdModRefitDesigns by AI", serializedObject, "_aiChoosesUserCmdModRefitDesigns");
-                    NGUIEditorTools.DrawProperty("User ElementRefitDesigns by AI", serializedObject, "_aiChoosesUserElementRefitDesigns");
 
                     var equipmentPlanSP = NGUIEditorTools.DrawProperty("Equipment Plan", serializedObject, "_equipmentPlan");
                     EditorGUI.BeginDisabledGroup(equipmentPlanSP.enumValueIndex == 0);  // disabled if Random selected
@@ -189,7 +169,6 @@ public class DebugControlsEditor : Editor {
                 }
                 NGUIEditorTools.EndContents();
             }
-
         }
         EditorGUI.EndDisabledGroup();
         // End disabled while playing group
@@ -262,9 +241,28 @@ public class DebugControlsEditor : Editor {
                     }
                     NGUIEditorTools.EndContents();
                 }
-
             }
             GUILayout.Space(10F);
+            NGUIEditorTools.EndContents();
+        }
+
+        if (NGUIEditorTools.DrawHeader("In-game AI Settings", detailed: true)) {
+            NGUIEditorTools.BeginContents();
+            {
+                GUILayout.Space(5F);
+                if (NGUIEditorTools.DrawHeader("AI handles User Designs")) {
+                    NGUIEditorTools.BeginContents();
+                    {
+                        NGUIEditorTools.SetLabelWidth(240F);
+                        NGUIEditorTools.DrawProperty("User CmdModInitialDesigns by AI", serializedObject, "_aiHandlesUserCmdModuleInitialDesigns");
+                        NGUIEditorTools.DrawProperty("User CmdModRefitDesigns by AI", serializedObject, "_aiHandlesUserCmdModuleRefitDesigns");
+                        NGUIEditorTools.DrawProperty("User CentralHubInitialDesigns by AI", serializedObject, "_aiHandlesUserCentralHubInitialDesigns");
+                        NGUIEditorTools.DrawProperty("User ElementRefitDesigns by AI", serializedObject, "_aiHandlesUserElementRefitDesigns");
+                    }
+                    NGUIEditorTools.EndContents();
+                }
+                GUILayout.Space(5F);
+            }
             NGUIEditorTools.EndContents();
         }
         // End not disabled while playing group

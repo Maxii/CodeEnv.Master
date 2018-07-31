@@ -26,6 +26,13 @@ public class StarbaseTableRowForm : ACommandTableRowForm {
 
     public override FormID FormID { get { return FormID.StarbaseTableRow; } }
 
+    protected override void AssignValueToLocationGuiElement() {
+        base.AssignValueToLocationGuiElement();
+        var report = Report as StarbaseCmdReport;
+        _locationGuiElement.SectorID = report.SectorID;
+        _locationGuiElement.Location = report.Position;
+    }
+
     protected override void AssignValueToResourcesGuiElement() {
         base.AssignValueToResourcesGuiElement();
         var report = Report as StarbaseCmdReport;

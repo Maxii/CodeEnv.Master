@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, OrderID = {4}, FollowonOrder = {5}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, \nTarget = {3}, \nOrderID = {4}, \nFollowonOrder = {5}]";
 
         private static readonly BaseDirective[] DirectivesWithNullTarget = new BaseDirective[]  {
                                                                                                     BaseDirective.Cancel,

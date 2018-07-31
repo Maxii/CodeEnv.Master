@@ -147,7 +147,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);    // only MortalItems should ever see a change to false
         }
 
-        protected virtual void HandleOwnerChanging(Player incomingOwner) { } // 6.18.18 Not currently used
+        protected virtual void HandleOwnerChanging(Player incomingOwner) { }
 
         private void HandleOwnerChanged() {
             //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner);

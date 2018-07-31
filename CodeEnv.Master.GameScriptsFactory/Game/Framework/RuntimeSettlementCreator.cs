@@ -46,7 +46,8 @@ public class RuntimeSettlementCreator : ARuntimeUnitCreator {
 
     protected override void MakeCommand() {
         __ValidateColonyShipState();
-        _command = _factory.MakeSettlementCmdInstance(Owner, CmdModDesign, gameObject, UnitName);
+        Formation randomFormation = RandomExtended.Choice(TempGameValues.AcceptableBaseFormations);
+        _command = _factory.MakeSettlementCmdInstance(Owner, CmdModDesign, gameObject, UnitName, randomFormation);
     }
 
     protected override void AddElementsToCommand() {
@@ -109,6 +110,7 @@ public class RuntimeSettlementCreator : ARuntimeUnitCreator {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateColonyShipState() {
         D.AssertNotNull(ColonyShip);
         D.AssertEqual(ShipHullCategory.Colonizer, ColonyShip.HullCategory);

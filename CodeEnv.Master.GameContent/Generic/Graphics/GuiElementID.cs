@@ -30,7 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last: CombatStance = 111  
+        // Newly available: 83, 84, 85
+        // last: PlayerSeparationPopupList = 112  
 
         #region Checkboxes
 
@@ -42,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
 
         ZoomOutOnCursorCheckbox = 4,
 
-        ElementIconsCheckbox = 5,
+        ShowElementIconsCheckbox = 5,
 
         // 7.8.17 Currently used in DesignScreensManager
         ShipDesignWindowCheckbox = 93,
@@ -50,6 +51,11 @@ namespace CodeEnv.Master.GameContent {
         FleetCmdDesignWindowCheckbox = 95,
         StarbaseCmdDesignWindowCheckbox = 96,
         SettlementCmdDesignWindowCheckbox = 97,
+
+        AiHandlesUserCmdModuleInitialDesignsCheckbox = 79,
+        AiHandlesUserCmdModuleRefitDesignsCheckbox = 80,
+        AiHandlesUserCentralHubInitialDesignsCheckbox = 81,
+        AiHandlesUserElementRefitDesignsCheckbox = 82,
 
         #endregion
 
@@ -111,13 +117,7 @@ namespace CodeEnv.Master.GameContent {
         AIPlayer6HomeDesirabilityPopupList = 77,
         AIPlayer7HomeDesirabilityPopupList = 78,
 
-        AIPlayer1UserSeparationPopupList = 79,
-        AIPlayer2UserSeparationPopupList = 80,
-        AIPlayer3UserSeparationPopupList = 81,
-        AIPlayer4UserSeparationPopupList = 82,
-        AIPlayer5UserSeparationPopupList = 83,
-        AIPlayer6UserSeparationPopupList = 84,
-        AIPlayer7UserSeparationPopupList = 85,
+        PlayersSeparationPopupList = 112,
 
         PlayerCountPopupList = 53,
 
@@ -197,8 +197,6 @@ namespace CodeEnv.Master.GameContent {
         HeroChange = 43,
 
         CombatStanceChange = 110,
-
-        ////TechResearch = 112,
 
         #endregion
 

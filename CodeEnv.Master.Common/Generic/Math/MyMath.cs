@@ -550,11 +550,11 @@ namespace CodeEnv.Master.Common {
                 return FindClosestPointOnSphereTo(midPtOfLineInsideSphere, sphereCenter, sphereRadius);
             }
             // any plane containing the intersecting line will do as its normal will always be orthogonal to the intersecting line
-            D.Log("Line goes directly through SphereCenter, so using random plane to generate normal.");
+            //D.Log("Line goes directly through SphereCenter, so using random plane to generate normal.");
             Vector3 thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
             int count = 0;
             while (IsPointOnLine(startLinePt, endLinePtOnSphere, thirdPtDefiningPlane)) {
-                D.Assert(count++ < 100, "Too many iterations");
+                D.AssertException(count++ < 100, "Too many iterations");
                 thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
             }
             Plane aPlaneContainingLine = new Plane(startLinePt, endLinePtOnSphere, thirdPtDefiningPlane);

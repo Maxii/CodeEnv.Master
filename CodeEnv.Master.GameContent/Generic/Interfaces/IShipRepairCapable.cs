@@ -17,18 +17,28 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items or stations that can repair Ships and CmdModules.
+    /// Interface for Items or stations that can repair Ships and FleetCmdModules.
     /// <remarks>Planets, Bases and FormationStations.</remarks>
     /// </summary>
     public interface IShipRepairCapable : IRepairCapable, IShipNavigableDestination {
 
         /// <summary>
-        /// Gets the repair capacity available in hitPts per day.
+        /// Gets the repair capacity available to repair the ship in hitPts per day.
         /// </summary>
         /// <param name="ship">The ship.</param>
         /// <param name="elementOwner">The element owner.</param>
         /// <returns></returns>
         float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner);
+
+        /// <summary>
+        /// Gets the repair capacity available to repair the Fleet's CmdModule in hitPts per day.
+        /// </summary>
+        /// <param name="unusedFleetCmd">The unused fleet command.</param>
+        /// <param name="flagship">The flagship.</param>
+        /// <param name="cmdOwner">The command owner.</param>
+        /// <returns></returns>
+        float GetAvailableRepairCapacityFor(IFleetCmd_Ltd unusedFleetCmd, IShip_Ltd flagship, Player cmdOwner);
+
 
     }
 }

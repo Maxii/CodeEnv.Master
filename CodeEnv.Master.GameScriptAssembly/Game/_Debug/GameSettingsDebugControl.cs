@@ -65,9 +65,10 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [SerializeField]
     private DebugSystemDesirability _homeSystemDesirability = DebugSystemDesirability.Normal;
 
-    [Tooltip("Set the degree of separation of all AIPlayer's from the User")]
+    [Tooltip("Set the degree of separation between players")]
     [SerializeField]
-    private DebugPlayerSeparation _aiPlayersSeparationFromUser = DebugPlayerSeparation.Normal;
+    private DebugPlayerSeparation _playersSeparation = DebugPlayerSeparation.Normal;
+
 
     [Tooltip("Check to deploy additional User creators on random dates. Not valid when _useDebugCreatorsOnly is checked")]
     [SerializeField]
@@ -95,7 +96,6 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [Tooltip("Check to zoom on a user unit when starting a new game. Not valid when _useDebugCreatorsOnly is checked")]
     [SerializeField]
     private bool _zoomOnUser = false;
-
 
     #endregion
 
@@ -175,13 +175,11 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
         Player[] aiPlayers = new Player[aiPlayerCount];
         EmpireStartLevel[] aiPlayerStartLevels = new EmpireStartLevel[aiPlayerCount];
         SystemDesirability[] aiPlayerHomeSystemDesirabilties = new SystemDesirability[aiPlayerCount];
-        PlayerSeparation[] aiPlayerSeparationFromUser = new PlayerSeparation[aiPlayerCount];
 
         Species aiSpecies;
         GameColor aiColor;
         IQ aiIQ;
         TeamID aiTeam;
-
         for (int i = 0; i < aiPlayerCount; i++) {
             int aiPlayerNumber = i + 1;
             switch (aiPlayerNumber) {
@@ -235,7 +233,6 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
             aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, aiIQ, aiTeam, aiColor);
             aiPlayerStartLevels[i] = _startLevel.Convert();
             aiPlayerHomeSystemDesirabilties[i] = _homeSystemDesirability.Convert();
-            aiPlayerSeparationFromUser[i] = _aiPlayersSeparationFromUser.Convert();
         }
 
         var userPlayerSpecies = _playerPrefsMgr.UserPlayerSpeciesSelection.Convert();
@@ -257,14 +254,14 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
             __ZoomOnUser = !_useDebugCreatorsOnly && _zoomOnUser,
             UniverseSize = _universeSize.Convert(),
             SystemDensity = _systemDensity.Convert(),
+            PlayersSeparation = _playersSeparation.Convert(),
             PlayerCount = _playerCount,
             UserPlayer = userPlayer,
             AIPlayers = aiPlayers,
             UserStartLevel = _startLevel.Convert(),
             AIPlayersStartLevels = aiPlayerStartLevels,
             UserHomeSystemDesirability = _homeSystemDesirability.Convert(),
-            AIPlayersHomeSystemDesirability = aiPlayerHomeSystemDesirabilties,
-            AIPlayersUserSeparations = aiPlayerSeparationFromUser
+            AIPlayersHomeSystemDesirability = aiPlayerHomeSystemDesirabilties
         };
         return gameSettings;
     }

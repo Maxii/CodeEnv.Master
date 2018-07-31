@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory Category { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
+
         /// <summary>
         /// The Composition of the Unit this report is about. The unit's elements
         /// reported will be limited to those elements the Player requesting
@@ -128,7 +130,9 @@ namespace CodeEnv.Master.GameContent {
                 UnitWeaponsRange = fData.UnitWeaponsRange;
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
-                SectorID = fData.SectorID;
+                IntVector3 sectorID;
+                fData.TryGetSectorID(out sectorID);
+                SectorID = sectorID;    // 7.15.18 DisplayInfoFactory will handle if default(IntVector3)
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Formation)) {
                 Formation = fData.Formation;

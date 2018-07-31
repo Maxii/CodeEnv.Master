@@ -22,8 +22,9 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Sprite resident in world space that can respond to the mouse. 
+/// Sprite resident in world space that tracks an object and can interact with the mouse. 
 /// The user perceives the widget at a constant size, independent of camera distance.
+/// <remarks>This version is parented to a common UIPanel for the tracked target's type.</remarks>
 /// </summary>
 public class InteractiveWorldTrackingSprite : WorldTrackingSprite, IInteractiveWorldTrackingSprite {
 

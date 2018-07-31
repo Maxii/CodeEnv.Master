@@ -111,19 +111,19 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     }
 
     /// <summary>
-    /// Forms a fleet from the provided ships from this hanger using the provided cmdModDesign and orders them to AssumeFormation
-    /// at the closest Base LocalAssyStation.
+    /// Forms a fleet from the provided ships from this Hanger using the provided cmdModuleDesign.
+    /// Throws an error if one or more of the provided ships are not currently part of this hanger.
+    /// <remarks>1.6.18 The ships forming the fleet have their existing orders cleared.
     /// </summary>
     /// <param name="fleetRootname">The fleet root name.</param>
     /// <param name="cmdModDesign">The command mod design.</param>
     /// <param name="formation">The formation.</param>
-    /// <param name="ships">The ships.</param>
+    /// <param name="ships">The ships from this hanger.</param>
     /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, FleetCmdModuleDesign cmdModDesign, Formation formation, IEnumerable<ShipItem> ships) {
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
 
         ships.ForAll(ship => {
-            // canceling any existing ship orders is handled below
             Remove(ship);
         });
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);    // will fail if ships was ref to _allShips
@@ -137,7 +137,6 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
             D.Assert(ship.__HasCommand);
             D.Assert(!ship.IsCollisionAvoidanceOperational);
             ship.PrepareForHangerDeparture();
-            // 1.6.18 Fleet will clear orders of ships during CommenceOperations
         });
 
         var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);
@@ -219,7 +218,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
     #region Losing Hanger Fleet Generation
 
     private void DispatchLostHangerFleet() {
-        if (Owner.IsUser && !DebugControls.Instance.AiChoosesUserCmdModInitialDesigns) {
+        if (Owner.IsUser && !PlayerPrefsManager.Instance.IsAiHandlesUserCmdModuleInitialDesignsEnabled) {
             string dialogText = "Pick the CmdModDesign you wish to use to create this HangerEmergencyEscape Fleet. \nCancel to use the default design.";
             EventDelegate cancelDelegate = new EventDelegate(() => {
                 var cmdModDefaultDesign = _gameMgr.UserAIManager.Designs.GetFleetCmdModDefaultDesign();
@@ -235,10 +234,10 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
         }
     }
 
-    private void FormFleetFrom(AUnitCmdModuleDesign chosenDesign) {
+    private void FormFleetFrom(AUnitCmdModuleDesign chosenCmdModDesign) {
         var fleetShipsCopy = _allShips.ToList();
         D.Assert(fleetShipsCopy.Any());
-        FormFleetFrom("LostHangerFleet", chosenDesign as FleetCmdModuleDesign, Formation.Globe, fleetShipsCopy);
+        FormFleetFrom("LostHangerFleet", chosenCmdModDesign as FleetCmdModuleDesign, Formation.Globe, fleetShipsCopy);
     }
 
     #endregion
@@ -257,10 +256,10 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
         Vector3 hangerPosition = transform.position;
         Vector3 locationForCreator = hangerPosition + offset;
-        if (!GameUtility.IsLocationContainedInUniverse(locationForCreator, universeSize)) {
+        if (!GameUtility.IsLocationContainedInNavigableUniverse(locationForCreator, universeSize)) {
             locationForCreator = hangerPosition - offset;
         }
-        D.Assert(GameUtility.IsLocationContainedInUniverse(locationForCreator, universeSize));
+        GameUtility.__ValidateLocationContainedInNavigableUniverse(locationForCreator);
         return locationForCreator;
     }
 

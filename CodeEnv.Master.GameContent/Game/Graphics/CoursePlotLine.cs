@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// Use this when you have added, replaced or removed one or more waypoints in your course.
         /// </summary>
         /// <param name="course">The course.</param>
-        public void UpdateCourse(IList<INavigableDestination> course) {
+        public void RefreshCourse(IList<INavigableDestination> course) {
             D.AssertNotNull(course);
             List<Vector3> waypointLocations = new List<Vector3>(course.Count);
             for (int i = 0; i < course.Count; i++) {
@@ -63,8 +63,7 @@ namespace CodeEnv.Master.GameContent {
                 D.AssertNotNull(waypoint, course.Select(wpt => wpt.DebugName).Concatenate());
                 waypointLocations.Add(waypoint.Position);
             }
-            Points = waypointLocations;
-            //Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3 list
+            Points = waypointLocations; // updating Points will update _line.points3 list
         }
 
     }

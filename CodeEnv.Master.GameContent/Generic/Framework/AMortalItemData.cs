@@ -70,8 +70,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isDead, value, "IsDead", IsDeadPropSetHandler, IsDeadPropSettingHandler); }
         }
 
-        public abstract IntVector3 SectorID { get; }
-
         #region Initialization 
 
         /// <summary>

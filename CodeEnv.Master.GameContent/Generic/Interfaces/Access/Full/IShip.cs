@@ -46,9 +46,9 @@ namespace CodeEnv.Master.GameContent {
 
         IFleetFormationStation FormationStation { get; }
 
-        bool __HasCommand { get; }
-
         AlertStatus AlertStatus { set; }
+
+        bool __HasCommand { get; }
 
         void HandlePendingCollisionWith(IObstacle obstacle);
 

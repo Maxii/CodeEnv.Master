@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsDead { get; }
 
-        IntVector3 SectorID { get; }
-
         Transform transform { get; }
 
         GameObject gameObject { get; }

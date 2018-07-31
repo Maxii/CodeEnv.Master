@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementCategory Category { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
+
         /// <summary>
         /// The Composition of the Unit this report is about. The unit's elements
         /// reported will be limited to those elements the Player requesting

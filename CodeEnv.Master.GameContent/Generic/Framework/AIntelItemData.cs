@@ -33,7 +33,6 @@ namespace CodeEnv.Master.GameContent {
         protected abstract IntelCoverage DefaultStartingIntelCoverage { get; }
 
         protected IGameManager _gameMgr;
-
         private IDictionary<Player, AIntel> _playerIntelLookup;
 
         #region Initialization 
@@ -54,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializePlayersIntel() {
-            int playerCount = _gameMgr.AIPlayers.Count + 1;
+            int playerCount = _gameMgr.AllPlayers.Count;
             //D.Log(ShowDebugLog, "{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
             var userPlayer = _gameMgr.UserPlayer;
@@ -163,7 +162,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newCoverage">The new coverage.</param>
         public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
             IntelCoverage unusedResultingCoverage;
-            //// TrySetIntelCoverage(player, newCoverage, out unusedResultingCoverage);
             TryChangeIntelCoverage(player, newCoverage, out unusedResultingCoverage);
         }
 
@@ -278,7 +276,8 @@ namespace CodeEnv.Master.GameContent {
                         var undiscoveredPlayerAiMgr = _gameMgr.GetAIManagerFor(player);
                         bool isUndiscoveredPlayerFound = undiscoveredPlayerAiMgr.CheckForUndiscoveredPlayer(Item as IOwnerItem_Ltd);
                         if (isUndiscoveredPlayerFound) {
-                            D.Warn("FYI. {0}: {1} discovered new Owner {2} because it already had access to Item Owner.",
+                            // 7.14.18 Definitely occurring so removed FYI Warn
+                            D.Log(ShowDebugLog, "{0}: {1} discovered new Owner {2} because it already had access to Item Owner.",
                                 DebugName, player.DebugName, Owner.DebugName);
                         }
                     }
@@ -321,7 +320,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
         }
-
 
         #endregion
 

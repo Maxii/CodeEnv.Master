@@ -34,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Speed CurrentSpeedSetting { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
 
         public float? FullSpeed { get; private set; }
 
@@ -91,7 +92,9 @@ namespace CodeEnv.Master.GameContent {
                 WeaponsRange = sData.WeaponsRange;
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
-                SectorID = sData.SectorID;
+                IntVector3 sectorID;
+                sData.TryGetSectorID(out sectorID);
+                SectorID = sectorID;    // 7.15.18 DisplayInfoFactory will handle if default(IntVector3)
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Target)) {
                 Target = sData.Target;

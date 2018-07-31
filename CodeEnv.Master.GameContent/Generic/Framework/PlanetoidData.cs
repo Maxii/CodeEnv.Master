@@ -50,8 +50,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
-        public override IntVector3 SectorID { get { return _sectorID; } }
-        private IntVector3 _sectorID;
+        public IntVector3 SectorID { get; private set; }
 
         /// <summary>
         /// The mass of this Planetoid.
@@ -104,13 +103,11 @@ namespace CodeEnv.Master.GameContent {
             Capacity = planetoidStat.Capacity;
             Resources = planetoidStat.Resources;
             Topography = Topography.System;
-            _sectorID = InitializeSectorID();
+            SectorID = InitializeSectorID();
         }
 
         private IntVector3 InitializeSectorID() {
-            ////IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
             IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDContaining(Position);
-            ////D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }

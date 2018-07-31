@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public int PlayerCount { get; set; }
 
         public SystemDensityGuiSelection SystemDensitySelection { get; set; }
+        public PlayerSeparationGuiSelection PlayersSeparationSelection { get; set; }
 
         public SpeciesGuiSelection UserPlayerSpeciesSelection { get; set; }
         public SpeciesGuiSelection[] AIPlayerSpeciesSelections { get; set; }
@@ -48,8 +49,6 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemDesirabilityGuiSelection UserPlayerHomeDesirabilitySelection { get; set; }
         public SystemDesirabilityGuiSelection[] AIPlayersHomeDesirabilitySelections { get; set; }
-
-        public PlayerSeparationGuiSelection[] AIPlayersUserSeparationSelections { get; set; }
 
         public NewGamePreferenceSettings() { }
 

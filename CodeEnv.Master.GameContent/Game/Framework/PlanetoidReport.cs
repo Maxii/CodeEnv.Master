@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
 
         public PlanetoidCategory Category { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
+
         public float? OrbitalSpeed { get; private set; }
 
         public int? Capacity { get; private set; }

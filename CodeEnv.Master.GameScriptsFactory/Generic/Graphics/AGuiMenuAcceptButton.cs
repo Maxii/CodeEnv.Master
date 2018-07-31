@@ -72,7 +72,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
             float sliderValue = slider.value;
             RecordSliderState(sliderID, sliderValue);
         }
-        ValidateStateOnCapture();
+        __ValidateCapturedState();
     }
 
     /// <summary>
@@ -97,10 +97,15 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     /// <param name="value">The slider value.</param>
     protected virtual void RecordSliderState(GuiElementID sliderID, float value) { }
 
+    #region Debug
+
     /// <summary>
     /// Validates the state of the GuiElements of this window when captured.
     /// </summary>
-    protected virtual void ValidateStateOnCapture() { }
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected virtual void __ValidateCapturedState() { }
+
+    #endregion
 
 }
 

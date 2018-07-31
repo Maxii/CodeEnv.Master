@@ -185,6 +185,18 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
+            if (Owner == player) {
+                // 7.30.18 Can't Assert Comprehensive here as this assessment can be initiated by the coverage change of a 
+                // System member (planet) to Comprehensive (via AssessAssigningOwnerAndAlliesComprehensiveCoverage)
+                // before the System itself is set to Comprehensive later by the same method. This is because this System
+                // propagates its owner change to its members causing the member to AssessSettingToComprehensive before the System does.
+                return;
+            }
+
+            if (GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
+                return; // no point in continuing as Coverage can't regress
+            }
+
             _allMemberIntelCoverages.Clear();
             foreach (var pData in _allPlanetoidData) {
                 IntelCoverage pCoverage = pData.GetIntelCoverage(player);
@@ -194,10 +206,7 @@ namespace CodeEnv.Master.GameContent {
             IntelCoverage starCoverage = StarData.GetIntelCoverage(player);
             _allMemberIntelCoverages.Add(starCoverage);
 
-            if (SettlementData != null) {
-                IntelCoverage settlementCoverage = SettlementData.GetIntelCoverage(player);
-                _allMemberIntelCoverages.Add(settlementCoverage);
-            }
+            // 7.30.18 Not currently including Settlement because it can't be 'fully explored' by a ship.
 
             IntelCoverage currentCoverage = GetIntelCoverage(player);
 
@@ -218,54 +227,16 @@ namespace CodeEnv.Master.GameContent {
             HandleSettlementDataChanged();
         }
 
-        private void HandleSettlementDataChanged() {
-            // Existing settlements will always be destroyed (data = null) before a new settlement is founded
-            if (SettlementData != null) {
-                SubscribeToSettlementDataValueChanges();
-                //D.Log(ShowDebugLog, "{0} is about to have its owner changed to {1}'s Owner {2}.", DebugName, SettlementData.DebugName, SettlementData.Owner);
-                Owner = SettlementData.Owner;
-            }
-            else {
-                Owner = TempGameValues.NoPlayer;
-                UnsubscribeToSettlementDataValueChanges();
-            }
-            if (IsOperational) {
-                RecalcAllProperties();
-                AssessIntelCoverage();
-            }
-        }
-
         private void PlanetoidIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
             HandlePlanetoidIntelCoverageChanged(e.Player);
-        }
-
-        private void HandlePlanetoidIntelCoverageChanged(Player playerWhosCoverageChgd) {
-            if (!IsOperational) {
-                return;
-            }
-            AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
         private void SettlementIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
             HandleSettlementIntelCoverageChanged(e.Player);
         }
 
-        private void HandleSettlementIntelCoverageChanged(Player playerWhosCoverageChgd) {
-            if (!IsOperational) {
-                return;
-            }
-            AssessIntelCoverageFor(playerWhosCoverageChgd);
-        }
-
         private void StarIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
             HandleStarIntelCoverageChanged(e.Player);
-        }
-
-        private void HandleStarIntelCoverageChanged(Player playerWhosCoverageChgd) {
-            if (!IsOperational) {
-                return;
-            }
-            AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
         private void PlanetoidCapacityPropChangedHandler() {
@@ -290,11 +261,51 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private void HandlePlanetoidIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            if (!IsOperational) {
+                return;
+            }
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
+        private void HandleSettlementDataChanged() {
+            // Existing settlements will always be destroyed (data = null) before a new settlement is founded
+            if (SettlementData != null) {
+                SubscribeToSettlementDataValueChanges();
+            }
+            else {
+                UnsubscribeToSettlementDataValueChanges();
+            }
+            _sectorData.AssessSectorAndSystemOwnership();
+
+            if (IsOperational) {
+                RecalcAllProperties();
+                AssessIntelCoverage();
+            }
+        }
+
+        private void HandleSettlementIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            if (!IsOperational) {
+                return;
+            }
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
+        private void HandleStarIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            if (!IsOperational) {
+                return;
+            }
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
         protected override void PropagateOwnerChange() {
             base.PropagateOwnerChange();
             _allPlanetoidData.ForAll(pd => pd.Owner = Owner);
             StarData.Owner = Owner;
-            _sectorData.AssessOwnership();
+            if (SettlementData != null) {
+                // 7.30.18 no reason to propagate to Settlement. If present, it is the driving force behind the System's owner change
+                D.AssertEqual(Owner, SettlementData.Owner);
+            }
         }
 
         private void RecalcAllProperties() {
@@ -336,10 +347,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void Cleanup() {
-            Unsubscribe();
-        }
-
         private void Unsubscribe() {
             IList<PlanetoidData> pSubscriptionKeys = new List<PlanetoidData>(_planetoidSubscriptions.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
@@ -350,6 +357,10 @@ namespace CodeEnv.Master.GameContent {
 
             UnsubscribeToStarDataValueChanges();
             UnsubscribeToSettlementDataValueChanges();
+        }
+
+        private void Cleanup() {
+            Unsubscribe();
         }
 
         #endregion

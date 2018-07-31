@@ -43,7 +43,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float UnitMaxFormationRadius {
             get { return _unitMaxFormationRadius; }
-            set { SetProperty<float>(ref _unitMaxFormationRadius, value, "UnitMaxFormationRadius"); }
+            set {
+                __ValidateUnitMaxFormationRadius();
+                SetProperty<float>(ref _unitMaxFormationRadius, value, "UnitMaxFormationRadius");
+            }
         }
 
         public abstract IEnumerable<Formation> AcceptableFormations { get; }
@@ -212,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<CmdSensor> Sensors { get; private set; }
 
-        public FtlDampener FtlDampener { get; private set; }
+        public FtlDamper FtlDamper { get; private set; }
 
         public AUnitCmdModuleDesign CmdModuleDesign { get; private set; }
 
@@ -233,12 +236,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The command module design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, AUnitCmdModuleDesign cmdModDesign)
+            FtlDamper ftlDamper, AUnitCmdModuleDesign cmdModDesign)
             : base(cmd, owner, cmdModDesign.HitPoints, passiveCMs) {
-            FtlDampener = ftlDampener;
+            FtlDamper = ftlDamper;
             MaxCmdStaffEffectiveness = cmdModDesign.CmdModuleStat.MaxCmdStaffEffectiveness;
             CmdModuleDesign = cmdModDesign;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
@@ -268,7 +271,7 @@ namespace CodeEnv.Master.GameContent {
         public override void CommenceOperations() {
             base.CommenceOperations();
             RecalcPropertiesDerivedFromCombinedElements();
-            // 3.30.17 Activation of FtlDampener handled by AssessFtlDampenerActivation
+            // 3.30.17 Activation of FtlDamper handled by AssessFtlDamperActivation
         }
 
         public void ActivateCmdSensors() {
@@ -296,21 +299,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Replaces the existing CmdModule with the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
+        /// Replaces the existing CmdModule with the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDamper
         /// with the new instances provided as these are derived from the cmdModuleDesign.
         /// <remarks>These changes do not interfere with the ongoing operations of this Cmd. They can however create momentary 
-        /// changes in AlertStatus and FtlDampening before both are properly resumed.</remarks>
+        /// changes in AlertStatus and FtlDamping before both are properly resumed.</remarks>
         /// </summary>
         /// <param name="cmdModuleDesign">The design of the new CmdModule.</param>
         /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
         /// <param name="sensors">The replacement CmdSensors.</param>
-        /// <param name="ftlDampener">The replacement FtlDampener.</param>
-        public virtual void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+        /// <param name="ftlDamper">The replacement FtlDamper.</param>
+        public virtual void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs,
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper) {
             CmdModuleDesign = cmdModuleDesign;
             MaxCmdStaffEffectiveness = cmdModuleDesign.CmdModuleStat.MaxCmdStaffEffectiveness;
             ReplacePassiveCMs(passiveCMs);
             ReplaceSensors(sensors);
-            ReplaceFtlDampener(ftlDampener);
+            ReplaceFtlDamper(ftlDamper);
         }
 
         private void ReplaceSensors(IEnumerable<CmdSensor> sensorReplacements) {
@@ -320,15 +324,15 @@ namespace CodeEnv.Master.GameContent {
             Initialize(sensorReplacements);
         }
 
-        private void ReplaceFtlDampener(FtlDampener replacementFtlDampener) {
-            D.AssertNotNull(FtlDampener);
-            D.Assert(!FtlDampener.IsActivated);
-            D.AssertNull(FtlDampener.RangeMonitor);
+        private void ReplaceFtlDamper(FtlDamper replacementFtlDamper) {
+            D.AssertNotNull(FtlDamper);
+            D.Assert(!FtlDamper.IsActivated);
+            D.AssertNull(FtlDamper.RangeMonitor);
 
-            D.Assert(!replacementFtlDampener.IsActivated);
-            D.AssertNotNull(replacementFtlDampener.RangeMonitor);
-            FtlDampener = replacementFtlDampener;
-            AssessFtlDampenerActivation();
+            D.Assert(!replacementFtlDamper.IsActivated);
+            D.AssertNotNull(replacementFtlDamper.RangeMonitor);
+            FtlDamper = replacementFtlDamper;
+            AssessFtlDamperActivation();
         }
 
         #region Event and Property Change Handlers
@@ -424,20 +428,20 @@ namespace CodeEnv.Master.GameContent {
             if (AlertStatus == AlertStatus.Red) {
                 D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
             }
-            AssessFtlDampenerActivation();
+            AssessFtlDamperActivation();
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
 
-        private void AssessFtlDampenerActivation() {
+        private void AssessFtlDamperActivation() {
             switch (AlertStatus) {
                 case AlertStatus.Normal:
-                    FtlDampener.IsActivated = false;
+                    FtlDamper.IsActivated = false;
                     break;
                 case AlertStatus.Yellow:
-                    FtlDampener.IsActivated = false;
+                    FtlDamper.IsActivated = false;
                     break;
                 case AlertStatus.Red:
-                    FtlDampener.IsActivated = true;
+                    FtlDamper.IsActivated = true;
                     break;
                 case AlertStatus.None:
                 default:
@@ -456,7 +460,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void HandleHQElementDataChanged() {
             D.Assert(_elementsData.Contains(HQElementData), HQElementData.DebugName);
-            // Align the IntelCoverage of this Cmd with that of its new HQ
+            // Align the IntelCoverage of this Cmd with that of its new HQ  // OPTIMIZE Most of the following is to support the D.Log
             var otherPlayers = _gameMgr.AllPlayers.Except(Owner);
             foreach (var player in otherPlayers) {
                 IntelCoverage playerIntelCoverageOfOldHQ = GetIntelCoverage(player);    // Cmds coverage the same as OldHQ until changed
@@ -465,14 +469,13 @@ namespace CodeEnv.Master.GameContent {
                 bool isPlayerIntelCoverageChgd = TryChangeIntelCoverage(player, playerIntelCoverageOfNewHQ, out resultingCoverage);
                 // 2.6.17 It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
                 // previous HQ had > None, thereby attempting to regress a BaseCmd's IntelCoverage to None from > None which won't take.
-                // FIXME Same thing could happen to FleetCmd except regress to None would occur which would result in the Fleet disappearing...
-                // Desirable fix?: if a fleet and disappears from User, force change of new HQ IntelCoverage to what old HQ was?
+                // Same thing could happen to FleetCmd except regress to None would occur which would result in the Fleet disappearing...
                 if (playerIntelCoverageOfOldHQ > IntelCoverage.None && playerIntelCoverageOfNewHQ == IntelCoverage.None) {
-                    // fleet can change to None but Base can't
                     if (isPlayerIntelCoverageChgd) {
                         D.AssertEqual(GetIntelCoverage(player), IntelCoverage.None);
                         D.Assert(this is FleetCmdData);
-                        D.Warn("{0}: {1} has just disappeared from {2}'s visibility because of a HQ change.", DebugName, UnitName, player.DebugName);
+                        // 7.29.18 This does occur, albeit rarely
+                        D.Log("{0} just disappeared from {1}'s visibility because of a HQ change.", DebugName, player.DebugName);
                     }
                     else {
                         D.AssertNotEqual(GetIntelCoverage(player), IntelCoverage.None);
@@ -679,7 +682,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, s.Name);
                 }
             }
-            D.Assert(!FtlDampener.IsDamageable);
+            D.Assert(!FtlDamper.IsDamageable);
             return cumCurrentHitPtReductionFromEquip;
         }
 
@@ -701,7 +704,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, s.Name);
                 }
             }
-            // 11.21.17 FtlDampener is currently not damageable
+            // 11.21.17 FtlDamper is currently not damageable
 
             return cumRprPtsFromEquip;
         }
@@ -711,13 +714,13 @@ namespace CodeEnv.Master.GameContent {
         protected override void RemoveDamageFromAllEquipment() {
             base.RemoveDamageFromAllEquipment();
             Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
-            // 11.21.17 FtlDampener is currently not damageable
+            // 11.21.17 FtlDamper is currently not damageable
         }
 
         protected sealed override void DeactivateAllEquipment() {
             base.DeactivateAllEquipment();
             Sensors.ForAll(sens => sens.IsActivated = false);
-            FtlDampener.IsActivated = false;
+            FtlDamper.IsActivated = false;
         }
 
         private void Unsubscribe(AUnitElementData elementData) {
@@ -748,6 +751,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        protected abstract void __ValidateUnitMaxFormationRadius();
 
         protected override void __ValidateAllEquipmentDamageRepaired() {
             base.__ValidateAllEquipmentDamageRepaired();

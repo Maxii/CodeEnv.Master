@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         Reference<float> ActualSpeedValue_Debug { get; }
 
+        bool IsLocatedIn(IntVector3 sectorID);
+
     }
 }
 

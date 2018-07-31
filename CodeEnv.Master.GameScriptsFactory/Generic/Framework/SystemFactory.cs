@@ -410,7 +410,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="parent">The GameObject the System should be a child of.</param>
     /// <param name="cameraStat">The camera stat.</param>
     /// <returns></returns>
-    public SystemItem MakeSystemInstance(string systemName, Sector sector, GameObject parent, FocusableItemCameraStat cameraStat) {
+    public SystemItem MakeSystemInstance(string systemName, CoreSector sector, GameObject parent, FocusableItemCameraStat cameraStat) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(parent, systemPrefab);
         SystemItem system = systemGo.GetSafeComponent<SystemItem>();
@@ -426,7 +426,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="sector">The sector.</param>
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="system">The system item.</param>
-    public void PopulateSystemInstance(string systemName, Sector sector, FocusableItemCameraStat cameraStat, ref SystemItem system) {
+    public void PopulateSystemInstance(string systemName, CoreSector sector, FocusableItemCameraStat cameraStat, ref SystemItem system) {
         D.Assert(!system.IsOperational, system.DebugName);
         D.AssertNotNull(system.transform.parent, system.DebugName);
 

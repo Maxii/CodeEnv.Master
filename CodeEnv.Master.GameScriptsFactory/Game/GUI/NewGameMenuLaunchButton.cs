@@ -40,6 +40,9 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private SystemDensity _systemDensity;
     private SystemDensityGuiSelection _systemDensitySelection;
 
+    private PlayerSeparation _playersSeparation;
+    private PlayerSeparationGuiSelection _playersSeparationSelection;
+
     private Species _userPlayerSpecies;
     private Species[] _aiPlayersSpecies;
     private SpeciesGuiSelection _userPlayerSpeciesSelection;
@@ -54,9 +57,6 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private SystemDesirability[] _aiPlayersHomeSystemDesirability;
     private SystemDesirabilityGuiSelection _userPlayerHomeSystemDesirabilitySelection;
     private SystemDesirabilityGuiSelection[] _aiPlayersHomeSystemDesirabilitySelections;
-
-    private PlayerSeparation[] _aiPlayersUserSeparations;
-    private PlayerSeparationGuiSelection[] _aiPlayersUserSeparationSelections;
 
     private GameColor _userPlayerColor;
     private GameColor[] _aiPlayersColors;
@@ -82,8 +82,6 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         _aiPlayersStartLevelSelections = new EmpireStartLevelGuiSelection[maxAiPlayerQty];
         _aiPlayersHomeSystemDesirability = new SystemDesirability[maxAiPlayerQty];
         _aiPlayersHomeSystemDesirabilitySelections = new SystemDesirabilityGuiSelection[maxAiPlayerQty];
-        _aiPlayersUserSeparations = new PlayerSeparation[maxAiPlayerQty];
-        _aiPlayersUserSeparationSelections = new PlayerSeparationGuiSelection[maxAiPlayerQty];
     }
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
@@ -102,6 +100,10 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
                 _playerCount = int.Parse(selection);
                 break;
 
+            case GuiElementID.PlayersSeparationPopupList:
+                _playersSeparationSelection = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _playersSeparation = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
             case GuiElementID.UserPlayerSpeciesPopupList:
                 _userPlayerSpeciesSelection = Enums<SpeciesGuiSelection>.Parse(selection);
                 _userPlayerSpecies = Enums<Species>.Parse(convertedSelection);
@@ -272,36 +274,6 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
                 _aiPlayersHomeSystemDesirabilitySelections[6] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
                 _aiPlayersHomeSystemDesirability[6] = Enums<SystemDesirability>.Parse(convertedSelection);
                 break;
-
-            case GuiElementID.AIPlayer1UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[0] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[0] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer2UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[1] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[1] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer3UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[2] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[2] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer4UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[3] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[3] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer5UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[4] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[4] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer6UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[5] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[5] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-            case GuiElementID.AIPlayer7UserSeparationPopupList:
-                _aiPlayersUserSeparationSelections[6] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
-                _aiPlayersUserSeparations[6] = Enums<PlayerSeparation>.Parse(convertedSelection);
-                break;
-
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
         }
@@ -309,22 +281,23 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     #region Event and Property Change Handlers
 
+    #endregion
+
     protected override void HandleValidClick() {
         base.HandleValidClick();
         RecordPreferences();
         InitiateNewGame();
     }
 
-    #endregion
-
     private void RecordPreferences() {
         var settings = new NewGamePreferenceSettings() {
             UniverseSizeSelection = _universeSizeSelection,
 
             UniverseSize = _universeSize,   // 10.4.16 needed to know which pref property gets assigned PlayerCount
+            SystemDensitySelection = _systemDensitySelection,
+            PlayersSeparationSelection = _playersSeparationSelection,
             PlayerCount = _playerCount,
 
-            SystemDensitySelection = _systemDensitySelection,
             UserPlayerSpeciesSelection = _userPlayerSpeciesSelection,
             AIPlayerSpeciesSelections = _aiPlayersSpeciesSelections,
             UserPlayerColor = _userPlayerColor,
@@ -337,8 +310,6 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             AIPlayersStartLevelSelections = _aiPlayersStartLevelSelections,
             UserPlayerHomeDesirabilitySelection = _userPlayerHomeSystemDesirabilitySelection,
             AIPlayersHomeDesirabilitySelections = _aiPlayersHomeSystemDesirabilitySelections,
-
-            AIPlayersUserSeparationSelections = _aiPlayersUserSeparationSelections
         };
         _playerPrefsMgr.RecordNewGameSettings(settings);
     }
@@ -369,6 +340,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             __ZoomOnUser = true,
             UniverseSize = _universeSize,
             SystemDensity = _systemDensity,
+            PlayersSeparation = _playersSeparation,
             PlayerCount = _playerCount,
             UserPlayer = userPlayer,
             AIPlayers = aiPlayers,
@@ -376,15 +348,15 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             AIPlayersStartLevels = _aiPlayersStartLevels,
             UserHomeSystemDesirability = _userPlayerHomeSystemDesirability,
             AIPlayersHomeSystemDesirability = _aiPlayersHomeSystemDesirability,
-            AIPlayersUserSeparations = _aiPlayersUserSeparations
         };
         _gameMgr.InitiateNewGame(settings);
     }
 
-    protected override void ValidateStateOnCapture() {
-        base.ValidateStateOnCapture();
+    protected override void __ValidateCapturedState() {
+        base.__ValidateCapturedState();
         D.AssertNotDefault((int)_universeSize, "UniverseSize has not been set!");
         D.AssertNotDefault((int)_systemDensity, "SystemDensity has not been set!");
+        D.AssertNotDefault((int)_playersSeparation, "PlayerSeparation has not been set!");
         D.Assert(_playerCount > Constants.One, _playerCount.ToString());
         D.AssertNotDefault((int)_userPlayerSpecies, "User Player Species has not been set!");
         //TODO

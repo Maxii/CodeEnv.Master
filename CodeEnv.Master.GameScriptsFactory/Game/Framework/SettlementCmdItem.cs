@@ -121,13 +121,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         }
     }
 
-    /// <summary>
-    /// Removes the settlement and its orbiter from the system in preparation for a future settlement.
-    /// </summary>
-    private void RemoveSettlementFromSystem() {
-        ParentSystem.Settlement = null;
-    }
-
     protected override TrackingIconInfo MakeIconInfo() {
         return SettlementIconInfoFactory.Instance.MakeInstance(UserReport);
     }
@@ -145,6 +138,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     protected override void PrepareForDeathEffect() {
         base.PrepareForDeathEffect();
         RemoveSettlementFromSystem();
+    }
+
+    /// <summary>
+    /// Removes the settlement and its orbiter from the system in preparation for a future settlement.
+    /// </summary>
+    private void RemoveSettlementFromSystem() {
+        ParentSystem.Settlement = null;
     }
 
     protected override void DestroyApplicableParents(float delayInHours = Constants.ZeroF) {

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFtlDampenerRangeMonitor.cs
-// Interface for easy access to the FtlDampenerRangeMonitor MonoBehaviour.
+// File: IFtlDamperRangeMonitor.cs
+// Interface for easy access to the FtlDamperRangeMonitor MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,13 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to the FtlDampenerRangeMonitor MonoBehaviour.
+    /// Interface for easy access to the FtlDamperRangeMonitor MonoBehaviour.
     /// </summary>
-    public interface IFtlDampenerRangeMonitor : IRangedEquipmentMonitor {
+    public interface IFtlDamperRangeMonitor : IRangedEquipmentMonitor {
 
         /// <summary>
         /// Resets this Monitor in preparation for reuse by the same Parent.
-        /// <remarks>Deactivates and removes the FtlDampener, preparing the monitor for the addition of a new FtlDampener.</remarks>
+        /// <remarks>Deactivates and removes the FtlDamper, preparing the monitor for the addition of a new FtlDamper.</remarks>
         /// </summary>
         void ResetForReuse();
 

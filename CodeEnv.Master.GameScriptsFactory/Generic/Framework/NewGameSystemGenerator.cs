@@ -118,6 +118,8 @@ public class NewGameSystemGenerator {
         int homeSystemQtyToDeploy = gameSettings.PlayerCount;
         IDictionary<Player, SystemCreator> deployedCreatorLookup = new Dictionary<Player, SystemCreator>(homeSystemQtyToDeploy);
         List<IntVector3> excludedSectorIDs_Internal = new List<IntVector3>(excludedSectorIDs);
+        // 7.11.18 the contents of this _Internal list is not added to excludedSectorIDs on purpose. Its only purpose is to
+        // keep home systems from being placed right next to another home system.
 
         // Handle User first
         Player userPlayer = gameSettings.UserPlayer;
@@ -127,20 +129,20 @@ public class NewGameSystemGenerator {
         IList<PlanetoidCategory> userHomePlanetCatsByPlanetIndex = GetPlanetCategories(userHomeSystemDesirability, isHomeSystem: true);
 
         IList<IntVector3> existingHomeSectorIDs = new List<IntVector3>();
-        PlayerSeparation userSeparation = gameSettings.AIPlayersUserSeparations[0]; // HACK
-        IntVector3 userHomeSystemSectorID = sectorGrid.GetHomeSectorID(userSeparation, existingHomeSectorIDs, excludedSectorIDs_Internal);
+        PlayerSeparation playersSeparation = gameSettings.PlayersSeparation;
+        IntVector3 userHomeSystemSectorID = sectorGrid.GetHomeSectorID(playersSeparation, existingHomeSectorIDs, excludedSectorIDs_Internal);
         existingHomeSectorIDs.Add(userHomeSystemSectorID);
         excludedSectorIDs_Internal.Add(userHomeSystemSectorID);
 
         var userHomeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(userHomeSystemSectorID);
         excludedSectorIDs_Internal.AddRange(userHomeNeighboringSectorIDs);
 
-        Vector3 userHomeSectorLocation = sectorGrid.GetSectorWorldLocation(userHomeSystemSectorID);
-        var deployedUserHomeCreator = DeployAndConfigureCreatorTo(userHomeSystemName, userHomeSectorLocation, userHomeSystemDesirability, userHomeStarCat, userHomePlanetCatsByPlanetIndex);
+        Vector3 userHomeSectorLocation = sectorGrid.GetSectorCenterLocation(userHomeSystemSectorID);
+        var deployedUserHomeCreator = DeployAndConfigureCreatorTo(userHomeSystemName, userHomeSectorLocation, userHomeSystemDesirability,
+            userHomeStarCat, userHomePlanetCatsByPlanetIndex);
         deployedCreatorLookup.Add(userPlayer, deployedUserHomeCreator);
 
         IntVector3 aiHomeSystemSectorID;
-        PlayerSeparation aiPlayerSeparationFromUser;
         Player[] aiPlayers = gameSettings.AIPlayers;
         for (int i = 0; i < aiPlayers.Length; i++) {
             var aiPlayer = aiPlayers[i];
@@ -149,13 +151,13 @@ public class NewGameSystemGenerator {
             var aiHomeStarCat = Enums<StarCategory>.GetRandom(excludeDefault: true); // IMPROVE vary by SystemDesirability
             var aiHomePlanetCatsByPlanetIndex = GetPlanetCategories(aiHomeSystemDesirability, isHomeSystem: true);
 
-            aiPlayerSeparationFromUser = gameSettings.AIPlayersUserSeparations[i];
-            aiHomeSystemSectorID = sectorGrid.GetHomeSectorID(aiPlayerSeparationFromUser, existingHomeSectorIDs, excludedSectorIDs_Internal);
+            aiHomeSystemSectorID = sectorGrid.GetHomeSectorID(playersSeparation, existingHomeSectorIDs, excludedSectorIDs_Internal);
             existingHomeSectorIDs.Add(aiHomeSystemSectorID);
             excludedSectorIDs_Internal.Add(aiHomeSystemSectorID);
 
-            var aiHomeSectorLocation = sectorGrid.GetSectorWorldLocation(aiHomeSystemSectorID);
-            var deployedAiHomeCreator = DeployAndConfigureCreatorTo(aiHomeSystemName, aiHomeSectorLocation, aiHomeSystemDesirability, aiHomeStarCat, aiHomePlanetCatsByPlanetIndex);
+            var aiHomeSectorLocation = sectorGrid.GetSectorCenterLocation(aiHomeSystemSectorID);
+            var deployedAiHomeCreator = DeployAndConfigureCreatorTo(aiHomeSystemName, aiHomeSectorLocation, aiHomeSystemDesirability,
+                aiHomeStarCat, aiHomePlanetCatsByPlanetIndex);
             deployedCreatorLookup.Add(aiPlayer, deployedAiHomeCreator);
 
             // This keeps other homeSystemSectors from being placed right next to this homeSystemSector where 
@@ -168,52 +170,10 @@ public class NewGameSystemGenerator {
         return deployedCreatorLookup;
     }
 
-    [Obsolete]
-    private IntVector3 CalcAiPlayerHomeSectorID(IntVector3 userHomeSectorID, IEnumerable<IntVector3> sectorIDsToAvoid, int universeRadiusInSectors,
-        PlayerSeparation separationFromUser) {
-        SectorGrid sectorGrid = SectorGrid.Instance;
-
-        float userHomeSectorDistanceFromOrigin = sectorGrid.GetDistanceInSectorsFromOrigin(userHomeSectorID);
-        int maxUserHomeSectorDistanceToUniverseEdge = universeRadiusInSectors + Mathf.FloorToInt(userHomeSectorDistanceFromOrigin);
-        int closestAllowedAiHomeSectorDistanceToUserHome = 2;  //// in case userHome has surrounding systems
-        int maxClosestAdder = maxUserHomeSectorDistanceToUniverseEdge - closestAllowedAiHomeSectorDistanceToUserHome;
-        D.Assert(maxClosestAdder >= 1);
-
-        int minAiHomeSectorDistanceFromUserHome;
-        int maxAiHomeSectorDistanceFromUserHome;
-
-        // PlayerSeparation has 3 choices, so separation ranges are split into thirds of the total available separation
-        if (separationFromUser == PlayerSeparation.Close) {
-            minAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome;
-            maxAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome + Mathf.CeilToInt(maxClosestAdder * Constants.OneThird);
-        }
-        else if (separationFromUser == PlayerSeparation.Normal) {
-            minAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome + Mathf.FloorToInt(maxClosestAdder * Constants.OneThird);
-            maxAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome + Mathf.CeilToInt(maxClosestAdder * Constants.TwoThirds);
-        }
-        else {
-            D.AssertEqual(PlayerSeparation.Distant, separationFromUser);
-            minAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome + Mathf.FloorToInt(maxClosestAdder * Constants.TwoThirds);
-            maxAiHomeSectorDistanceFromUserHome = closestAllowedAiHomeSectorDistanceToUserHome + maxClosestAdder;
-        }
-
-        IEnumerable<IntVector3> candidateAiHomeSectorIDs = sectorGrid.GetSurroundingSectorIDsBetween(userHomeSectorID, minAiHomeSectorDistanceFromUserHome, maxAiHomeSectorDistanceFromUserHome);
-        if (!candidateAiHomeSectorIDs.Any()) {
-            D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", DebugName, userHomeSectorID, minAiHomeSectorDistanceFromUserHome, maxAiHomeSectorDistanceFromUserHome);
-        }
-        var tempCandidateSectorIDs = candidateAiHomeSectorIDs;
-        candidateAiHomeSectorIDs = candidateAiHomeSectorIDs.Except(sectorIDsToAvoid);
-        if (!candidateAiHomeSectorIDs.Any()) {
-            D.Error("{0} found no sectors to place AIPlayer's home sector. Candidates = {1}, ToAvoid = {2}.", DebugName,
-                tempCandidateSectorIDs.Concatenate(), sectorIDsToAvoid.Concatenate());
-        }
-        var aiHomeSectorID = RandomExtended.Choice(candidateAiHomeSectorIDs);
-        return aiHomeSectorID;
-    }
-
     /// <summary>
     /// Deploys and configures any additional system creators around the player's homeSectorID
     /// if startLevel indicates there will be more player owned settlements.
+    /// <remarks>7.11.18 Will warn if can't find enough surrounding CoreSectors to meet startLevel-specified initial settlements.</remarks>
     /// </summary>
     /// <param name="homeSectorID">The home sector identifier.</param>
     /// <param name="startLevel">The start level.</param>
@@ -228,7 +188,11 @@ public class NewGameSystemGenerator {
         SectorGrid sectorGrid = SectorGrid.Instance;
         var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includeRim: false);
         var sectorIDsToDeployTo = homeNeighboringSectorIDs.Shuffle().Take(additionalCreatorQtyToDeploy);
-        D.AssertEqual(sectorIDsToDeployTo.Count(), additionalCreatorQtyToDeploy);  // probable shortage of homeNeighboringSectorIDs due to periphery
+        int sectorIDsToDeployToQty = sectorIDsToDeployTo.Count();
+        if (sectorIDsToDeployToQty < additionalCreatorQtyToDeploy) {
+            D.Warn("{0}.DeployAndConfigureAdditionalCreatorsAroundHomeSector() needs {1} but only found {2} CoreSectors around HomeCoreSector {3}.", DebugName, additionalCreatorQtyToDeploy, sectorIDsToDeployToQty, homeSectorID.DebugName);
+            additionalCreatorQtyToDeploy = sectorIDsToDeployToQty;
+        }
 
         int[] systemDesirabilityWeighting = new int[] { 1, 3, 1 };
         SystemDesirability[] systemDesirabilityChoices = Enums<SystemDesirability>.GetValues(excludeDefault: true).ToArray();
@@ -237,7 +201,7 @@ public class NewGameSystemGenerator {
             string systemName = _nameFactory.GetUnusedName();
             StarCategory starCat = Enums<StarCategory>.GetRandom(excludeDefault: true); // IMPROVE vary by SystemDesirability
             IList<PlanetoidCategory> planetCatsByPlanetIndex = GetPlanetCategories(systemDesirability, isHomeSystem: false);
-            Vector3 deployedLocation = sectorGrid.GetSectorWorldLocation(deployedSectorID);
+            Vector3 deployedLocation = sectorGrid.GetSectorCenterLocation(deployedSectorID);
             SystemCreator creator = DeployAndConfigureCreatorTo(systemName, deployedLocation, systemDesirability, starCat, planetCatsByPlanetIndex);
             deployedCreators.Add(creator);
         }
@@ -245,7 +209,7 @@ public class NewGameSystemGenerator {
     }
 
     /// <summary>
-    /// Configures the existing debug creators, destroying any present that exceed the allowedQty.
+    /// Configures the existing debug creators, destroying any present that exceed the allowedQty, are in a RimSector or are in a sector to avoid.
     /// </summary>
     /// <param name="allowedQty">The allowed system qty.</param>
     /// <param name="sectorIDsToAvoid">The sector IDs to avoid.</param>
@@ -265,9 +229,18 @@ public class NewGameSystemGenerator {
             deployedCreators = new List<DebugSystemCreator>(existingCreatorQty);
             creatorsToDestroy = new List<DebugSystemCreator>(existingCreatorQty);
 
-            existingDebugCreators.ForAll(ec => {
-                if (sectorIDsToAvoid.Contains(ec.SectorID)) {
-                    creatorsToDestroy.Add(ec);
+            var sectorGrid = SectorGrid.Instance;
+            existingDebugCreators.ForAll(debugCreator => {
+                IntVector3 debugCreatorCoreSectorID;
+                if (!sectorGrid.TryGetCoreSectorIDContaining(debugCreator.transform.position, out debugCreatorCoreSectorID)) {
+                    D.Warn("{0}: {1} is not located in a CoreSector and should be repositioned!", DebugName, debugCreator.DebugName);
+                    creatorsToDestroy.Add(debugCreator);
+                }
+                else {
+                    D.AssertNotDefault(debugCreatorCoreSectorID);
+                    if (sectorIDsToAvoid.Contains(debugCreatorCoreSectorID)) {
+                        creatorsToDestroy.Add(debugCreator);
+                    }
                 }
             });
 
@@ -400,7 +373,8 @@ public class NewGameSystemGenerator {
         return DeployAndConfigureCreatorTo(systemName, location, systemDesirability, starCat, planetCatsByPlanetIndex);
     }
 
-    private SystemCreator DeployAndConfigureCreatorTo(string systemName, Vector3 location, SystemDesirability systemDesirability, StarCategory starCat, IList<PlanetoidCategory> planetCatsByPlanetIndex) {
+    private SystemCreator DeployAndConfigureCreatorTo(string systemName, Vector3 location, SystemDesirability systemDesirability,
+        StarCategory starCat, IList<PlanetoidCategory> planetCatsByPlanetIndex) {
         float systemOrbitSlotsStartRadius;
         string starDesignName = MakeAndRecordStarDesign(starCat, systemDesirability, out systemOrbitSlotsStartRadius);
 
@@ -414,7 +388,8 @@ public class NewGameSystemGenerator {
 
         IList<int> unassignedPlanetIndices;
         IList<OrbitData> planetOrbitSlots;
-        IList<string> planetDesignNames = MakePlanetDesignsAndOrbitSlots(planetCatsByPlanetIndex, systemDesirability, innerOrbitSlots, goldilocksOrbitSlots, outerOrbitSlots, out planetOrbitSlots, out unassignedPlanetIndices);
+        IList<string> planetDesignNames = MakePlanetDesignsAndOrbitSlots(planetCatsByPlanetIndex, systemDesirability, innerOrbitSlots,
+            goldilocksOrbitSlots, outerOrbitSlots, out planetOrbitSlots, out unassignedPlanetIndices);
 
         IList<PlanetoidCategory[]> moonCatsByPlanetIndex = GetRandomMoonCats(planetCatsByPlanetIndex);
 

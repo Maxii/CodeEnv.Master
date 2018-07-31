@@ -68,7 +68,7 @@
     <Compile Include="Generic\Framework\ASensorRangeMonitor.cs" />
     <Compile Include="Game\Framework\CmdSensorRangeMonitor.cs" />
     <Compile Include="Game\Framework\ElementSensorRangeMonitor.cs" />
-    <Compile Include="Game\Framework\FtlDampenerRangeMonitor.cs" />
+    <Compile Include="Game\Framework\FtlDamperRangeMonitor.cs" />
     <Compile Include="Game\_Debug\CmdIconsFolder.cs" />
     <Compile Include="Game\_Debug\ElementIconsFolder.cs" />
     <Compile Include="Game\_Debug\GameSettingsDebugControl.cs" />

@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Owner,
             //ItemInfoID.Capacity,
+            // ItemInfoID.SectorID,
 
             ItemInfoID.Resources,
 
@@ -59,6 +60,11 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
+                    case ItemInfoID.SectorID:
+                        isSuccess = true;
+                        D.AssertNotDefault(report.SectorID);
+                        colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
+                        break;
                     case ItemInfoID.Category:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != PlanetoidCategory.None ? report.Category.GetValueName() : Unknown);

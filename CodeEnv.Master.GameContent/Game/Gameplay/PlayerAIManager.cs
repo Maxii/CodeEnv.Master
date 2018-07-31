@@ -33,6 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a Cmd has changed.
+        /// <remarks>Includes the owner's own creation of a Cmd.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
@@ -40,6 +41,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a fleet has changed.
+        /// <remarks>Includes the owner's own creation of a Cmd.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
@@ -47,6 +49,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a base has changed.
+        /// <remarks>Includes the owner's own creation of a Cmd.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
@@ -54,6 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a ship has changed.
+        /// <remarks>Includes the owner's own creation of an Element.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
@@ -61,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a facility has changed.
+        /// <remarks>Includes the owner's own creation of an Element.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
@@ -106,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<Player> OtherKnownPlayers { get { return Owner.OtherKnownPlayers; } }
 
         protected IGameManager _gameMgr;
-        protected IDebugControls _debugControls;
+        protected PlayerPrefsManager _playerPrefsMgr;
         // TODO use these when needing to search for commands to take an action
         private IList<IUnitCmd> _availableCmds;
         private IList<IUnitCmd> _unavailableCmds;
@@ -125,8 +130,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() {
-            _debugControls = GameReferences.DebugControls;
+            __debugControls = GameReferences.DebugControls;
             _gameMgr = GameReferences.GameManager;
+            _playerPrefsMgr = PlayerPrefsManager.Instance;
             _jobMgr = GameReferences.JobManager;
             _fpsReadout = GameReferences.FpsReadout;
             _availableCmds = new List<IUnitCmd>();
@@ -145,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
             Knowledge.CommenceOperations();
             ResearchMgr.CommenceOperations();
 
-            if (_debugControls.IsAutoRelationsChangeEnabled) {
+            if (__debugControls.IsAutoRelationsChangeEnabled) {
                 __InitializeAutoRelationsChgSystem();
             }
 
@@ -477,6 +483,26 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Returns <c>true</c> if a planet is found that will repair both the fleet's ships and its CmdModule, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestPlanet">The closest planet.</param>
+        /// <param name="excludedPlanets">The excluded planets.</param>
+        /// <returns></returns>
+        public bool TryFindClosestFleetRepairPlanet(Vector3 worldPosition, out IPlanet_Ltd closestPlanet, params IPlanet_Ltd[] excludedPlanets) {
+            var candidates = Knowledge.Planets.Except(excludedPlanets).Where(planet => {
+                bool isCandidate = (planet as IShipRepairCapable).IsRepairingAllowedBy(Owner);
+                return isCandidate;
+            });
+            if (candidates.Any()) {
+                closestPlanet = candidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestPlanet = null;
+            return false;
+        }
+
+        /// <summary>
         /// Returns <c>true</c> if a IFleetExplorable item is found, <c>false</c> otherwise.
         /// </summary>
         /// <param name="worldPosition">The world position.</param>
@@ -511,7 +537,7 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.AssessAwarenessOf({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount); 
             IIntelItem intelItem = item as IIntelItem;
             IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);
-            if (_debugControls.IsAllIntelCoverageComprehensive) {
+            if (__debugControls.IsAllIntelCoverageComprehensive) {
                 // Each and every item should be set to Comprehensive by AIntelItemData during FinalInitialization...
                 D.AssertEqual(IntelCoverage.Comprehensive, intelCoverage);
             }
@@ -605,7 +631,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             // TEMP and redundant
-            if (_debugControls.IsAllIntelCoverageComprehensive) {
+            if (__debugControls.IsAllIntelCoverageComprehensive) {
                 // ... and they should also be known as a result of arriving here as Comprehensive and passing thru above
                 if (!Knowledge.HasKnowledgeOf(item)) {
                     D.Error("{0} has no knowledge of {1}.", DebugName, item.DebugName);
@@ -633,7 +659,7 @@ namespace CodeEnv.Master.GameContent {
                         if (!isAlreadyKnown) {
                             Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
                             if (item is ISector_Ltd) {
-                                D.Warn("FYI. {0} just discovered player {1} because of owner access to {2}!", DebugName, newlyDiscoveredPlayer.DebugName, item.DebugName);
+                                D.Log("{0} just discovered player {1} because of existing owner access to {2}!", DebugName, newlyDiscoveredPlayer.DebugName, item.DebugName);
                             }
                             Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
                             _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
@@ -644,9 +670,9 @@ namespace CodeEnv.Master.GameContent {
                             }
                             isUndiscoveredPlayerFound = true;
                         }
-                        //else {
-                        //    D.Log("{0}: {1} is already known to {2}.", DebugName, newlyDiscoveredPlayerCandidate.DebugName, Owner.DebugName);
-                        //}
+                        else {
+                            //D.Log("{0}: {1} is already known to {2}.", DebugName, newlyDiscoveredPlayerCandidate.DebugName, Owner.DebugName);
+                        }
                     }
                 }
             }
@@ -734,123 +760,6 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// AI chooses the FacilityDesign to form/add to a Settlement or Starbase. Can be Obsolete.
         /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
-        /// <remarks>UNCLEAR Default FacilityDesigns aren't currently used.</remarks>
-        /// </summary>
-        /// <param name="hullCat">The hull cat.</param>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(FacilityHullCategory hullCat, Action<FacilityDesign> onChosen) {
-            IEnumerable<FacilityDesign> designChoices;
-            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
-            D.Assert(areDesignsFound);
-            var chosenDesign = RandomExtended.Choice(designChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the ShipDesign to add to a Hanger. Can be Obsolete.
-        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
-        /// <remarks>UNCLEAR Default ShipDesigns aren't currently used.</remarks>
-        /// </summary>
-        /// <param name="hullCat">The hull cat.</param>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(ShipHullCategory hullCat, Action<ShipDesign> onChosen) {
-            IEnumerable<ShipDesign> designChoices;
-            bool areDesignsFound = Designs.TryGetDeployableDesigns(hullCat, out designChoices);
-            D.Assert(areDesignsFound);
-            var chosenDesign = RandomExtended.Choice(designChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
-        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="designToBeRefit">The design to be refit.</param>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(FleetCmdModuleDesign designToBeRefit, Action<FleetCmdModuleDesign> onChosen) {
-            IEnumerable<FleetCmdModuleDesign> cmdModUpgradeChoices;
-            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
-            D.Assert(areDesignsFound);
-
-            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
-        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="designToBeRefit">The design to be refit.</param>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(StarbaseCmdModuleDesign designToBeRefit, Action<StarbaseCmdModuleDesign> onChosen) {
-            IEnumerable<StarbaseCmdModuleDesign> cmdModUpgradeChoices;
-            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
-            D.Assert(areDesignsFound);
-
-            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to refit <c>designToBeRefit</c>.
-        /// <remarks>Will never be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="designToBeRefit">The design to be refit.</param>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(SettlementCmdModuleDesign designToBeRefit, Action<SettlementCmdModuleDesign> onChosen) {
-            IEnumerable<SettlementCmdModuleDesign> cmdModUpgradeChoices;
-            bool areDesignsFound = Designs.TryGetUpgradeDesigns(designToBeRefit, out cmdModUpgradeChoices);
-            D.Assert(areDesignsFound);
-
-            var chosenDesign = RandomExtended.Choice(cmdModUpgradeChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to initially form a unit.
-        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(Action<FleetCmdModuleDesign> onChosen) {
-            var cmdModuleChoices = Designs.GetAllDeployableFleetCmdModDesigns(includeDefault: true);
-            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to initially form a unit.
-        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(Action<StarbaseCmdModuleDesign> onChosen) {
-            D.Assert(Designs.AreDeployableStarbaseCmdModuleDesignsPresent);
-            var cmdModuleChoices = Designs.GetAllDeployableStarbaseCmdModDesigns(includeDefault: true);
-            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the command module design to use to initially form a unit.
-        /// <remarks>Can be the CmdModuleDefaultDesign.</remarks>
-        /// </summary>
-        /// <param name="onChosen">Delegate to execute when chosen.</param>
-        [Obsolete]
-        public virtual void ChooseDesign(Action<SettlementCmdModuleDesign> onChosen) {
-            var cmdModuleChoices = Designs.GetAllDeployableSettlementCmdModDesigns(includeDefault: true);
-            var chosenDesign = RandomExtended.Choice(cmdModuleChoices);
-            onChosen(chosenDesign);
-        }
-
-        /// <summary>
-        /// AI chooses the FacilityDesign to form/add to a Settlement or Starbase. Can be Obsolete.
-        /// Will throw an error if the Hull indicated by HullCategory has not yet been researched by player.
         /// <remarks>Currently simply picks a random design.</remarks>
         /// <remarks>UNCLEAR Default FacilityDesigns aren't currently used.</remarks>
         /// </summary>
@@ -901,7 +810,6 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(areDesignsFound);
             return RandomExtended.Choice(designChoices);
         }
-
 
         /// <summary>
         /// AI chooses the CmdModuleDesign to be used to form a new Unit.
@@ -1146,6 +1054,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        protected IDebugControls __debugControls;
+
         [System.Diagnostics.Conditional("DEBUG")]
         private void __Validate(Player player) {
             if (player.IsUser) {
@@ -1271,6 +1181,15 @@ namespace CodeEnv.Master.GameContent {
 
             // Replacement for IsLoneCmd
             if (fleetCmd.ElementCount == Constants.One) {
+                if (fleetCmd.IsFtlCapable && fleetCmd.IsFtlDamaged) {
+                    if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Repair)) {
+                        D.Log("{0} is issuing a {1} order to single ship fleet {2} with damaged FTL Engines.", DebugName,
+                            FleetDirective.Repair.GetValueName(), fleetCmd.DebugName);
+                        fleetCmd.__IssueCmdStaffsRepairOrder();
+                        return true;
+                    }
+                }
+
                 if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.JoinFleet)) {
                     IFleetNavigableDestination closestFleet = null;
 
@@ -1305,13 +1224,13 @@ namespace CodeEnv.Master.GameContent {
                 return false;
             }
 
-            if (_debugControls.FleetsAutoAttackAsDefault) {
+            if (__debugControls.FleetsAutoAttackAsDefault) {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     return false;
                 }
 
                 __myAttackingFleets = __myAttackingFleets ?? new List<IFleetCmd>();
-                if (__myAttackingFleets.Count < _debugControls.MaxAttackingFleetsPerPlayer) {
+                if (__myAttackingFleets.Count < __debugControls.MaxAttackingFleetsPerPlayer) {
                     // room to assign another fleet to attack
                     if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
                         if (!__myAttackingFleets.Contains(fleetCmd)) {
@@ -1382,7 +1301,7 @@ namespace CodeEnv.Master.GameContent {
                     return true;
                 }
 
-                if (_debugControls.FleetsAutoExploreAsDefault) {
+                if (__debugControls.FleetsAutoExploreAsDefault) {
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
                         return false;
                     }
@@ -1558,8 +1477,8 @@ namespace CodeEnv.Master.GameContent {
         private bool __IssueFleetFoundBaseOrder(IFleetCmd fleetCmd) {
             bool isFoundBaseOrderIssued = false;
 
-            bool tryFoundSettlement = _debugControls.FleetsAutoFoundSettlements;
-            bool tryFoundStarbase = _debugControls.FleetsAutoFoundStarbases;
+            bool tryFoundSettlement = __debugControls.FleetsAutoFoundSettlements;
+            bool tryFoundStarbase = __debugControls.FleetsAutoFoundStarbases;
             bool tryFoundBase = tryFoundSettlement || tryFoundStarbase;
             if (tryFoundBase) {
                 tryFoundSettlement = tryFoundSettlement && RandomExtended.SplitChance();

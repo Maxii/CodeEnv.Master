@@ -89,11 +89,30 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Radius of the Universe in Units.
+        /// <remarks>Each sector has 4 corners that are closer to the Universe's edge than to the origin. There are a total
+        /// of 4 sectors for each axis direction which have one of these corners directly located on the axis itself for a 
+        /// total of 24 sectors (4 x 2 (directions per axis) x 3 axis) that have this characteristic. The distance to each 
+        /// of these corners is the radius of the universe. That means each of these 24 sectors will have a total of 5 corners 
+        /// inside the universe and 3 outside.</remarks>
         /// </summary>
         /// <param name="universeSize">Size of the universe.</param>
         /// <returns></returns>
         public static float Radius(this UniverseSize universeSize) {
-            return universeSize.RadiusInSectors() * TempGameValues.SectorSideLength;
+            float distanceToSectorFarCornerOnAxis = universeSize.RadiusInSectors() * TempGameValues.SectorSideLength;
+            return distanceToSectorFarCornerOnAxis;
+        }
+
+        /// <summary>
+        /// The radius of the Universe that is navigable by Fleets. UOM is Units.
+        /// <remarks>Defined as UniverseRadius - MaxFleetFormationRadius.</remarks>
+        /// <remarks>Used to keep all fleet navigation waypoints and RimSector Position properties within this
+        /// distance from the UniverseOrigin. This will keep ships from ever having a move target that is outside the
+        /// universe.</remarks>
+        /// </summary>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        public static float NavigableRadius(this UniverseSize universeSize) {
+            return Radius(universeSize) - TempGameValues.MaxFleetFormationRadius;
         }
 
         public static int DefaultPlayerCount(this UniverseSize universeSize) {
@@ -2298,7 +2317,7 @@ namespace CodeEnv.Master.GameContent {
                 case EquipmentCategory.FtlPropulsion:
                     return AllowedFtlEngineMounts;
                 case EquipmentCategory.StlPropulsion:
-                case EquipmentCategory.FtlDampener:
+                case EquipmentCategory.FtlDamper:
                 case EquipmentCategory.StarbaseCmdModule:
                 case EquipmentCategory.SettlementCmdModule:
                 case EquipmentCategory.FleetCmdModule:
@@ -2412,14 +2431,22 @@ namespace CodeEnv.Master.GameContent {
             switch (elementID) {
                 case GuiElementID.CameraRollCheckbox:
                     return "IsCameraRollEnabled";
-                case GuiElementID.ElementIconsCheckbox:
-                    return "IsElementIconsEnabled";
+                case GuiElementID.ShowElementIconsCheckbox:
+                    return "IsShowElementIconsEnabled";
                 case GuiElementID.PauseOnLoadCheckbox:
                     return "IsPauseOnLoadEnabled";
                 case GuiElementID.ResetOnFocusCheckbox:
                     return "IsResetOnFocusEnabled";
                 case GuiElementID.ZoomOutOnCursorCheckbox:
                     return "IsZoomOutOnCursorEnabled";
+                case GuiElementID.AiHandlesUserCmdModuleInitialDesignsCheckbox:
+                    return "IsAiHandlesUserCmdModuleInitialDesignsEnabled";
+                case GuiElementID.AiHandlesUserCmdModuleRefitDesignsCheckbox:
+                    return "IsAiHandlesUserCmdModuleRefitDesignsEnabled";
+                case GuiElementID.AiHandlesUserCentralHubInitialDesignsCheckbox:
+                    return "IsAiHandlesUserCentralHubInitialDesignsEnabled";
+                case GuiElementID.AiHandlesUserElementRefitDesignsCheckbox:
+                    return "IsAiHandlesUserElementRefitDesignsEnabled";
                 case GuiElementID.GameSpeedOnLoadPopupList:
                     return "GameSpeedOnLoad";
                 case GuiElementID.QualitySettingPopupList:
@@ -2428,6 +2455,9 @@ namespace CodeEnv.Master.GameContent {
                     return "UniverseSizeSelection";
                 case GuiElementID.SystemDensityPopupList:
                     return "SystemDensitySelection";
+                case GuiElementID.PlayersSeparationPopupList:
+                    return "PlayersSeparationSelection";
+
 
                 case GuiElementID.UserPlayerSpeciesPopupList:
                     return "UserPlayerSpeciesSelection";
@@ -2529,21 +2559,6 @@ namespace CodeEnv.Master.GameContent {
                 case GuiElementID.AIPlayer7StartLevelPopupList:
                     return "AIPlayer7StartLevelSelection";
 
-                case GuiElementID.AIPlayer1UserSeparationPopupList:
-                    return "AIPlayer1UserSeparationSelection";
-                case GuiElementID.AIPlayer2UserSeparationPopupList:
-                    return "AIPlayer2UserSeparationSelection";
-                case GuiElementID.AIPlayer3UserSeparationPopupList:
-                    return "AIPlayer3UserSeparationSelection";
-                case GuiElementID.AIPlayer4UserSeparationPopupList:
-                    return "AIPlayer4UserSeparationSelection";
-                case GuiElementID.AIPlayer5UserSeparationPopupList:
-                    return "AIPlayer5UserSeparationSelection";
-                case GuiElementID.AIPlayer6UserSeparationPopupList:
-                    return "AIPlayer6UserSeparationSelection";
-                case GuiElementID.AIPlayer7UserSeparationPopupList:
-                    return "AIPlayer7UserSeparationSelection";
-
                 case GuiElementID.PlayerCountPopupList:
                 default:
                     if (elementID != GuiElementID.SavedGamesPopupList) { // TODO Not currently implemented
@@ -2557,7 +2572,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Range Category
 
-        public static float __GetBaselineFtlDampenerRange(this RangeCategory rangeCategory) {
+        public static float __GetBaselineFtlDamperRange(this RangeCategory rangeCategory) {
             float value = Constants.ZeroF;
             switch (rangeCategory) {
                 case RangeCategory.Short:

@@ -17,8 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items or stations that can repair Facilities and CmdModules.
-    /// <remarks>Bases and FormationStations.</remarks>
+    /// Interface for Items or stations that can repair Facilities and BaseCmdModules.
+    /// <remarks>Bases.</remarks>
     /// <remarks>Anything that can repair a facility can repair a ship.</remarks>
     /// </summary>
     public interface IFacilityRepairCapable : IShipRepairCapable {
@@ -30,6 +30,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="elementOwner">The element owner.</param>
         /// <returns></returns>
         float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner);
+
+        /// <summary>
+        /// Gets the repair capacity available to repair the Base's CmdModule in hitPts per day.
+        /// </summary>
+        /// <param name="unusedBaseCmd">The unused Base command.</param>
+        /// <param name="cmdOwner">The command owner.</param>
+        /// <returns></returns>
+        float GetAvailableRepairCapacityFor(IUnitBaseCmd_Ltd unusedBaseCmd, Player cmdOwner);
+
 
     }
 }

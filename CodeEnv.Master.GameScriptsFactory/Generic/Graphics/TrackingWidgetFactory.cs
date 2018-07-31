@@ -63,6 +63,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
     /// <summary>
     /// Creates a sprite on the UI layer that tracks the <c>target</c>. It does not interact with the mouse.
+    /// <remarks>7.20.18 Not currently used.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The tracked target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
@@ -80,7 +81,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        ////trackingSprite.SetShowDistance(min, max);
+        //trackingWidget.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(UITrackingSprite).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
@@ -88,6 +89,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <summary>
     /// Creates a sprite whose size doesn't change on the screen. It does interact with the mouse.
     /// <remarks>The approach taken to UIPanel usage will be determined by the DebugControls setting.</remarks>
+    /// <remarks>7.20.18 Currently used by Stars, Unit Elements and Cmds.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
@@ -108,7 +110,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
+    public IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt,
+        TrackingIconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -118,7 +121,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        ////trackingSprite.SetShowDistance(min, max);
+        //trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(InteractiveWorldTrackingSprite_Independent).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
@@ -141,7 +144,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        ////trackingSprite.SetShowDistance(min, max);
+        //trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(InteractiveWorldTrackingSprite).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
@@ -149,6 +152,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <summary>
     /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
     /// <remarks>The approach taken to UIPanel usage will be determined by the DebugControls setting.</remarks>
+    /// <remarks>7.20.18 Currently used by Planetoids.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
@@ -179,7 +183,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        ////trackingSprite.SetShowDistance(min, max);
+        //trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite_Independent).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
@@ -202,7 +206,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        ////trackingSprite.SetShowDistance(min, max);
+        //trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
@@ -244,7 +248,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        ////trackingWidget.SetShowDistance(min, max);
+        //trackingWidget.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel_Independent).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
@@ -267,7 +271,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        ////trackingWidget.SetShowDistance(min, max);
+        //trackingWidget.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
@@ -323,7 +327,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        ////trackingSprite.SetShowDistance(min);
+        //trackingWidget.SetShowDistance(min);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel_IndependentVariableSize).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
@@ -352,7 +356,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        ////trackingSprite.SetShowDistance(min);
+        //trackingWidget.SetShowDistance(min);
         //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite_IndependentVariableSize).Name, trackedTgt.DebugName);
         return trackingWidget;
     }

@@ -51,6 +51,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         set { base.Data = value; }
     }
 
+    public IntVector3 SectorID { get { return Data.SectorID; } }
+
     public PlanetoidReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     public override float Radius { get { return Data.Radius; } }
@@ -471,9 +473,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region ICameraFollowable Members
 
-    public float FollowDistanceDampener { get { return CameraStat.FollowDistanceDampener; } }
+    public float FollowDistanceDamper { get { return CameraStat.FollowDistanceDamper; } }
 
-    public float FollowRotationDampener { get { return CameraStat.FollowRotationDampener; } }
+    public float FollowRotationDamper { get { return CameraStat.FollowRotationDamper; } }
 
     #endregion
 

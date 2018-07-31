@@ -287,7 +287,7 @@
     </Level>
   </EquipmentCategory>
 
-  <EquipmentCategory EquipmentCategoryName="FtlDampener">
+  <EquipmentCategory EquipmentCategoryName="FtlDamper">
     <Level LevelName="One">
       <Name>FtlDamp1</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>

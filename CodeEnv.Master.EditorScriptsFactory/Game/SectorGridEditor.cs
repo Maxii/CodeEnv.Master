@@ -39,7 +39,15 @@ public class SectorGridEditor : Editor {
 
             GUILayout.Space(5F);
             NGUIEditorTools.SetLabelWidth(160F);
-            NGUIEditorTools.DrawProperty("Rim Cell Vertex Threshold", serializedObject, "_rimCellVertexThreshold");
+            NGUIEditorTools.DrawProperty("Use Debug RimCell Values", serializedObject, "_logDebugRimCellStepValues");
+
+            GUILayout.Space(5F);
+            EditorGUI.BeginDisabledGroup(true); // 7.10.18 Change capability no longer needed as testing is complete
+            {
+                NGUIEditorTools.SetLabelWidth(160F);
+                NGUIEditorTools.DrawProperty("Rim Cell Vertex Threshold", serializedObject, "_rimCellVertexThreshold");
+            }
+            EditorGUI.EndDisabledGroup();
 
             GUILayout.Space(5F);
             EditorGUI.BeginDisabledGroup(true);

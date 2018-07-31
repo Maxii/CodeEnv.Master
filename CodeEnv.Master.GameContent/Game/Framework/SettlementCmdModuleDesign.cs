@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public SettlementCmdModuleDesign(SettlementCmdModuleDesign designToImprove)
-            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
+            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDamperStat),
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
                   GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
@@ -60,8 +60,9 @@ namespace CodeEnv.Master.GameContent {
             DesignLevel = designToImprove.DesignLevel;
         }
 
-        public SettlementCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdModuleStat cmdModStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdModStat) {
+        public SettlementCmdModuleDesign(Player player, FtlDamperStat ftlDamperStat, SettlementCmdModuleStat cmdModStat, 
+            SensorStat reqdMRSensorStat)
+            : base(player, ftlDamperStat, reqdMRSensorStat, cmdModStat) {
             InitializeValuesAndReferences();
         }
 

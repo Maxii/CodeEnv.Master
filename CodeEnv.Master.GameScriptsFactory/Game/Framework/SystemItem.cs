@@ -287,7 +287,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return new StationaryLocation(closestSettlementStationWorldLocation);
     }
 
-
     /// <summary>
     /// Assesses whether to fire a infoAccessChanged event indicating InfoAccess rights to the Owner has been 
     /// permanently achieved (due to NonRegressibleIntel).
@@ -361,7 +360,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             // The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
             Data.SettlementData = null;
         }
-        // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
 
     protected override void ImplementUiChangesFollowingOwnerChange() {
@@ -439,7 +437,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
-
     #region Cleanup
 
     protected override void Cleanup() {
@@ -481,7 +478,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         var sector = SectorGrid.Instance.GetSector(SectorID);
         Player sectorOwner;
         if (sector.TryGetOwner(player, out sectorOwner)) {
-            D.Assert(InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));
+            // 7.29.18 Having access to the sector owner does not mean you have access to the system owner
             if (sectorOwner == TempGameValues.NoPlayer) {
                 if (Settlement != null) {
                     // if no Sector owner, there isn't a System owner and there can't be a settlement. 6.23.18 Cause resolved
@@ -496,13 +493,13 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
                     attractivenessColor = GameColor.Green;  // most attractive
                     return true;
                 }
-                return false;
+                return false;   // sector owned by player, and player has already settled this system
             }
             return false;   // can't settle systems in sectors that are owned by opponent even if opponent Settlement not present
         }
         else {
             // don't have access to sector owner, so can't tell if anyone owns it -> appears settleable for now
-            D.Assert(!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));
+            D.Assert(!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner));  // UNCLEAR
             attractivenessColor = GameColor.Yellow; // indicates maybe
             return true;
         }
@@ -510,7 +507,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateLocation(Vector3 worldLocation) {
-        D.Assert(GameUtility.IsLocationContainedInUniverse(worldLocation, _gameMgr.GameSettings.UniverseSize));
+        GameUtility.__ValidateLocationContainedInNavigableUniverse(worldLocation);
     }
 
     #endregion
@@ -626,9 +623,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     #region IFleetExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
-        bool isStarExplored = (Star as IShipExplorable).IsFullyExploredBy(player);
-        bool areAllPlanetsExplored = Planets.Cast<IShipExplorable>().All(p => p.IsFullyExploredBy(player));
-        return isStarExplored && areAllPlanetsExplored;
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
 
     public bool IsExploringAllowedBy(Player player) {

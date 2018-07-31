@@ -43,7 +43,8 @@ public class RuntimeFleetCreator : ARuntimeUnitCreator {
     }
 
     protected override void MakeCommand() {
-        _command = _factory.MakeFleetCmdInstance(Owner, CmdModDesign, gameObject, UnitName);
+        Formation randomFormation = RandomExtended.Choice(TempGameValues.AcceptableFleetFormations);
+        _command = _factory.MakeFleetCmdInstance(Owner, CmdModDesign, gameObject, UnitName, randomFormation);
     }
 
     protected override void AddElementsToCommand() {

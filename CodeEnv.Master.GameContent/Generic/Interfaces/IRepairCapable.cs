@@ -34,16 +34,6 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool IsRepairingAllowedBy(Player player);
 
-        /// <summary>
-        /// Gets the repair capacity available for this Unit's CmdModule in hitPts per day.
-        /// </summary>
-        /// <param name="unitCmd">The unit command module.</param>
-        /// <param name="hqElement">The HQElement.</param>
-        /// <param name="cmdOwner">The command owner.</param>
-        /// <returns></returns>
-        float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner);
-
-
 
     }
 }

@@ -29,10 +29,6 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case ItemInfoID.SectorID:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
-                        break;
                     case ItemInfoID.MaxHitPoints:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.MaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.MaxHitPoints.Value) : Unknown);
@@ -60,7 +56,8 @@ namespace CodeEnv.Master.GameContent {
             if (health.HasValue) {
                 healthColor = (health.Value > GeneralSettings.Instance.ElementHealthThreshold_Damaged) ? GameColor.Green :
                             (health.Value > GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged) ? GameColor.Yellow :
-                            (health.Value > GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged) ? GameColor.Orange : GameColor.Red; ;
+                            (health.Value > GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged) ? GameColor.Orange : GameColor.Red;
+                ;
                 colorizedHealthText = Constants.FormatPercent_0Dp.Inject(health.Value).SurroundWith(healthColor);
             }
 

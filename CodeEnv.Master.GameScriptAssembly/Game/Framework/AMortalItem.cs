@@ -37,7 +37,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         set { base.Data = value; }
     }
 
-    public IntVector3 SectorID { get { return Data.SectorID; } }
+    ////[Obsolete]
+    ////public IntVector3 SectorID { get { return Data.SectorID; } }
 
     /// <summary>
     /// Indicates this Item is dieing and about to be dead.
@@ -305,13 +306,18 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
+
         if (Owner.IsRelationshipWith(attackingPlayer, DiplomaticRelationship.ColdWar)) {
-            ISector itemsCurrentSector = GameReferences.SectorGrid.GetSectorContaining(Position);
-            // 4.12.17 OK to use ISector for owner access as this method really answers the question of
-            // the attackingPlayer who would know if this item was in their territory // IMPROVE is there a better way?
-            if (itemsCurrentSector.Owner == attackingPlayer) {
-                // We are in ColdWar and this item is located in their territory so they can attack it
-                return true;
+            var sectorGrid = GameReferences.SectorGrid;
+            IntVector3 itemsCurrentSectorID;
+            if (sectorGrid.TryGetSectorIDContaining(Position, out itemsCurrentSectorID)) {
+                // 4.12.17 OK to use ISector for owner access as this method really answers the question of
+                // the attackingPlayer who would know if this item was in their territory // IMPROVE is there a better way?
+                ISector itemsCurrentSector = sectorGrid.GetSector(itemsCurrentSectorID);
+                if (itemsCurrentSector.Owner == attackingPlayer) {
+                    // We are in ColdWar and this item is located in their territory so they can attack it
+                    return true;
+                }
             }
         }
         return false;

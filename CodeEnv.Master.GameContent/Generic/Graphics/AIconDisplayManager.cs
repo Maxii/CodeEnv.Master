@@ -138,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Destroys the icon if present, include any subscription un-wiring required.
+        /// Destroys the icon if present, include any subscription unwiring required.
         /// WARNING: Destroying an Icon that is used for other purposes by the Item can result in difficult to diagnose errors.
         /// e.g. Cmds use the Icon as the transform upon which to center highlighting.
         /// </summary>

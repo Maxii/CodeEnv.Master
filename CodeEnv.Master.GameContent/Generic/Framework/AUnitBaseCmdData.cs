@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private IntVector3 _sectorID;
-        public override IntVector3 SectorID {
+        public /*override*/ IntVector3 SectorID {
             get {
                 if (_sectorID == default(IntVector3)) {
                     _sectorID = InitializeSectorID();
@@ -85,8 +85,8 @@ namespace CodeEnv.Master.GameContent {
         #region Initialization 
 
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, AUnitCmdModuleDesign cmdModDesign)
-            : base(cmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            FtlDamper ftlDamper, AUnitCmdModuleDesign cmdModDesign)
+            : base(cmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
         }
 
         protected override AIntel MakeIntelInstance() {
@@ -148,6 +148,10 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0} cannot have UnitOutput with zero production. Fixing.", DebugName);
                 unitOutputs += OutputsYield.OneProduction;
             }
+        }
+
+        protected sealed override void __ValidateUnitMaxFormationRadius() {
+            // 7.16.18 Currently only Fleets need to validate their max formation radius
         }
 
         #endregion

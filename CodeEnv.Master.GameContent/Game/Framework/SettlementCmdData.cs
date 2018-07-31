@@ -65,11 +65,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper,
            SettlementCmdModuleDesign cmdModDesign)
-               : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
+               : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDamper, cmdModDesign) {
         }
 
         /// <summary>
@@ -79,11 +79,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleDesign cmdModDesign)
-            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper, SettlementCmdModuleDesign cmdModDesign)
+            : base(settlementCmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
@@ -146,8 +146,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDampener);
+        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModDesign, IEnumerable<PassiveCountermeasure> passiveCMs, 
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper) {
+            base.ReplaceCmdModuleWith(cmdModDesign, passiveCMs, sensors, ftlDamper);
             // CmdModuleDesign does have SettlementCmdModule-specific values (StartingPopulation, StartingApproval) but they should be ignored
         }
 

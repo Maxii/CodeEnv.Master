@@ -26,6 +26,10 @@ namespace CodeEnv.Master.GameContent {
         public bool IsZoomOutOnCursorEnabled { get; set; }
         public bool IsResetOnFocusEnabled { get; set; }
         public bool IsPauseOnLoadEnabled { get; set; }
+        public bool IsAiHandlesUserCmdModuleInitialDesignsEnabled { get; set; }
+        public bool IsAiHandlesUserCmdModuleRefitDesignsEnabled { get; set; }
+        public bool IsAiHandlesUserCentralHubInitialDesignsEnabled { get; set; }
+        public bool IsAiHandlesUserElementRefitDesignsEnabled { get; set; }
 
         public GameSpeed GameSpeedOnLoad { get; set; }
 

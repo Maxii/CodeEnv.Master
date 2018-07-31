@@ -64,8 +64,8 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("SGen")]
         ShieldGenerator,
 
-        [EnumAttribute("Damp")]
-        FtlDampener,
+        [EnumAttribute("Damp")] // Dampen means make wet. Damp refers to damping amplitude
+        FtlDamper,
 
         [EnumAttribute("FCmdM")]
         FleetCmdModule,

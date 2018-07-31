@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCategory Category { get; private set; }
 
+        public IntVector3 SectorID { get; private set; }
+
         public int? Population { get; private set; }
 
         public float? Approval { get; private set; }

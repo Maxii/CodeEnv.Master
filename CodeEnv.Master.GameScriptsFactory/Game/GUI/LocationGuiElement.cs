@@ -87,7 +87,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
             location = Location.Value;
         }
         else {
-            location = SectorGrid.Instance.GetSectorWorldLocation(SectorID);
+            location = SectorGrid.Instance.GetSectorCenterLocation(SectorID);
         }
 
         IUnitBaseCmd myClosestBase = null;

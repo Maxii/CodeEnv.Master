@@ -17,6 +17,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
     using System;
 
     /// <summary>
@@ -25,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
     public interface IUnitBaseCmd : IUnitCmd {
 
         event EventHandler resourcesChanged;
+
+        IntVector3 SectorID { get; }
 
         BaseOrder CurrentOrder { get; }
 

@@ -46,7 +46,8 @@ public class AutoSettlementCreator : AAutoUnitCreator {
     }
 
     protected override void MakeCommand() {
-        _command = _factory.MakeSettlementCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName);
+        Formation randomFormation = RandomExtended.Choice(TempGameValues.AcceptableBaseFormations);
+        _command = _factory.MakeSettlementCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName, randomFormation);
     }
 
     protected override void AddElementsToCommand() {

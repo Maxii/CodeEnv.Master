@@ -29,10 +29,10 @@ public abstract class AWorldTrackingWidget_VariableSize : AWorldTrackingWidget {
     /// <summary>
     /// The Units per Pixel multiplier used to calculate the maximum distance that world tracking widgets are legible.
     /// </summary>
-    protected static float _maxShowDistanceMultiplier = 50F;
+    protected const float MaxShowDistanceMultiplier = 50F;
 
     protected override float CalcMaxShowDistance(float max) {
-        float result = GetSmallestWidgetDimension() * _maxShowDistanceMultiplier;
+        float result = GetSmallestWidgetDimension() * MaxShowDistanceMultiplier;
         if (max < Mathf.Infinity) {
             if (max < result) {
                 result = max;

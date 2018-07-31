@@ -28,6 +28,54 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : AUnitCmdData {
 
+        #region FTL
+
+        private bool _isFtlCapable;
+        /// <summary>
+        /// Indicates whether ALL the fleet's ships have FTL engines. If <c>false</c> the fleet is not capable of traveling at FTL speeds.
+        /// <remarks>Returning <c>true</c> says nothing about the operational state of the engines.</remarks>
+        /// <remarks>Subscribable.</remarks>
+        /// </summary>
+        public bool IsFtlCapable {
+            get { return _isFtlCapable; }
+            private set { SetProperty<bool>(ref _isFtlCapable, value, "IsFtlCapable"); }
+        }
+
+        private bool _isFtlOperational;
+        /// <summary>
+        /// Indicates whether ALL the fleet's ships have FTL engines that are operational, aka activated, undamaged and not damped 
+        /// by an FTL damping field. If <c>false</c> the fleet is not currently capable of traveling at FTL speeds.
+        /// <remarks>Subscribable.</remarks>
+        /// </summary>
+        public bool IsFtlOperational {
+            get { return _isFtlOperational; }
+            private set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational"); }
+        }
+
+        private bool _isFtlDamaged;
+        /// <summary>
+        /// Indicates whether ANY of the fleet's ship's FTL engines, if any, are damaged. If <c>true</c> the fleet is not 
+        /// currently capable of traveling at FTL speeds. 
+        /// <remarks>Subscribable.</remarks>
+        /// </summary>
+        public bool IsFtlDamaged {
+            get { return _isFtlDamaged; }
+            private set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged"); }
+        }
+
+        private bool _isFtlDampedByField;
+        /// <summary>
+        /// Indicates whether ANY of the fleet's ship's FTL engines, if any, are damped by an FTL Damping Field. 
+        /// If <c>true</c> the fleet is not currently capable of traveling at FTL speeds.
+        /// <remarks>Subscribable.</remarks>
+        /// </summary>
+        public bool IsFtlDampedByField {
+            get { return _isFtlDampedByField; }
+            private set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField"); }
+        }
+
+        #endregion
+
         private INavigableDestination _target;
         public INavigableDestination Target {
             get { return _target; }
@@ -87,6 +135,7 @@ namespace CodeEnv.Master.GameContent {
         private float _unitFullSpeedValue;
         /// <summary>
         /// The maximum sustainable speed of the fleet in units per hour.
+        /// <remarks>This is the lowest FullSpeedValue of any ship in the fleet.</remarks>
         /// </summary>
         public float UnitFullSpeedValue {
             get { return _unitFullSpeedValue; }
@@ -107,8 +156,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _unitComposition; }
             set { SetProperty<FleetComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
-
-        public override IntVector3 SectorID { get { return HQElementData.SectorID; } }
 
         public new ShipData HQElementData {
             protected get { return base.HQElementData as ShipData; }
@@ -135,10 +182,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, FleetCmdModuleDesign cmdModDesign)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdModDesign) {
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper, FleetCmdModuleDesign cmdModDesign)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDamper, cmdModDesign) {
         }
 
         /// <summary>
@@ -148,11 +195,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
-        /// <param name="ftlDampener">The FTL dampener.</param>
+        /// <param name="ftlDamper">The FTL damper.</param>
         /// <param name="cmdModDesign">The cmd module design.</param>
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, FleetCmdModuleDesign cmdModDesign)
-            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdModDesign) {
+            FtlDamper ftlDamper, FleetCmdModuleDesign cmdModDesign)
+            : base(fleetCmd, owner, passiveCMs, sensors, ftlDamper, cmdModDesign) {
         }
 
         protected override AIntel MakeIntelInstance() {
@@ -168,6 +215,7 @@ namespace CodeEnv.Master.GameContent {
         public override void AddElement(AUnitElementData elementData) {
             base.AddElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
+            __CheckFtlStatus(elementData as ShipData);
         }
 
         public override void RemoveElement(AUnitElementData elementData) {
@@ -177,8 +225,9 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
-            base.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
+        public override void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs,
+            IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper) {
+            base.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDamper);
             // No FleetCmdModule-specific values to consider dealing with
         }
 
@@ -195,6 +244,10 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitSensorRange();
         }
 
+        public bool TryGetSectorID(out IntVector3 sectorID) {
+            return HQElementData.TryGetSectorID(out sectorID);
+        }
+
         protected override OutputsYield RecalcUnitOutputs() {
             var unitOutputs = ElementsData.Select(ed => ed.Outputs).Sum();
             return unitOutputs;
@@ -209,6 +262,10 @@ namespace CodeEnv.Master.GameContent {
             base.RecalcPropertiesDerivedFromCombinedElements();
             RefreshFullSpeed();
             RefreshMaxTurnRate();
+            AssessIsFtlCapable();
+            AssessIsFtlDamaged();
+            AssessIsFtlDampedByField();
+            AssessIsFtlOperational();
         }
 
         private void RefreshFullSpeed() {
@@ -224,11 +281,34 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void AssessIsFtlCapable() {
+            bool isAllShipsFtlCapable = ElementsData.All(sData => sData.IsFtlCapable);
+            IsFtlCapable = isAllShipsFtlCapable;
+        }
+
+        private void AssessIsFtlDamaged() {
+            bool isAnyShipsFtlEngineDamaged = ElementsData.Any(sData => sData.IsFtlDamaged);
+            IsFtlDamaged = isAnyShipsFtlEngineDamaged;
+        }
+
+        private void AssessIsFtlDampedByField() {
+            bool isAnyShipsFtlEngineDampedByField = ElementsData.Any(sData => sData.IsFtlDampedByField);
+            IsFtlDampedByField = isAnyShipsFtlEngineDampedByField;
+        }
+
+        private void AssessIsFtlOperational() {
+            bool isAllShipsEnginesFtlCapableAndOperational = ElementsData.All(sData => sData.IsFtlOperational);
+            IsFtlOperational = isAllShipsEnginesFtlCapableAndOperational;
+        }
+
         protected override void Subscribe(AUnitElementData elementData) {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _elementSubscriptionsLookup[elementData];
             ShipData shipData = elementData as ShipData;
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeedValue, ShipFullSpeedPropChangedHandler));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlDamaged, ShipIsFtlDamagedPropChangedHandler));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlDampedByField, ShipIsFtlDampedByFieldPropChangedHandler));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlOperational, ShipIsFtlOperationalPropChangedHandler));
         }
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
@@ -254,14 +334,28 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void ShipFullSpeedPropChangedHandler() {
+            RefreshFullSpeed();
+        }
+
+        private void ShipIsFtlDamagedPropChangedHandler() {
+            AssessIsFtlDamaged();
+        }
+
+        private void ShipIsFtlDampedByFieldPropChangedHandler() {
+            AssessIsFtlDampedByField();
+        }
+
+        private void ShipIsFtlOperationalPropChangedHandler() {
+            AssessIsFtlOperational();
+        }
+
+        #endregion
+
         protected override void HandleUnitWeaponsRangeChanged() {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance) {
                 D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
             }
-        }
-
-        private void ShipFullSpeedPropChangedHandler() {
-            RefreshFullSpeed();
         }
 
         protected override void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
@@ -274,8 +368,6 @@ namespace CodeEnv.Master.GameContent {
             base.HandleHQElementDataChanged();
             D.Assert(HQElementData.CombatStance == ShipCombatStance.Defensive, HQElementData.CombatStance.GetValueName());
         }
-
-        #endregion
 
         protected override void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
             if (HQElementData.IsOwnerChgUnderway && ElementCount > Constants.One) {
@@ -299,6 +391,28 @@ namespace CodeEnv.Master.GameContent {
             }
             return base.GetTopography();
         }
+
+        #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __CheckFtlStatus(ShipData data) {
+            if (!data.IsFtlCapable) {
+                D.Error("{0} is adding {1} that isn't FtlCapable?", DebugName, data.DebugName); // TEMP until I make STL-only ships
+                return;
+            }
+            if (data.IsFtlDamaged) {
+                var otherUndamagedFtlCapableShips = ElementsData.Where(sData => sData.IsFtlCapable && !sData.IsFtlDamaged);
+                if (otherUndamagedFtlCapableShips.Any()) {
+                    D.Warn("{0} is adding {1} with damaged FTL Engines?", DebugName, data.DebugName);
+                }
+            }
+        }
+
+        protected override void __ValidateUnitMaxFormationRadius() {
+            D.Assert(UnitMaxFormationRadius <= TempGameValues.MaxFleetFormationRadius);
+        }
+
+        #endregion
 
         #region Nested Classes
 

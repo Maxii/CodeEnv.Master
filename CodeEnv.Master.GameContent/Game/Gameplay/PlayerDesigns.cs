@@ -32,19 +32,19 @@ namespace CodeEnv.Master.GameContent {
 
         private static EquipmentCategory[] _equipCatsUsedByFleetCmdTemplateDesign = {
                                                                                         EquipmentCategory.FleetCmdModule,
-                                                                                        EquipmentCategory.FtlDampener,
+                                                                                        EquipmentCategory.FtlDamper,
                                                                                         EquipmentCategory.MRSensor
                                                                                     };
 
         private static EquipmentCategory[] _equipCatsUsedByStarbaseCmdTemplateDesign = {
                                                                                         EquipmentCategory.StarbaseCmdModule,
-                                                                                        EquipmentCategory.FtlDampener,
+                                                                                        EquipmentCategory.FtlDamper,
                                                                                         EquipmentCategory.MRSensor
                                                                                     };
 
         private static EquipmentCategory[] _equipCatsUsedBySettlementCmdTemplateDesign = {
                                                                                         EquipmentCategory.SettlementCmdModule,
-                                                                                        EquipmentCategory.FtlDampener,
+                                                                                        EquipmentCategory.FtlDamper,
                                                                                         EquipmentCategory.MRSensor
                                                                                     };
 
@@ -343,8 +343,8 @@ namespace CodeEnv.Master.GameContent {
                             currentCmdModuleStats.Add(sStat);
                         }
                         break;
-                    case EquipmentCategory.FtlDampener:
-                        currentCmdModuleStats.Add(GetCurrentFtlDampenerStat());
+                    case EquipmentCategory.FtlDamper:
+                        currentCmdModuleStats.Add(GetCurrentFtlDamperStat());
                         break;
                     case EquipmentCategory.None:
                     default:
@@ -421,9 +421,9 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public FtlDampenerStat GetCurrentFtlDampenerStat() {
-            Level playerLevel = _currentEquipLevelLookup[EquipmentCategory.FtlDampener];
-            return _eStatFactory.MakeInstance(_player, EquipmentCategory.FtlDampener, playerLevel) as FtlDampenerStat;
+        public FtlDamperStat GetCurrentFtlDamperStat() {
+            Level playerLevel = _currentEquipLevelLookup[EquipmentCategory.FtlDamper];
+            return _eStatFactory.MakeInstance(_player, EquipmentCategory.FtlDamper, playerLevel) as FtlDamperStat;
         }
 
         public FleetCmdModuleStat GetCurrentFleetCmdModuleStat() {
@@ -529,7 +529,7 @@ namespace CodeEnv.Master.GameContent {
         /// Throws an error if the FleetCmdModule has not yet been researched.
         /// </summary>
         private void UpdateFleetCmdTemplateDesign() {
-            FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
+            FtlDamperStat ftlDampStat = GetCurrentFtlDamperStat();
             var cmdModuleStat = GetCurrentFleetCmdModuleStat();
             var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
             FleetCmdModuleDesign cmdModDesign = new FleetCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
@@ -552,7 +552,7 @@ namespace CodeEnv.Master.GameContent {
         /// Throws an error if the SettlementCmdModule has not yet been researched.
         /// </summary>
         private void UpdateSettlementCmdTemplateDesign() {
-            FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
+            FtlDamperStat ftlDampStat = GetCurrentFtlDamperStat();
             var cmdModuleStat = GetCurrentSettlementCmdModuleStat();
             var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
             SettlementCmdModuleDesign cmdModDesign = new SettlementCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
@@ -577,7 +577,7 @@ namespace CodeEnv.Master.GameContent {
         private void AttemptStarbaseCmdTemplateDesignUpdate() {
             StarbaseCmdModuleStat cmdModuleStat;
             if (TryGetCurrentStarbaseCmdModuleStat(out cmdModuleStat)) {
-                FtlDampenerStat ftlDampStat = GetCurrentFtlDampenerStat();
+                FtlDamperStat ftlDampStat = GetCurrentFtlDamperStat();
                 var reqdMrSensorStat = GetCurrentMRCmdSensorStat();
                 StarbaseCmdModuleDesign cmdModDesign = new StarbaseCmdModuleDesign(_player, ftlDampStat, cmdModuleStat, reqdMrSensorStat) {
                     RootDesignName = TempGameValues.StarbaseCmdModTemplateRootDesignName,
@@ -1802,10 +1802,6 @@ namespace CodeEnv.Master.GameContent {
                 .Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current).Except(designToUpgrade);
             return upgradeDesigns.Any();
         }
-
-        #endregion
-
-        #region Debug
 
         #endregion
 

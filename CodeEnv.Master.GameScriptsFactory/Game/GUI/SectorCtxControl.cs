@@ -52,6 +52,7 @@ public class SectorCtxControl : ACtxControl {
     private ASector _sector;
     private ASector Sector {
         get {
+            D.Assert(_sectorExaminerMenuOperator.IsCurrentSectorIdValid);
             _sector = _sector ?? SectorGrid.Instance.GetSector(_sectorExaminerMenuOperator.CurrentSectorID);
             return _sector;
         }

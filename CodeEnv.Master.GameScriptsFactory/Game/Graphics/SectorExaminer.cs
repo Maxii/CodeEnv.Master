@@ -51,21 +51,31 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     [SerializeField]
     private int _distanceInSectorsFromCamera = 2;
 
+    [Tooltip("Click to show a box around the hot spot.")]
     [SerializeField]
     private bool _showHotSpot = false;
 
-    public string DebugName { get { return DebugNameFormat.Inject(typeof(SectorExaminer).Name, CurrentSectorID.DebugName); } }
+    public string DebugName {
+        get {
+            string sectorIdMsg = IsCurrentSectorIdValid ? CurrentSectorID.DebugName : "Invalid Sector";
+            return DebugNameFormat.Inject(typeof(SectorExaminer).Name, sectorIdMsg);
+        }
+    }
 
-    private IntVector3 _currentSectorID;
+    public bool IsCurrentSectorIdValid { get { return _currentSectorID != default(IntVector3); } }
+
+    private bool _isCurrentSectorIdInitialized = false;
+    private IntVector3 _currentSectorID = default(IntVector3);
     /// <summary>
     /// The Location of this SectorExaminer expressed as the ID of the Sector it is over.
+    /// <remarks>7.16.18 Can be default value as ShowSectorUnderMouse now changes CurrentSectorID
+    /// if over area without an ASector.</remarks>
     /// </summary>
     public IntVector3 CurrentSectorID {
         get {
-            if (_currentSectorID == default(IntVector3)) {
+            if (!_isCurrentSectorIdInitialized) {
                 // First time initialization. Can't be done in Awake as it can run before SectorGrid.Awake?
-                _currentSectorID = _sectorGrid.GetSectorIDContaining(Position);
-                ////_currentSectorID = _sectorGrid.GetSectorIDThatContains(Position);
+                _currentSectorID = InitializeCurrentSectorID();
             }
             return _currentSectorID;
         }
@@ -73,6 +83,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private bool IsSectorWireframeShowing { get { return _sectorWireframe != null && _sectorWireframe.IsShowing; } }
+
+    private bool IsSectorHotSpotWireframeShowing { get { return _hotSpotWireframe != null && _hotSpotWireframe.IsShowing; } }
 
     private bool IsContextMenuShowing { get { return _ctxControl != null && _ctxControl.IsShowing; } }
 
@@ -123,8 +135,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _hotSpotTransform.localPosition = hotSpotLocalOffset;
 
         var hotSpotEventListener = MyEventListener.Get(_hotSpotTransform.gameObject);
-        hotSpotEventListener.onHover += HoverEventHandler;
-        hotSpotEventListener.onPress += PressEventHandler;
+        hotSpotEventListener.onHover += HotSpotHoverEventHandler;
+        hotSpotEventListener.onPress += HotSpotPressEventHandler;
     }
 
     private void Subscribe() {
@@ -141,6 +153,17 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
             UICamera.onMouseMove -= MouseMovedEventHandler;
         }
+    }
+
+    private IntVector3 InitializeCurrentSectorID() {
+        D.Assert(!_isCurrentSectorIdInitialized);
+        _isCurrentSectorIdInitialized = true;
+        IntVector3 sectorID;
+        if (_sectorGrid.TryGetSectorIDContaining(Position, out sectorID)) {
+            return sectorID;
+        }
+        D.Warn("{0} is initializing CurrentSectorID in a location without a Sector.", DebugName);
+        return default(IntVector3);
     }
 
     private SectorCtxControl InitializeContextMenu() {
@@ -171,13 +194,13 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         HandleViewModeChanged();
     }
 
-    private void HoverEventHandler(GameObject go, bool isOver) {
-        HandleHoveredChanged(isOver);
+    private void HotSpotHoverEventHandler(GameObject go, bool isOver) {
+        HandleHotSpotHoveredChanged(isOver);
     }
 
-    private void PressEventHandler(GameObject go, bool isDown) {
+    private void HotSpotPressEventHandler(GameObject go, bool isDown) {
         if (_inputHelper.IsRightMouseButton && !isDown) {
-            HandleRightPressRelease();
+            HandleHotSpotRightPressRelease();
         }
     }
 
@@ -210,10 +233,11 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 HighlightSectorContents(false);
                 ShowSectorDebugLog(false);
 
-                // OPTIMIZE cache sector
-                var sector = _sectorGrid.GetSector(CurrentSectorID);
-                if (sector.IsHudShowing) {
-                    sector.ShowHud(false);
+                if (IsCurrentSectorIdValid) {
+                    ASector sector = _sectorGrid.GetSector(CurrentSectorID);    // OPTIMIZE cache sector?
+                    if (sector.IsHudShowing) {
+                        sector.ShowHud(false);
+                    }
                 }
                 break;
             case PlayerViewMode.None:
@@ -222,15 +246,19 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         }
     }
 
-    private void HandleHoveredChanged(bool isOver) {
-        if (_viewMode == PlayerViewMode.SectorView) {
+    private void HandleHotSpotHoveredChanged(bool isOver) {
+        D.AssertEqual(PlayerViewMode.SectorView, _viewMode);
+        if (IsCurrentSectorIdValid) {
             D.Log(ShowDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
             var sector = _sectorGrid.GetSector(CurrentSectorID);
             sector.ShowHud(isOver);
         }
+        else {
+            _sectorGrid.Sectors.Where(sector => sector.IsHudShowing).ForAll(sector => sector.ShowHud(false));
+        }
     }
 
-    private void HandleRightPressRelease() {
+    private void HandleHotSpotRightPressRelease() {
         if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl = _ctxControl ?? InitializeContextMenu();
@@ -239,15 +267,19 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void HandleCurrentSectorIdChanged() {
-        Vector3 sectorCenterLoc = _sectorGrid.GetSectorWorldLocation(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
-        transform.position = sectorCenterLoc;
-        ShowSectorWireframes(true);
-        UpdateSectorIDLabel();
-        HighlightSectorContents(true);
-        ShowSectorDebugLog(true);
+        if (IsCurrentSectorIdValid) {
+            Vector3 sectorCenterLoc = _sectorGrid.GetSectorCenterLocation(CurrentSectorID);
+            transform.position = sectorCenterLoc;
+            ShowSectorWireframes(true);
+            UpdateSectorIDLabel();
+            HighlightSectorContents(true);
+            ShowSectorDebugLog(true);
+        }
+        _hotSpotCollider.enabled = IsCurrentSectorIdValid;
     }
 
     private void UpdateSectorIDLabel() {
+        D.Assert(IsCurrentSectorIdValid);
         _sectorIDLabel = _sectorIDLabel ?? InitializeSectorIDLabel();
         _sectorIDLabel.Set(SectorIDLabelText.Inject(CurrentSectorID));
     }
@@ -263,55 +295,57 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             Vector3 mousePosition = Input.mousePosition;
             mousePosition.z = _distanceToHighlightedSector;
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-            // mouseWorldPoint can be outside where SectorIDs are assigned, aka outside universe
+            // mouseWorldPoint can be in cells without SectorIDs
             IntVector3 sectorIdUnderMouse;
-            if (_sectorGrid.TryGetSectorIDContaining(mouseWorldPoint, out sectorIdUnderMouse)) {
-                if (CurrentSectorID != sectorIdUnderMouse) {    // avoid the SetProperty equivalent warnings
-                    CurrentSectorID = sectorIdUnderMouse;
-                }
-            }
-            else {
+            if (!_sectorGrid.TryGetSectorIDContaining(mouseWorldPoint, out sectorIdUnderMouse)) {
+                // 7.14.18 Turn off these visible attributes if previous CurrentSectorID is valid BEFORE making it invalid
                 HighlightSectorContents(false);
                 ShowSectorWireframes(false);
                 ShowSectorDebugLog(false);
+            }
+            if (CurrentSectorID != sectorIdUnderMouse) {    // avoid the SetProperty equivalent warnings
+                CurrentSectorID = sectorIdUnderMouse;
             }
         }
     }
 
     private void ShowSectorWireframes(bool toShow) {
-        if (toShow == IsSectorWireframeShowing) {
-            return;
+        //D.Log(ShowDebugLog, "{0}.ShowSectorWireframe({1})", DebugName, toShow);
+        if (toShow != IsSectorWireframeShowing) {
+            if (toShow) {
+                _sectorWireframe = _sectorWireframe ?? new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F,
+                    color: TempGameValues.SectorHighlightColor);
+                UpdateSectorIDLabel();
+            }
+            _sectorWireframe.Show(toShow);
+            _sectorIDLabel.Show(toShow);
         }
-        //D.Log(ShowDebugLog, "{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
-        bool toShowHotSpot = _showHotSpot && toShow;
-        if (toShow) {
-            _sectorWireframe = _sectorWireframe ?? new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F,
-                color: TempGameValues.SectorHighlightColor);
+        if (toShow != IsSectorHotSpotWireframeShowing) {
+            bool toShowHotSpot = _showHotSpot && toShow;
             if (toShowHotSpot) {
                 _hotSpotWireframe = _hotSpotWireframe ?? new CubeWireframe("HotSpotWireframe", _hotSpotTransform, _hotSpotCollider.size,
                     color: GameColor.Red);
             }
-            UpdateSectorIDLabel();
+            _hotSpotWireframe.Show(toShowHotSpot);
         }
-        _sectorWireframe.Show(toShow);
-        _hotSpotWireframe.Show(toShowHotSpot);
-        _sectorIDLabel.Show(toShow);
     }
 
     private void HighlightSectorContents(bool toShow) {
-        IEnumerable<ISectorViewHighlightable> highlightablesInSector;
-        if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorID, out highlightablesInSector)) {
-            D.Log(ShowDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DebugName).Concatenate(), CurrentSectorID);
-            highlightablesInSector.ForAll(highlightable => {
-                if (highlightable.IsSectorViewHighlightShowing != toShow) {
-                    highlightable.ShowSectorViewHighlight(toShow);
-                }
-            });
+        if (IsCurrentSectorIdValid) {
+            IEnumerable<ISectorViewHighlightable> highlightablesInSector;
+            if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorID, out highlightablesInSector)) {
+                D.Log(ShowDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DebugName).Concatenate(), CurrentSectorID);
+                highlightablesInSector.ForAll(highlightable => {
+                    if (highlightable.IsSectorViewHighlightShowing != toShow) {
+                        highlightable.ShowSectorViewHighlight(toShow);
+                    }
+                });
+            }
         }
     }
 
     private void ShowSectorDebugLog(bool toShow) {
-        if (ShowDebugLog) {
+        if (ShowDebugLog && IsCurrentSectorIdValid) {
             var sector = _sectorGrid.GetSector(CurrentSectorID);
             sector.ShowDebugLog = toShow;
         }
@@ -338,8 +372,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
 
         var hotSpotEventListener = MyEventListener.Get(_hotSpotTransform.gameObject);
-        hotSpotEventListener.onHover -= HoverEventHandler;
-        hotSpotEventListener.onPress -= PressEventHandler;
+        hotSpotEventListener.onHover -= HotSpotHoverEventHandler;
+        hotSpotEventListener.onPress -= HotSpotPressEventHandler;
     }
 
     public override string ToString() {

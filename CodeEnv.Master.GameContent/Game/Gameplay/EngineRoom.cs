@@ -195,10 +195,12 @@ namespace CodeEnv.Master.GameContent {
             if (Mathfx.Approx(intendedNewSpeedValue, __PreviousIntendedCurrentSpeedValue, .01F)) {
                 if (newSpeed != Speed.Stop) {    // can't be HardStop
                     if (!IsPropulsionEngaged) {
-                        D.Error("{0} received ChangeSpeed({1}, {2:0.00}) without propulsion engaged to execute it.", DebugName, newSpeed.GetValueName(), intendedNewSpeedValue);
+                        D.Error("{0} received ChangeSpeed({1}, {2:0.00}) without propulsion engaged to execute it.", DebugName,
+                            newSpeed.GetValueName(), intendedNewSpeedValue);
                     }
                 }
-                //D.Log(ShowDebugLog, "{0} is ignoring speed request of {1}({2:0.##}) as it is a duplicate.", DebugName, newSpeed.GetValueName(), intendedNewSpeedValue);
+                //D.Log(ShowDebugLog, "{0} is ignoring speed request of {1}({2:0.##}) as it is a duplicate.", DebugName, 
+                //newSpeed.GetValueName(), intendedNewSpeedValue);
                 return;
             }
 
@@ -574,9 +576,10 @@ namespace CodeEnv.Master.GameContent {
             }
 
             string jobName = "{0}.CollisionAvoidanceJob".Inject(DebugName);
-            Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, obstacle), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                D.Assert(jobWasKilled); // CA Jobs never complete naturally
-            });
+            Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, obstacle),
+                jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+                    D.Assert(jobWasKilled); // CA Jobs never complete naturally
+                });
             _caPropulsionJobs.Add(obstacle, caJob);
         }
 
@@ -585,7 +588,7 @@ namespace CodeEnv.Master.GameContent {
 
             bool isInformedOfLogging = false;
             bool isInformedOfWarning = false;
-            GameDate logDate = new GameDate(GameTimeDuration.TenHours);   // HACK  // 3.5.17 Logging at 9F with FtlDampener
+            GameDate logDate = new GameDate(GameTimeDuration.TenHours);   // HACK  // 3.5.17 Logging at 9F with FtlDamper
             GameDate warnDate = default(GameDate);
             GameDate errorDate = default(GameDate);
             GameDate currentDate;
@@ -612,7 +615,8 @@ namespace CodeEnv.Master.GameContent {
                             errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);
                         }
                         if (currentDate > errorDate) {
-                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out avoiding collision with {1}.", DebugName, obstacle.DebugName);
+                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out avoiding collision with {1}.", DebugName,
+                                obstacle.DebugName);
                         }
                     }
                 }

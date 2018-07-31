@@ -19,6 +19,7 @@
 using System;
 using System.Reflection;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -37,7 +38,6 @@ public class GuiMenuCheckbox_PlayerPrefs : AGuiMenuElement {
     [Tooltip("The unique ID of this Checkbox GuiElement")]
     [SerializeField]
     private GuiElementID _elementID = GuiElementID.None;
-
     public override GuiElementID ElementID { get { return _elementID; } }
 
     private bool _defaultValue = false;
@@ -76,6 +76,7 @@ public class GuiMenuCheckbox_PlayerPrefs : AGuiMenuElement {
 
     private void Subscribe() {
         EventDelegate.Add(_checkbox.onChange, CheckboxStateSetEventHandler);
+        __SubscribeToDebugControls();
     }
 
     private void InitializeSelection() {
@@ -119,6 +120,10 @@ public class GuiMenuCheckbox_PlayerPrefs : AGuiMenuElement {
     /// </summary>
     protected virtual void CheckboxStateSetEventHandler() { }
 
+    private void __DebugCntlsChangedPreferenceEventHandler(object sender, EventArgs e) {
+        __HandleDebugCntlsChangedPreference();
+    }
+
     #endregion
 
     protected override void Cleanup() {
@@ -127,7 +132,28 @@ public class GuiMenuCheckbox_PlayerPrefs : AGuiMenuElement {
 
     protected virtual void Unsubscribe() {
         EventDelegate.Remove(_checkbox.onChange, CheckboxStateSetEventHandler);
+        __UnsubscribeFromDebugControls();
     }
+
+    #region Debug
+
+    private void __SubscribeToDebugControls() {
+        DebugControls.Instance.preferencePropertyChanged += __DebugCntlsChangedPreferenceEventHandler;
+    }
+
+    private void __UnsubscribeFromDebugControls() {
+        DebugControls.Instance.preferencePropertyChanged -= __DebugCntlsChangedPreferenceEventHandler;
+    }
+
+    private void __HandleDebugCntlsChangedPreference() {
+        bool isCheckedPrev = _checkbox.value;
+        TryMakePreferenceSelection();
+        if (isCheckedPrev != _checkbox.value) {
+            //D.Log("{0} just changed its preference selection from {1} to {2}.", DebugName, isCheckedPrev, _checkbox.value);
+        }
+    }
+
+    #endregion
 
     #region PlayerPrefs Reflection-based Property Acquisition Archive
 

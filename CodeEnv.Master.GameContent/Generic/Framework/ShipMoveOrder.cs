@@ -24,8 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipMoveOrder : ShipOrder {
 
-        private const string DebugNameFormat = @"[{0}: Directive = {1}, Source = {2}, \nTarget = {3}, \nSpeed = {4}, Fleetwide = {5}, 
-            CmdOrderID = {6}, \nFollowonOrder = {7}, \nStandoff = {8:0.#}]";
+        private const string DebugNameFormat = @"[{0}: Directive = {1}, Source = {2}, \\nTarget = {3}, \\nSpeed = {4}, Fleetwide = {5}, 
+            CmdOrderID = {6}, \\nFollowonOrder = {7}, \\nStandoff = {8:0.#}]";  // \\ reqd because of @
 
         public override string DebugName {
             get {

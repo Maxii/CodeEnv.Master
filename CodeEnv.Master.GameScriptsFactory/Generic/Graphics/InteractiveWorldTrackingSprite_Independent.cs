@@ -16,18 +16,15 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Sprite that can respond to the mouse, resident in world space that tracks an object as its child. 
+/// Sprite resident in world space that tracks an object as its child that can interact with the mouse. 
 /// The user perceives the widget at a constant size, independent of camera distance.
+/// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
 /// </summary>
 public class InteractiveWorldTrackingSprite_Independent : WorldTrackingSprite_Independent, IInteractiveWorldTrackingSprite_Independent {
 

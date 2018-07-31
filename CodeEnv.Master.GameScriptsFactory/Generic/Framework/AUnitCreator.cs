@@ -70,7 +70,13 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     public abstract GameDate DeployDate { get; }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDContaining(transform.position); } }
+    protected IntVector3 SectorID {
+        get {
+            // 7.13.18 Should never fail as UniverseCreator never positions outside universe or in a FailedRimCell.
+            // If DebugCreator and initially positioned incorrectly, UniverseCreator will warn and relocate properly
+            return SectorGrid.Instance.GetSectorIDContaining(transform.position);
+        }
+    }
 
     protected abstract Player Owner { get; }
 
@@ -93,7 +99,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         _jobMgr = JobManager.Instance;
     }
 
-    private void Subscribe() {
+    private void Subscribe() {  // OPTIMIZE statically subscribe? Will also allow these scripts to be destroyed after deployment
         _gameMgr.sceneLoading += SceneLoadingEventHandler;
     }
 
@@ -114,8 +120,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected abstract string InitializeRootUnitName();
 
     private void InitializeUnitName() {
-        UnitName = UnitNameFormat.Inject(RootUnitName, _unitNameCounter);
-        _unitNameCounter++;
+        UnitName = __GetUniqueUnitName(RootUnitName);
     }
 
     #region Event and Property Change Handlers
@@ -236,6 +241,12 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     #region Debug
+
+    public static string __GetUniqueUnitName(string rootUnitName) {
+        string uniqueUnitName = UnitNameFormat.Inject(rootUnitName, _unitNameCounter);
+        _unitNameCounter++;
+        return uniqueUnitName;
+    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateStaticSetting() {

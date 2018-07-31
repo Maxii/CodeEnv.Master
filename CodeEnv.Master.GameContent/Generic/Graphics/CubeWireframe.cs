@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CubeWireframe.cs
-// Generates a rectangular box wireframe around a gameobject.
+// Generates a rectangular box wireframe around a GameObject.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using Vectrosity;
 
     /// <summary>
-    /// Generates a rectangular box wireframe around a gameobject. 
+    /// Generates a rectangular box wireframe around a GameObject. 
     /// </summary>
     public class CubeWireframe : A3DVectrosityBase {
 

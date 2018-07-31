@@ -42,13 +42,13 @@ namespace CodeEnv.Master.GameContent {
             return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
-        protected static FtlDampenerStat GetImprovedReqdStat(Player player, FtlDampenerStat existingStat) {
+        protected static FtlDamperStat GetImprovedReqdStat(Player player, FtlDamperStat existingStat) {
             PlayerDesigns designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
-            var currentStat = designs.GetCurrentFtlDampenerStat();
+            var currentStat = designs.GetCurrentFtlDamperStat();
             return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
-        public FtlDampenerStat FtlDampenerStat { get; private set; }
+        public FtlDamperStat FtlDamperStat { get; private set; }
 
         public SensorStat ReqdMRSensorStat { get; private set; }
 
@@ -60,9 +60,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override OptionalEquipMountCategory[] SupportedOptionalMountCategories { get { return SupportedMountCategories; } }
 
-        public AUnitCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat cmdModStat)
+        public AUnitCmdModuleDesign(Player player, FtlDamperStat ftlDamperStat, SensorStat reqdMRSensorStat, ACmdModuleStat cmdModStat)
             : base(player) {
-            FtlDampenerStat = ftlDampenerStat;
+            FtlDamperStat = ftlDamperStat;
             ReqdMRSensorStat = reqdMRSensorStat;
             CmdModuleStat = cmdModStat;
         }
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
             float cumConstructionCost = base.CalcConstructionCost();
             cumConstructionCost += CmdModuleStat.ConstructCost;
             cumConstructionCost += ReqdMRSensorStat.ConstructCost;
-            cumConstructionCost += FtlDampenerStat.ConstructCost;
+            cumConstructionCost += FtlDamperStat.ConstructCost;
             return cumConstructionCost;
         }
 
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
             float cumHitPts = base.CalcHitPoints();
             cumHitPts += CmdModuleStat.HitPoints;
             cumHitPts += ReqdMRSensorStat.HitPoints;
-            cumHitPts += FtlDampenerStat.HitPoints;
+            cumHitPts += FtlDamperStat.HitPoints;
             return cumHitPts;
         }
 
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
         protected override bool IsNonOptionalStatContentEqual(AUnitMemberDesign oDesign) {
             if (base.IsNonOptionalStatContentEqual(oDesign)) {
                 var cmdModDesign = oDesign as AUnitCmdModuleDesign;
-                return cmdModDesign.FtlDampenerStat == FtlDampenerStat && cmdModDesign.ReqdMRSensorStat == ReqdMRSensorStat
+                return cmdModDesign.FtlDamperStat == FtlDamperStat && cmdModDesign.ReqdMRSensorStat == ReqdMRSensorStat
                     && cmdModDesign.CmdModuleStat == CmdModuleStat;
             }
             return false;
@@ -149,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
         ////public override int GetHashCode() {
         ////    unchecked {
         ////        int hash = base.GetHashCode();
-        ////        hash = hash * 31 + FtlDampenerStat.GetHashCode();
+        ////        hash = hash * 31 + FtlDamperStat.GetHashCode();
         ////        hash = hash * 31 + ReqdMRSensorStat.GetHashCode();
         ////        hash = hash * 31 + ReqdCmdStat.GetHashCode();
         ////        return hash;
@@ -159,7 +159,7 @@ namespace CodeEnv.Master.GameContent {
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
         ////        AUnitCmdModuleDesign oDesign = (AUnitCmdModuleDesign)obj;
-        ////        return oDesign.FtlDampenerStat == FtlDampenerStat && oDesign.ReqdMRSensorStat == ReqdMRSensorStat
+        ////        return oDesign.FtlDamperStat == FtlDamperStat && oDesign.ReqdMRSensorStat == ReqdMRSensorStat
         ////            && oDesign.ReqdCmdStat == ReqdCmdStat;
         ////    }
         ////    return false;

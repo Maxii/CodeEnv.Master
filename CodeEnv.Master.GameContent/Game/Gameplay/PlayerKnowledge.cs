@@ -630,7 +630,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd_Ltd> fleetsInSector) {
             D.AssertNotDefault(sectorID);
-            fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
+            fleetsInSector = Fleets.Where(fleet => fleet.IsLocatedIn(sectorID));
             if (fleetsInSector.Any()) {
                 return true;
             }

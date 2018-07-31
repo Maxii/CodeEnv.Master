@@ -206,8 +206,8 @@ namespace CodeEnv.Master.GameContent {
                                 case EquipmentCategory.ShieldGenerator:
                                     stat = CreateShieldGenStat(statID, levelNode);
                                     break;
-                                case EquipmentCategory.FtlDampener:
-                                    stat = CreateFtlDampenerStat(statID, levelNode);
+                                case EquipmentCategory.FtlDamper:
+                                    stat = CreateFtlDamperStat(statID, levelNode);
                                     break;
                                 case EquipmentCategory.FleetCmdModule:
                                     stat = CreateFleetCmdModuleStat(statID, levelNode);
@@ -314,7 +314,7 @@ namespace CodeEnv.Master.GameContent {
                     constructCost, expense, maxTurnRate, maxSpeed, isDamageable);
             }
 
-            private FtlDampenerStat CreateFtlDampenerStat(EquipmentStatID statID, XElement levelNode) {
+            private FtlDamperStat CreateFtlDamperStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -327,7 +327,7 @@ namespace CodeEnv.Master.GameContent {
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
                 RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategoryTagName).Value);
 
-                return new FtlDampenerStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr, hitPts,
+                return new FtlDamperStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr, hitPts,
                     constructCost, expense, rangeCat);
             }
 
@@ -875,18 +875,18 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         //[Obsolete]
-        //private FtlDampenerStat __CreateFtlDampenerStat(Level level) {
-        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.FtlDampener, level);
+        //private FtlDamperStat __CreateFtlDamperStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.FtlDamper, level);
         //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
         //    float hitPts = 1F;
-        //    return CreateFtlDampenerStat(id, "FtlDampener", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
+        //    return CreateFtlDamperStat(id, "FtlDamper", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
         //         0F, 1F, 0F, hitPts, constructionCost, 0F, RangeCategory.Short);
         //}
 
         //[Obsolete]
-        //private FtlDampenerStat CreateFtlDampenerStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName,
+        //private FtlDamperStat CreateFtlDamperStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName,
         //    string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense, RangeCategory rangeCat) {
-        //    return new FtlDampenerStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat);
+        //    return new FtlDamperStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat);
         //}
 
         //[Obsolete]

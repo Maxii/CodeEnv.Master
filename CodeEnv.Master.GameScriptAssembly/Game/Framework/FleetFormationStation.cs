@@ -32,7 +32,7 @@ using UnityEngine.Profiling;
 /// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
 /// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigableDestination, IFacilityRepairCapable,
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigableDestination, IShipRepairCapable,
     IEquatable<FleetFormationStation> {
 
     private const string NameFormat = "{0}.{1}";
@@ -316,19 +316,6 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         return Owner == player;
     }
 
-    /// <summary>
-    /// Gets the repair capacity available for this Unit's CmdModule in hitPts per day.
-    /// </summary>
-    /// <param name="unitCmd">The unit command module.</param>
-    /// <param name="hqElement">The HQElement.</param>
-    /// <param name="cmdOwner">The command owner.</param>
-    /// <returns></returns>
-    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
-        D.AssertEqual(Owner, cmdOwner);
-        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_CmdModule;
-        return basicValue;
-    }
-
     #endregion
 
     #region IShipRepairCapable Members
@@ -339,13 +326,17 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         return basicValue;
     }
 
-    #endregion
-
-    #region IFacilityRepairCapable Members
-
-    public float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner) {
-        D.AssertEqual(Owner, elementOwner);
-        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_Element;
+    /// <summary>
+    /// Gets the repair capacity available to repair the Fleet's CmdModule in hitPts per day.
+    /// </summary>
+    /// <param name="unusedFleetCmd">The unused fleet command.</param>
+    /// <param name="flagship">The flagship.</param>
+    /// <param name="cmdOwner">The command owner.</param>
+    /// <returns></returns>
+    public float GetAvailableRepairCapacityFor(IFleetCmd_Ltd unusedFleetCmd, IShip_Ltd flagship, Player cmdOwner) {
+        D.AssertEqual(Owner, cmdOwner);
+        D.Assert(flagship.IsHQ);
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_CmdModule;
         return basicValue;
     }
 

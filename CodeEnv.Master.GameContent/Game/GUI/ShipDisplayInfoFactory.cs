@@ -71,6 +71,11 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
+                    case ItemInfoID.SectorID:
+                        isSuccess = true;
+                        string sectorIdMsg = report.SectorID != default(IntVector3) ? report.SectorID.ToString() : "None";
+                        colorizedText = _lineTemplate.Inject(sectorIdMsg);
+                        break;
                     case ItemInfoID.Category:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != ShipHullCategory.None ? report.Category.GetValueName() : Unknown);

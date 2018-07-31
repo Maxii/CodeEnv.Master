@@ -616,6 +616,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     #region Debug
 
+    // Changing state during ConfigureCurrentState Test
+    // ------------------------------------------------
     // WARNING: Making a state change directly or indirectly (e.g. thru another method or issuing an order) from a void 
     // previousState_ExitState(), state_UponPreconfigureState() or state_EnterState() method ('the void method') will cause the state machine
     // to lose its place. This even occurs if the state change is the last line of code in 'the void method'. 

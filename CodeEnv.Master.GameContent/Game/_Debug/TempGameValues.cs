@@ -117,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
         public static EquipmentCategory[] EquipCatsReqdAtStartup =  {
                                                                         EquipmentCategory.SRSensor,
                                                                         EquipmentCategory.MRSensor,
-                                                                        EquipmentCategory.FtlDampener,
+                                                                        EquipmentCategory.FtlDamper,
                                                                         EquipmentCategory.StlPropulsion,
                                                                         EquipmentCategory.FleetCmdModule,
                                                                         EquipmentCategory.SettlementCmdModule,
@@ -364,7 +364,8 @@ namespace CodeEnv.Master.GameContent {
         /// The length in world units of the diagonal across a sector, aka the longest distance between corners.
         /// Sqrt(SectorSideLengthSqrd + SectorSideDiagonalLengthSqrd).
         /// </summary>
-        public static readonly float SectorDiagonalLength = (float)Mathf.Sqrt(Mathf.Pow(SectorSideLength, 2F) + Mathf.Pow(SectorSideDiagonalLength, 2F));    // 2078.46
+        public static readonly float SectorDiagonalLength = (float)Mathf.Sqrt(Mathf.Pow(SectorSideLength, 2F)
+            + Mathf.Pow(SectorSideDiagonalLength, 2F));    // 2078.46
 
         public static readonly Vector3 SectorSize = new Vector3(SectorSideLength, SectorSideLength, SectorSideLength);
 
@@ -385,6 +386,16 @@ namespace CodeEnv.Master.GameContent {
         public const float MoonObstacleZoneRadiusAdder = 1F;
 
         public const float MaxFacilityRadius = 0.35F;  // range is 0.17 - 0.3465 CentralHub (half of HullDimension.magnitude of 0.693)
+
+        /// <summary>
+        /// The maximum fleet formation radius. 
+        /// <remarks>7.16.18 Used to define UniverseNavigableRadius = UniverseRadius - MaxFleetFormationRadius. It
+        /// is used to make sure RimSector's Position value and Pathfinding's navigational waypoints are all kept within
+        /// this radius. This will make sure ship's will never have a move target that can be outside the universe as 
+        /// a ship, when moving as a fleet, will generate its move target as the fleet's move target plus the ship's formation offset.</remarks>
+        /// <remarks>Globe 5.443, Spread 5.2, Wedge 5.2, Plane 4.054, Diamond 3.7</remarks>
+        /// </summary>
+        public const float MaxFleetFormationRadius = 5.5F;
 
         /// <summary>
         /// The multiplier used to determine the radius of a Facility's ObstacleZoneColliderZone.

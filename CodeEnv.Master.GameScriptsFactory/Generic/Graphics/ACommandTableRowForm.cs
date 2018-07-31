@@ -34,13 +34,6 @@ public abstract class ACommandTableRowForm : ATableRowForm {
         _ownerGuiElement.Owner = Report.Owner;
     }
 
-    protected sealed override void AssignValueToLocationGuiElement() {
-        base.AssignValueToLocationGuiElement();
-        var report = Report as AUnitCmdReport;
-        _locationGuiElement.SectorID = report.SectorID;
-        _locationGuiElement.Location = report.Position;
-    }
-
     protected sealed override void AssignValueToHeroGuiElement() {
         base.AssignValueToHeroGuiElement();
         _heroGuiElement.Hero = (Report as AUnitCmdReport).Hero;

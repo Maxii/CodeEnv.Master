@@ -179,14 +179,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #region Fields
 
     /// <summary>
-    /// The ID of the Sector where the camera is currently located.
-    /// <remarks>Sectors and their IDs only exist inside the radius of the universe. The camera can
-    /// be located outside this universe to allow viewing of the whole universe. If located
-    /// outside the universe, this ID will be its default value.</remarks>
-    /// </summary>
-    private IntVector3 _sectorID;
-
-    /// <summary>
     /// The position of the camera in world space.
     /// <remarks>The camera can be positioned outside the universe. It will 
     /// always be within the OuterBoundary.</remarks>
@@ -224,13 +216,21 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     public Settings settings = new Settings {
         smallMovementThreshold = 2F,
-        focusingDistanceDampener = 2.0F,
-        focusingRotationDampener = 1.0F,
-        focusedDistanceDampener = 4.0F,
-        focusedRotationDampener = 2.0F,
-        freeformDistanceDampener = 3.0F,
-        freeformRotationDampener = 2.0F
+        focusingDistanceDamper = 2.0F,
+        focusingRotationDamper = 1.0F,
+        focusedDistanceDamper = 4.0F,
+        focusedRotationDamper = 2.0F,
+        freeformDistanceDamper = 3.0F,
+        freeformRotationDamper = 2.0F
     };
+
+    /// <summary>
+    /// The ID of the Sector where the camera is currently located.
+    /// <remarks>Sectors and their IDs only exist inside the radius of the universe. The camera can
+    /// be located inside the universe over a FailedRimCell or outside the universe to allow viewing of the whole universe. 
+    /// If either is true, this ID will be its default value.</remarks>
+    /// </summary>
+    private IntVector3 _sectorID;
 
     /// <summary>
     /// Indicates whether the Camera (in Follow mode) is in the process of zooming.
@@ -276,8 +276,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Fields used in algorithms that can vary by Target or CameraState
     private float _minimumDistanceFromTarget;
     private float _optimalDistanceFromTarget;
-    private float _cameraDistanceDampener;
-    private float _cameraRotationDampener;
+    private float _cameraDistanceDamper;
+    private float _cameraRotationDamper;
 
     #endregion
 
@@ -448,9 +448,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
 
-        if (!_sectorGrid.TryGetSectorIDContaining(Position, out _sectorID)) {        ////_sectorID = _sectorGrid.GetSectorIdThatContains(Position);
+        if (!_sectorGrid.TryGetSectorIDContaining(Position, out _sectorID)) {
             // Position is outside the universeRadius
-            _sectorID = default(IntVector3);    ////_sectorID = _sectorGrid.GetNearestSectorIDTo(Position);
+            _sectorID = default(IntVector3);
         }
         transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
 
@@ -654,14 +654,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     /// <summary>
-    /// Returns <c>true</c> if the Camera's current position is within the radius
-    /// of the universe and therefore has a valid SectorID, <c>false</c> otherwise.
+    /// Returns <c>true</c> if the Camera's current position is over a universe cell
+    /// with a valid SectorID, <c>false</c> otherwise.
     /// </summary>
     /// <param name="sectorID">The sectorID.</param>
     /// <returns></returns>
-    public bool TryGetSectorID(out IntVector3 sectorID) {
+    public bool TryGetValidSectorID(out IntVector3 sectorID) {
         sectorID = _sectorID;
-        return _sectorID != default(IntVector3);
+        return sectorID != default(IntVector3);
     }
 
     /// <summary>
@@ -703,8 +703,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _xAxisRotation = lookAtVector.x;
         _zAxisRotation = lookAtVector.z;
 
-        _cameraRotationDampener = settings.focusingRotationDampener;
-        _cameraDistanceDampener = settings.focusingDistanceDampener;
+        _cameraRotationDamper = settings.focusingRotationDamper;
+        _cameraDistanceDamper = settings.focusingDistanceDamper;
 
         LockCursor(true);
     }
@@ -758,8 +758,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
         // x,y,z rotation has already been established before entering ??? FIXME where???
 
-        _cameraRotationDampener = settings.focusedRotationDampener;
-        _cameraDistanceDampener = settings.focusedDistanceDampener;
+        _cameraRotationDamper = settings.focusedRotationDamper;
+        _cameraDistanceDamper = settings.focusedDistanceDamper;
     }
 
     void Focused_Update() {
@@ -939,8 +939,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
-        _cameraRotationDampener = settings.focusedRotationDampener;
-        _cameraDistanceDampener = settings.focusedDistanceDampener;
+        _cameraRotationDamper = settings.focusedRotationDamper;
+        _cameraDistanceDamper = settings.focusedDistanceDamper;
 
         ProcessChanges(timeSinceLastUpdate);
     }
@@ -959,8 +959,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _requestedDistanceFromTarget = _distanceFromTarget;
         // no facing change
 
-        _cameraRotationDampener = settings.freeformRotationDampener;
-        _cameraDistanceDampener = settings.freeformDistanceDampener;
+        _cameraRotationDamper = settings.freeformRotationDamper;
+        _cameraDistanceDamper = settings.freeformDistanceDamper;
 
         RefreshCamerasFOV();
 
@@ -1171,8 +1171,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
 
         // OPTIMIZE lets me change the values on the fly in the inspector
-        _cameraRotationDampener = settings.freeformRotationDampener;
-        _cameraDistanceDampener = settings.freeformDistanceDampener;
+        _cameraRotationDamper = settings.freeformRotationDamper;
+        _cameraDistanceDamper = settings.freeformDistanceDamper;
 
         ProcessChanges(timeSinceLastUpdate);
     }
@@ -1193,8 +1193,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         ICameraFollowable icfTarget = _target.GetComponent<ICameraFollowable>();
         D.Log("Follow Target is now {0}.", icfTarget.DebugName);
-        _cameraRotationDampener = icfTarget.FollowRotationDampener;
-        _cameraDistanceDampener = icfTarget.FollowDistanceDampener;
+        _cameraRotationDamper = icfTarget.FollowRotationDamper;
+        _cameraDistanceDamper = icfTarget.FollowDistanceDamper;
 
         // initial camera view angle determined by direction of target relative to camera when Follow initiated, aka where camera is approaching from
         var initialTargetDirection = (_targetPoint - Position).normalized;
@@ -1570,13 +1570,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void ProcessChanges(float deltaTime) {
-        transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
-        //transform.localRotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
+        transform.rotation = CalculateCameraRotation(_cameraRotationDamper * deltaTime);
+        //transform.localRotation = CalculateCameraRotation(_cameraRotationDamper * deltaTime);
 
-        //_distanceFromTarget = Mathfx.Hermite(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
-        _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
-        //_distanceFromTarget = Mathfx.Sinerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
-        //_distanceFromTarget = Mathfx.Coserp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
+        //_distanceFromTarget = Mathfx.Hermite(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDamper * deltaTime);
+        _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDamper * deltaTime);
+        //_distanceFromTarget = Mathfx.Sinerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDamper * deltaTime);
+        //_distanceFromTarget = Mathfx.Coserp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDamper * deltaTime);
 
         Vector3 proposedPosition = _targetPoint - (_targetDirection * _distanceFromTarget);
         //D.Log("Adjusting position to {0}.", proposedPosition);
@@ -1842,9 +1842,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <summary>
     /// Calculates a new rotation derived from the current EulerAngles.
     /// </summary>
-    /// <arg name="dampenedTimeSinceLastUpdate">The dampened adjusted time since last update.</arg>
+    /// <arg name="dampedTimeSinceLastUpdate">The damped adjusted time since last update.</arg>
     /// <returns></returns>
-    private Quaternion CalculateCameraRotation(float dampenedTimeSinceLastUpdate) {
+    private Quaternion CalculateCameraRotation(float dampedTimeSinceLastUpdate) {
         // keep rotation values exact as a substitute for the unreliable? accuracy that comes from reading EulerAngles from the Quaternion
         var degreesPerRotation = Constants.DegreesPerRotation;
         _xAxisRotation %= degreesPerRotation;
@@ -1868,7 +1868,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         Quaternion desiredRotation = Quaternion.Euler(desiredFacingDirection);
         //D.Log("Desired Rotation: {0}.", desiredRotation.eulerAngles);
 
-        Quaternion resultingRotation = Quaternion.Slerp(startingRotation, desiredRotation, dampenedTimeSinceLastUpdate);
+        Quaternion resultingRotation = Quaternion.Slerp(startingRotation, desiredRotation, dampedTimeSinceLastUpdate);
         // OPTIMIZE Lerp is faster but not as pretty when the rotation changes are far apart
         return resultingRotation;
     }
@@ -2045,12 +2045,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         //public float activeScreenEdge;
         public float smallMovementThreshold;
         // damping
-        public float focusingRotationDampener;
-        public float focusingDistanceDampener;
-        public float focusedRotationDampener;
-        public float focusedDistanceDampener;
-        public float freeformRotationDampener;
-        public float freeformDistanceDampener;
+        public float focusingRotationDamper;
+        public float focusingDistanceDamper;
+        public float focusedRotationDamper;
+        public float focusedDistanceDamper;
+        public float freeformRotationDamper;
+        public float freeformDistanceDamper;
         /// <summary>
         /// The maximum amount of requested distance change allowed
         /// per 'unit' input value. 

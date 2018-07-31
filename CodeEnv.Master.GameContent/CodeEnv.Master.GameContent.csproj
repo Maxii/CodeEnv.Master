@@ -63,6 +63,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\CoursePlot3DLine.cs" />
     <Compile Include="Generic\IO\CapabilityStatID.cs" />
     <Compile Include="Generic\Framework\CountermeasureAccuracy.cs" />
     <Compile Include="Generic\Framework\CombatStrength.cs" />
@@ -105,8 +106,8 @@
     <Compile Include="Game\Gameplay\ApStrafeDestinationProxy.cs" />
     <Compile Include="Game\Gameplay\ApStrafeTask.cs" />
     <Compile Include="Game\Framework\AutoPilot.cs" />
-    <Compile Include="Game\Framework\FtlDampener.cs" />
-    <Compile Include="Generic\IO\FtlDampenerStat.cs" />
+    <Compile Include="Game\Framework\FtlDamper.cs" />
+    <Compile Include="Generic\IO\FtlDamperStat.cs" />
     <Compile Include="Game\Gameplay\EngineRoom.cs" />
     <Compile Include="Game\Framework\Engine.cs" />
     <Compile Include="Generic\IO\EngineStat.cs" />
@@ -279,7 +280,7 @@
     <Compile Include="Game\Gameplay\ShipHullCategory.cs" />
     <Compile Include="Generic\Interfaces\ISelectable.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe_Alt.cs" />
-    <Compile Include="Generic\Graphics\HighlightCircle.cs" />
+    <Compile Include="Game\Graphics\HighlightCircle.cs" />
     <Compile Include="Generic\Interfaces\ICameraFocusable.cs" />
     <Compile Include="Generic\Interfaces\ICameraFollowable.cs" />
     <Compile Include="Generic\Interfaces\ICameraTargetable.cs" />
@@ -496,7 +497,7 @@
     <Compile Include="Generic\Interfaces\Access\IFpsReadout.cs" />
     <Compile Include="Game\Framework\ShipHelm.cs" />
     <Compile Include="Generic\Interfaces\IManeuverable.cs" />
-    <Compile Include="Generic\Interfaces\Access\IFtlDampenerRangeMonitor.cs" />
+    <Compile Include="Generic\Interfaces\Access\IFtlDamperRangeMonitor.cs" />
     <Compile Include="Generic\Interfaces\Client\IDateMinderClient.cs" />
     <Compile Include="Generic\Interfaces\Client\IRecurringDateMinderClient.cs" />
     <Compile Include="Generic\_Debug\RecurringDateMinder_Debug.cs" />
@@ -554,7 +555,6 @@
     <Compile Include="Generic\Interfaces\ISettleable.cs" />
     <Compile Include="Generic\Interfaces\Access\IUserActionButton.cs" />
     <Compile Include="Generic\IO\SectorStarbaseStationVacancyEventArgs.cs" />
-    <Compile Include="Generic\Framework\SectorCategory.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

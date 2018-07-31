@@ -25,8 +25,7 @@ namespace CodeEnv.Master.Common {
 
         public string QualitySetting { get; set; }
 
-        // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
-        //public bool IsElementIconsEnabled { get; set; }
+        public bool IsShowElementIconsEnabled { get; set; }
 
         public GraphicsOptionSettings() { }
 

@@ -39,9 +39,7 @@ namespace CodeEnv.Master.GameContent {
         private string _debugName;
         public string DebugName {
             get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(GetType().Name, LeaderName);
-                }
+                _debugName = _debugName ?? DebugNameFormat.Inject(GetType().Name, LeaderName);
                 return _debugName;
             }
         }
@@ -83,9 +81,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string SpeciesImageFilename { get { return _speciesStat.ImageFilename; } }
 
-
         public string HomeSystemName { get; private set; }
-
 
         [Obsolete("Use only during creation or refit")]
         public float SensorRangeMultiplier { get { return _speciesStat.SensorRangeMultiplier; } }

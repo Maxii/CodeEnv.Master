@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
         private IntVector3 _sectorID;
-        public override IntVector3 SectorID {
+        public IntVector3 SectorID {
             get {
                 if (_sectorID == default(IntVector3)) {
                     _sectorID = InitializeSectorID();
@@ -85,9 +85,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private IntVector3 InitializeSectorID() {
-            ////IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
             IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDContaining(Position);
-            D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }

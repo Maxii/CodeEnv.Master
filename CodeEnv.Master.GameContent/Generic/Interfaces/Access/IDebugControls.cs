@@ -54,6 +54,15 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler showStarIcons;
 
+        event EventHandler aiHandlesUserCmdModuleInitialDesigns;
+
+        event EventHandler aiHandlesUserCmdModuleRefitDesigns;
+
+        event EventHandler aiHandlesUserCentralHubInitialDesigns;
+
+        event EventHandler aiHandlesUserElementRefitDesigns;
+
+
 
         bool ShowOrdnanceDebugLogs { get; }
 
@@ -107,13 +116,17 @@ namespace CodeEnv.Master.GameContent {
         bool AreAssaultsAlwaysSuccessful { get; }
 
 
-        bool AiChoosesUserCmdModInitialDesigns { get; }
+        [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+        bool AiHandlesUserCmdModuleInitialDesigns { get; }
 
-        bool AiChoosesUserCmdModRefitDesigns { get; }
+        [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+        bool AiHandlesUserCmdModuleRefitDesigns { get; }
 
-        bool AiChoosesUserCentralHubInitialDesigns { get; }
+        [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+        bool AiHandlesUserCentralHubInitialDesigns { get; }
 
-        bool AiChoosesUserElementRefitDesigns { get; }
+        [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+        bool AiHandlesUserElementRefitDesigns { get; }
 
 
         bool DeactivateMRSensors { get; }
@@ -154,6 +167,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// If <c>true</c> elements will display 2D icons when the camera is too far away to discern the mesh.
         /// </summary>
+        [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
         bool ShowElementIcons { get; }
 
         /// <summary>

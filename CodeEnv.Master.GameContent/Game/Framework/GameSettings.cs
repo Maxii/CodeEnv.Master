@@ -60,6 +60,8 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemDensity SystemDensity { get; set; }
 
+        public PlayerSeparation PlayersSeparation { get; set; }
+
         public int PlayerCount { get; set; }
 
         public Player UserPlayer { get; set; }
@@ -70,8 +72,6 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemDesirability UserHomeSystemDesirability { get; set; }
         public SystemDesirability[] AIPlayersHomeSystemDesirability { get; set; }
-
-        public PlayerSeparation[] AIPlayersUserSeparations { get; set; }
 
         public GameSettings() { }
 

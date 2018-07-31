@@ -40,8 +40,8 @@ public class AudioOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     #endregion
 
-    protected override void ValidateStateOnCapture() {
-        base.ValidateStateOnCapture();
+    protected override void __ValidateCapturedState() {
+        base.__ValidateCapturedState();
         //TODO
     }
 

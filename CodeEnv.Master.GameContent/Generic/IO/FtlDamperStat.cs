@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FtlDampenerStat.cs
-// Stat for FtlDampener Equipment.
+// File: FtlDamperStat.cs
+// Stat for FtlDamper Equipment.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,14 +20,12 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Stat for FtlDampener Equipment.
+    /// Stat for FtlDamper Equipment.
     /// </summary>
-    public class FtlDampenerStat : ARangedEquipmentStat {
-
-        ////public override EquipmentCategory Category { get { return EquipmentCategory.FtlDampener; } }
+    public class FtlDamperStat : ARangedEquipmentStat {
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FtlDampenerStat" /> class.
+        /// Initializes a new instance of the <see cref="FtlDamperStat" /> class.
         /// </summary>
         /// <param name="name">The name of the RangedEquipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
@@ -41,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
-        public FtlDampenerStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
+        public FtlDamperStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat)
         : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
               rangeCat, isDamageable: false) {
@@ -51,14 +49,14 @@ namespace CodeEnv.Master.GameContent {
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
 
-        ////public static bool operator ==(FtlDampenerStat left, FtlDampenerStat right) {
+        ////public static bool operator ==(FtlDamperStat left, FtlDamperStat right) {
         ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
         ////    if (ReferenceEquals(left, right)) { return true; }
         ////    if (((object)left == null) || ((object)right == null)) { return false; }
         ////    return left.Equals(right);
         ////}
 
-        ////public static bool operator !=(FtlDampenerStat left, FtlDampenerStat right) {
+        ////public static bool operator !=(FtlDamperStat left, FtlDamperStat right) {
         ////    return !(left == right);
         ////}
 

@@ -30,7 +30,7 @@ public class AutoFleetCreator : AAutoUnitCreator {
     private IList<ShipItem> _elements;
 
     protected override string InitializeRootUnitName() {
-        return "Fleet_AutoConfig";
+        return "AutoFleet";
     }
 
     protected override void MakeElements() {
@@ -44,7 +44,8 @@ public class AutoFleetCreator : AAutoUnitCreator {
     }
 
     protected override void MakeCommand() {
-        _command = _factory.MakeFleetCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName);
+        Formation randomFormation = RandomExtended.Choice(TempGameValues.AcceptableFleetFormations);
+        _command = _factory.MakeFleetCmdInstance(Owner, Configuration.CmdModDesignName, gameObject, UnitName, randomFormation);
     }
 
     protected override void AddElementsToCommand() {

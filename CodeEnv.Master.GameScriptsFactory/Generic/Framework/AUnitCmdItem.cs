@@ -159,7 +159,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<ICmdSensorRangeMonitor> SensorMonitors { get; private set; }
 
-    public IFtlDampenerRangeMonitor FtlDampenerMonitor { get; private set; }
+    public IFtlDamperRangeMonitor FtlDamperMonitor { get; private set; }
 
     public new CmdCameraStat CameraStat {
         protected get { return base.CameraStat as CmdCameraStat; }
@@ -172,6 +172,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
+    protected PlayerPrefsManager _playerPrefsMgr;
     private ITrackingWidget _trackingLabel;
     private Job _deferRedAlertStanddownAssessmentJob;
     private FixedJoint _hqJoint;
@@ -180,6 +181,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
         Elements = new List<AUnitElementItem>();
         SensorMonitors = new List<ICmdSensorRangeMonitor>(2);
         FormationMgr = InitializeFormationMgr();
@@ -268,7 +270,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (sMonitorsWithoutSensors.Any()) {
             sMonitorsWithoutSensors.ForAll(sMon => SensorMonitors.Remove(sMon));
         }
-        Attach(Data.FtlDampener);
+        Attach(Data.FtlDamper);
     }
 
     private void Attach(CmdSensor sensor) {
@@ -281,8 +283,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void Attach(FtlDampener dampener) {
-        FtlDampenerMonitor = dampener.RangeMonitor;
+    private void Attach(FtlDamper damper) {
+        FtlDamperMonitor = damper.RangeMonitor;
     }
 
     public override void FinalInitialize() {
@@ -306,7 +308,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void InitializeCmdRangeMonitors() {
         SensorMonitors.ForAll(srm => srm.InitializeRangeDistance());
-        FtlDampenerMonitor.InitializeRangeDistance();
+        FtlDamperMonitor.InitializeRangeDistance();
     }
 
     private void InitializeFsmEventSubscriptionMgr() {
@@ -433,19 +435,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Replaces the existing CmdModule with the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDampener
+    /// Replaces the existing CmdModule with the new cmdModuleDesign. Replaces the existing PassiveCMs, CmdSensors and FtlDamper
     /// with the new instances provided as these are derived from the cmdModuleDesign.
     /// <remarks>These changes do not interfere with the ongoing operations of this Cmd. They can however create momentary 
-    /// changes in AlertStatus and FtlDampening before both are properly resumed.</remarks>
+    /// changes in AlertStatus and FtlDamping before both are properly resumed.</remarks>
     /// </summary>
     /// <param name="cmdModuleDesign">The design of the new CmdModule.</param>
     /// <param name="passiveCMs">The replacement PassiveCountermeasures.</param>
     /// <param name="sensors">The replacement CmdSensors.</param>
-    /// <param name="ftlDampener">The replacement FtlDampener.</param>
+    /// <param name="ftlDamper">The replacement FtlDamper.</param>
     public void ReplaceCmdModuleWith(AUnitCmdModuleDesign cmdModuleDesign, IEnumerable<PassiveCountermeasure> passiveCMs,
-        IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+        IEnumerable<CmdSensor> sensors, FtlDamper ftlDamper) {
         UnsubscribeFromSensorEvents();  // prepare for the changes in Data
-        Data.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDampener);
+        Data.ReplaceCmdModuleWith(cmdModuleDesign, passiveCMs, sensors, ftlDamper);
         // after the changes have been made in Data, reattach and continue operations
         AttachEquipment();
         InitializeCmdRangeMonitors();
@@ -834,6 +836,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         DeregisterForOrders();
         ReturnFromCalledStates();
         UponLosingOwnership();  // 4.20.17 Do any reqd Callback before exiting current non-Call()ed state
+        // 7.26.18 Avoid ClearAllElementsOrders as some element orders may still be applicable -> issued by Captain
         ResetOrderAndState();
     }
 
@@ -894,7 +897,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Clears CurrentOrder (as well as any deferred order waiting for a pause to resume) and sets CurrentState to Idling. 
     /// If currently executing an order, each Element that was issued an order by the currently executing order will have that order cleared.
     /// </summary>
-    protected virtual void ResetOrderAndState() {
+    private void ResetOrderAndState() {
         D.Assert(!IsDead);  // 1.25.18 Test to see if this can be called when already dead
         __ValidateCurrentStateNotACalledState();
         if (IsPaused) {
@@ -902,39 +905,58 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         // UponResetOrderAndState();    // 6.21.18 Not currently used by Cmds
         ResetOrdersReceivedWhilePausedSystem();
+        if (!IsDead) {   // 7.26.18 UponResetOrderAndState can set IsDead = true so don't switch to Idling from Dead!
+            ClearCurrentOrderAndIdle();
+        }
     }
 
     protected abstract void ResetOrdersReceivedWhilePausedSystem();
 
-    protected void ClearAllElementsOrders() {
-        ClearElementsOrders(default(Guid));
+    protected abstract void ClearCurrentOrderAndIdle();
+
+    /// <summary>
+    /// Clears each Element's CurrentOrder and causes them to Idle. 
+    /// <remarks>This results in each element calling ResetOrderAndState which results in UponResetOrderAndState 
+    /// being called in the currently executing state before the state is set to Idling.</remarks>
+    /// </summary>
+    protected void ClearOrderAndStateForAllElements() {
+        ClearElementsOrderAndState(default(Guid));
     }
 
     /// <summary>
-    /// Clears any element orders issued by the state(s) executing the order with the ID executingOrderID.
+    /// Clears any element's order and state which is currently executing the order with the ID held in executingOrderID.
     /// <remarks>Will throw an error if executingOrderID doesn't represent an order, aka is default(Guid).</remarks>
-    ///<remarks>6.23.18 Warning: Not intended to be used by Call()ed state_ExitState.</remarks>
+    /// <remarks>If an element qualifies to have its order cleared and state reset, it is done via ResetOrderAndState which
+    /// results in UponResetOrderAndState being called in the currently executing state before the state is 'cleared' to Idling.</remarks>
+    ///<remarks>7.26.18 Will throw an error if used by a Call()ed state_ExitState. Implemented by testing LastState.</remarks>
     /// </summary>
-    /// <param name="executingOrderID">The ID of the executing order.</param>
-    protected void ClearAnyRemainingElementOrdersIssuedBy(Guid executingOrderID) {
+    /// <param name="executingOrderID">Reference to _executingOrderID.</param>
+    protected void ClearOrderAndStateForElementsExecuting(ref Guid executingOrderID) {
         // 6.23.18 Can't Assert !_isWaitingToProcessReturn as ExitState can be called while waiting to process Return() - e.g. New Order
-        // Also can't Assert !Call()ed state as ExitState methods execute after the state is changed
-        if (IsDead) {
-            return;
-        }
         if (Data.__IsOwnerChgUnderway) {
             // 6.21.18 This 'warning' has yet to occur
             D.Warn("FYI. {0} has an owner change underway. Assess whether a problem based on subsequent warnings and errors.", DebugName);
         }
         D.AssertNotDefault(executingOrderID);
-        ClearElementsOrders(executingOrderID);
+        D.Assert(!__IsLastStateCalled);
+        // 7.28.18 This method is called from non-Call()edState _ExitState methods which means the state has already changed. 
+        // To keep callbacks generated by clearing element orders from leaking into the new state, set _executingOrderID to 
+        // default to tell HandleSubordinateElementOutcome() to filter out any callbacks.
+        Guid cmdOrderID = executingOrderID;
+        executingOrderID = default(Guid);
+        if (!IsDead) {
+            ClearElementsOrderAndState(cmdOrderID);
+        }
     }
 
     /// <summary>
-    /// Clears each Element's CurrentOrder and causes them to Idle if the Element's CurrentOrder has the provided cmdOrderID. 
+    /// Clears each Element's CurrentOrder and causes them to Idle if the Element's CurrentOrder has the provided cmdOrderID.
     /// If cmdOrderID is the default, each Element's CurrentOrder will be cleared no matter what its cmdOrderID.
+    /// <remarks>If an element qualifies to have its order cleared and state reset, it is done via ResetOrderAndState which
+    /// results in UponResetOrderAndState being called in the currently executing state before the state is set to Idling.</remarks>
     /// </summary>
-    private void ClearElementsOrders(Guid cmdOrderID) {
+    /// <param name="cmdOrderID">The command orderID.</param>
+    private void ClearElementsOrderAndState(Guid cmdOrderID) {
         IList<string> clearedElementNames = new List<string>(Elements.Count);
         // e.ClearOrder() can result in death -> list modified while iterating exception
         var elementsCopy = new List<AUnitElementItem>(Elements);
@@ -1041,8 +1063,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected virtual void ResetAndValidateCommonNonCallableExitStateValues() {
+        D.AssertDefault(_executingOrderID);
         _activeFsmReturnHandlers.Clear();
-        _executingOrderID = default(Guid);
         // 6.23.18 Can't Assert !_isWaitingToProcessReturn as ExitState can be called while waiting to process Return() - e.g. New Order
         _isWaitingToProcessReturn = false;
     }
@@ -1125,7 +1147,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected void Dead_ExitState() {
-        LogEventWarning();
+        D.Error("{0}.Dead_ExitState called. State changed to {1}.", DebugName, CurrentState.ToString());
     }
 
     #region Relays
@@ -1277,16 +1299,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     // 3.16.18 ApplyDamage and AssessCripplingDamageToEquipment moved to Data
 
-    /// <summary>
-    /// Destroys any parents that are applicable to the Cmd. 
-    /// <remarks>A Fleet and Starbase destroy their UnitContainer, but a Settlement 
-    /// destroys its UnitContainer's parent, its CelestialOrbitSimulator.</remarks>
-    /// </summary>
-    /// <param name="delayInHours">The delay in hours.</param>
-    protected virtual void DestroyApplicableParents(float delayInHours = Constants.ZeroF) {
-        GameUtility.Destroy(UnitContainer.gameObject, delayInHours);
-    }
-
     #endregion
 
     #endregion
@@ -1346,14 +1358,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Cleanup
 
-    protected override void Cleanup() {
-        base.Cleanup();
-        CleanupTrackingLabel();
-        KillDeferRedAlertStanddownAssessmentJob();
-        if (UnifiedSRSensorMonitor != null) {
-            UnifiedSRSensorMonitor.Dispose();
-        }
-    }
+    /// <summary>
+    /// Destroys any parents that are applicable to the Cmd. 
+    /// <remarks>A Fleet and Starbase destroy their UnitContainer, but a Settlement 
+    /// destroys its UnitContainer's parent, its CelestialOrbitSimulator.</remarks>
+    /// </summary>
+    /// <param name="delayInHours">The delay in hours.</param>
+    protected abstract void DestroyApplicableParents(float delayInHours = Constants.ZeroF);
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
@@ -1391,9 +1402,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         iconEventListener.onPress -= PressEventHandler;
     }
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        CleanupTrackingLabel();
+        KillDeferRedAlertStanddownAssessmentJob();
+        if (UnifiedSRSensorMonitor != null) {
+            UnifiedSRSensorMonitor.Dispose();
+        }
+    }
+
     #endregion
 
     #region Debug
+
+    protected abstract bool __IsLastStateCalled { get; }
 
     public bool __IsOwnerChgUnderway { get { return Data.__IsOwnerChgUnderway; } }
 
@@ -1522,6 +1544,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected abstract void PositionElementInFormation_Internal(IUnitElement element, FormationStationSlotInfo stationSlotInfo);
 
     void IFormationMgrClient.HandleMaxFormationRadiusDetermined(float maxFormationRadius) {
+        //D.Log("{0}.{1}.MaxRadius = {2:0.###}.", DebugName, Data.Formation.GetValueName(), maxFormationRadius);
         UnitMaxFormationRadius = maxFormationRadius;
     }
 

@@ -33,8 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the SectorID that contains the provided world location.
-        /// Throws an error if <c>worldLocation</c> is not within the universe or within a Sector.
-        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a Sector.
+        /// Throws an error if <c>worldLocation</c> is not within the universe or there is no Sector at that location.
+        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe and a ASector.
         /// If this is not certain, use TryGetSectorIDContaining(worldLocation) instead.</remarks>
         /// </summary>
         /// <param name="worldLocation">The world location.</param>
@@ -43,7 +43,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns <c>true</c> if a sectorID has been assigned containing this worldLocation, <c>false</c> otherwise.
-        /// <remarks>Locations inside the universe have assigned SectorIDs, while those outside do not.</remarks>
+        /// <remarks>Locations outside the universe and a very small percentage inside the universe (locations in FailedRimCells) 
+        /// do not have assigned SectorIDs.</remarks>
         /// </summary>
         /// <param name="worldLocation">The world location.</param>
         /// <param name="sectorID">The resulting sectorID.</param>
@@ -58,6 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="worldLocation">The world point.</param>
         /// <returns></returns>
+        [Obsolete]
         ISector GetSectorContaining(Vector3 worldLocation);
 
         ISector GetSector(IntVector3 sectorID);

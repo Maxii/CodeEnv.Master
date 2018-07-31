@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2018 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiAiPlayerUserSeparationPopupList.cs
-// AIPlayer UserSeparation selection popup list in the NewGameMenu.  
+// File: GuiPlayersSeparationPopupList.cs
+// Player Separation selection popup list in the NewGameMenu.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,19 +18,13 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// AIPlayer UserSeparation selection popup list in the NewGameMenu.  
+/// Player Separation selection popup list in the NewGameMenu.  
 /// </summary>
-[System.Obsolete("Use GuiPlayersSeparationPopupList")]
-public class GuiAiPlayerUserSeparationPopupList : AGuiMenuPopupList<PlayerSeparationGuiSelection> {
+public class GuiPlayersSeparationPopupList : AGuiMenuPopupList<PlayerSeparationGuiSelection> {
 
-    [Tooltip("The unique ID of this AIPlayerUserSeparation GuiElement")]
-    [SerializeField]
-    private GuiElementID _elementID = GuiElementID.None;
-
-    public override GuiElementID ElementID { get { return _elementID; } }
+    public override GuiElementID ElementID { get { return GuiElementID.PlayersSeparationPopupList; } }
 
     public override string ConvertedSelectedValue {
         get {
@@ -40,7 +34,7 @@ public class GuiAiPlayerUserSeparationPopupList : AGuiMenuPopupList<PlayerSepara
         }
     }
 
-    protected override string TooltipContent { get { return "Select the starting separation between this player and the user"; } }
+    protected override string TooltipContent { get { return "Select the starting separation between players"; } }
 
     protected override string[] Choices { get { return Enums<PlayerSeparationGuiSelection>.GetNames(excludeDefault: true); } }
 

@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="designToImprove">The design to improve.</param>
         public StarbaseCmdModuleDesign(StarbaseCmdModuleDesign designToImprove)
-            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
+            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDamperStat),
             GetImprovedReqdStat(designToImprove.Player, designToImprove.CmdModuleStat),
             GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
@@ -62,8 +62,8 @@ namespace CodeEnv.Master.GameContent {
             DesignLevel = designToImprove.DesignLevel;
         }
 
-        public StarbaseCmdModuleDesign(Player player, FtlDampenerStat ftlDampenerStat, StarbaseCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
+        public StarbaseCmdModuleDesign(Player player, FtlDamperStat ftlDamperStat, StarbaseCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDamperStat, reqdMRSensorStat, cmdStat) {
             InitializeValuesAndReferences();
         }
 

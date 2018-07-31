@@ -75,7 +75,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxCircles">The maximum circles.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
+        public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1,
+            float width = 1F, GameColor color = GameColor.White)
             : base(name) {
             Target = target;
             NormalizedRadius = normalizedRadius;
@@ -178,7 +179,6 @@ namespace CodeEnv.Master.GameContent {
                 _circlesToShow[index] = false;
                 //D.Log("Circle {0} removed from {1}.", index, LineName);
 
-                ////_line.ZeroPoints();   // ZeroPoints() removed in Vectrosity 4.0
                 // HACK my replacement for ZeroPoints() as whole class needs to be re-designed for Vectrosity 4.0
                 _line.points2.Clear();
                 _line.Draw();   // clears the screen of all circles. Coroutine will refill with showing circles
@@ -228,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else if (widthCount == MaxCircles) {
                 //D.Log("WidthCount, MaxCircles = {0}, SegmentsPerCircle = {1}.", widthCount, _segmentsPerCircle);
-                List<float> segmentWidths = new List<float>(MaxCircles * _segmentsPerCircle);
+                ////List<float> segmentWidths = new List<float>(MaxCircles * _segmentsPerCircle);
                 for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
                     int segmentStartIndex = _segmentsPerCircle * circleIndex;
                     int segmentEndIndex = _segmentsPerCircle * (circleIndex + 1) - 1;

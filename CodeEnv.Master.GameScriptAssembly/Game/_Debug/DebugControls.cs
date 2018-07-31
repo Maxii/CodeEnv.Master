@@ -33,7 +33,9 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     // Allows concurrent use of [Tooltip("")]. NguiEditorTools do not offer a separate tooltip option because this concurrent use is allowed.
     // [Header("")] can also be used concurrently, but this can also be done in the custom editor with greater location precision.
 
-    #region Event Delegates
+    #region Events
+
+    public event EventHandler preferencePropertyChanged;
 
     public event EventHandler validatePlayerKnowledgeNow;
 
@@ -64,6 +66,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     public event EventHandler showPlanetIcons;
 
     public event EventHandler showStarIcons;
+
+    public event EventHandler aiHandlesUserCmdModuleInitialDesigns;
+
+    public event EventHandler aiHandlesUserCmdModuleRefitDesigns;
+
+    public event EventHandler aiHandlesUserCentralHubInitialDesigns;
+
+    public event EventHandler aiHandlesUserElementRefitDesigns;
 
     #endregion
 
@@ -116,7 +126,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #endregion
 
-    #region AI Editor Fields
+    #region Pre-game AI Editor Fields
 
     [Tooltip("Check if fleets should automatically attack all other players.")]
     [SerializeField]
@@ -169,7 +179,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoFoundStarbases { get { return _fleetsAutoFoundStarbases; } }
 
-
     [Tooltip("Check if all players start knowing everything about each other and all Items, even those that are outside detection range.")]
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;
@@ -186,7 +195,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _areAssaultsAlwaysSuccessful = false;
     public bool AreAssaultsAlwaysSuccessful { get { return _areAssaultsAlwaysSuccessful; } }
 
-
     [Tooltip("Choose how to move ordnance that has a choice.")]
     [SerializeField]
     private UnityMoveTech _unityMoveTech = UnityMoveTech.Kinematic;
@@ -196,26 +204,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     [SerializeField]
     private bool _areAiUnitHudButtonsFunctional = false;
     public bool AreAiUnitHudButtonsFunctional { get { return _areAiUnitHudButtonsFunctional; } }
-
-    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is first formed.")]
-    [SerializeField]
-    private bool _aiChoosesUserCmdModInitialDesigns = false;  // TODO Should become a GameOption that can be changed in game
-    public bool AiChoosesUserCmdModInitialDesigns { get { return _aiChoosesUserCmdModInitialDesigns; } }
-
-    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is being refit.")]
-    [SerializeField]
-    private bool _aiChoosesUserCmdModRefitDesigns = false;  // TODO Should become a GameOption that can be changed in game
-    public bool AiChoosesUserCmdModRefitDesigns { get { return _aiChoosesUserCmdModRefitDesigns; } }
-
-    [Tooltip("Check if the AI should choose CentralHubDesigns for the user when a Base is first formed.")]
-    [SerializeField]
-    private bool _aiChoosesUserCentralHubInitialDesigns = false;  // TODO Should become a GameOption that can be changed in game
-    public bool AiChoosesUserCentralHubInitialDesigns { get { return _aiChoosesUserCentralHubInitialDesigns; } }
-
-    [Tooltip("Check if the AI should choose ElementDesigns for the user when an Element is being refit.")]
-    [SerializeField]
-    private bool _aiChoosesUserElementRefitDesigns = false;  // TODO Should become a GameOption that can be changed in game
-    public bool AiChoosesUserElementRefitDesigns { get { return _aiChoosesUserElementRefitDesigns; } }
 
 
     #region Auto Unit Preset Equipment Controls
@@ -347,7 +335,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #endregion
 
-    #region InGame Display Editor Fields
+    #region In-game Display Editor Fields
 
     [Tooltip("Shows the course plotted for each Fleet")]
     [SerializeField]
@@ -410,6 +398,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// <summary>
     /// If <c>true</c> elements will display 2D icons when the camera is too far away to discern the mesh.
     /// </summary>
+    [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
     public bool ShowElementIcons { get { return _showElementIcons; } }
 
     [Tooltip("Check if Icons for Planets should show")]
@@ -430,6 +419,33 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #endregion
 
+    #region In-game AI Editor Fields
+
+    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is first formed.")]
+    [SerializeField]
+    private bool _aiHandlesUserCmdModuleInitialDesigns = false;
+    [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+    public bool AiHandlesUserCmdModuleInitialDesigns { get { return _aiHandlesUserCmdModuleInitialDesigns; } }
+
+    [Tooltip("Check if the AI should choose CmdModuleDesigns for the user when a Unit is being refit.")]
+    [SerializeField]
+    private bool _aiHandlesUserCmdModuleRefitDesigns = false;
+    [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+    public bool AiHandlesUserCmdModuleRefitDesigns { get { return _aiHandlesUserCmdModuleRefitDesigns; } }
+
+    [Tooltip("Check if the AI should choose CentralHubDesigns for the user when a Base is first formed.")]
+    [SerializeField]
+    private bool _aiHandlesUserCentralHubInitialDesigns = false;
+    [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+    public bool AiHandlesUserCentralHubInitialDesigns { get { return _aiHandlesUserCentralHubInitialDesigns; } }
+
+    [Tooltip("Check if the AI should choose ElementDesigns for the user when an Element is being refit.")]
+    [SerializeField]
+    private bool _aiHandlesUserElementRefitDesigns = false;
+    [Obsolete("Use PlayerPrefsManager's Property instead")] // OPTIMIZE
+    public bool AiHandlesUserElementRefitDesigns { get { return _aiHandlesUserElementRefitDesigns; } }
+
+    #endregion
 
     public string DebugName { get { return GetType().Name; } }
 
@@ -437,6 +453,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     private IGameManager _gameMgr;
     private IList<IDisposable> _subscriptions;
+    private PlayerPrefsManager _playerPrefsMgr;
 
     #region Initialization
 
@@ -455,14 +472,69 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _gameMgr = GameReferences.GameManager;
+        InitializeValuesAndReferences();
+        InitializeValueChangeDetection();
         Subscribe();
+        SynchronizePlayerPreferencesWithEditorFields();
+    }
+
+    private void InitializeValuesAndReferences() {
+        _gameMgr = GameReferences.GameManager;
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
     }
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(ppm => ppm.IsShowElementIconsEnabled, PlayerPreferenceChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(ppm => ppm.IsAiHandlesUserCmdModuleInitialDesignsEnabled, PlayerPreferenceChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(ppm => ppm.IsAiHandlesUserCmdModuleRefitDesignsEnabled, PlayerPreferenceChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(ppm => ppm.IsAiHandlesUserCentralHubInitialDesignsEnabled, PlayerPreferenceChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(ppm => ppm.IsAiHandlesUserElementRefitDesignsEnabled, PlayerPreferenceChangedHandler));
         _gameMgr.newGameBuilding += NewGameBuildingEventHandler;
+    }
+
+    private void SynchronizePlayerPreferencesWithEditorFields() {
+        if (_playerPrefsMgr != null) {   // OnValidate can be called before Awake
+            //D.Log("{0} is attempting to sync with PlayerPrefs.", DebugName);
+            if (_showElementIcons != _playerPrefsMgr.IsShowElementIconsEnabled) {
+                _playerPrefsMgr.__IsShowElementIconsEnabled = _showElementIcons;
+            }
+            if (_aiHandlesUserCmdModuleInitialDesigns != _playerPrefsMgr.IsAiHandlesUserCmdModuleInitialDesignsEnabled) {
+                _playerPrefsMgr.__IsAiHandlesUserCmdModuleInitialDesignsEnabled = _aiHandlesUserCmdModuleInitialDesigns;
+            }
+            if (_aiHandlesUserCmdModuleRefitDesigns != _playerPrefsMgr.IsAiHandlesUserCmdModuleRefitDesignsEnabled) {
+                _playerPrefsMgr.__IsAiHandlesUserCmdModuleRefitDesignsEnabled = _aiHandlesUserCmdModuleRefitDesigns;
+            }
+            if (_aiHandlesUserCentralHubInitialDesigns != _playerPrefsMgr.IsAiHandlesUserCentralHubInitialDesignsEnabled) {
+                _playerPrefsMgr.__IsAiHandlesUserCentralHubInitialDesignsEnabled = _aiHandlesUserCentralHubInitialDesigns;
+            }
+            if (_aiHandlesUserElementRefitDesigns != _playerPrefsMgr.IsAiHandlesUserElementRefitDesignsEnabled) {
+                _playerPrefsMgr.__IsAiHandlesUserElementRefitDesignsEnabled = _aiHandlesUserElementRefitDesigns;
+            }
+        }
+    }
+
+    private void InitializeValueChangeDetection() {
+        _aiHandlesUserCmdModuleInitialDesignsPrev = _aiHandlesUserCmdModuleInitialDesigns;
+        _aiHandlesUserCmdModuleRefitDesignsPrev = _aiHandlesUserCmdModuleRefitDesigns;
+        _aiHandlesUserCentralHubInitialDesignsPrev = _aiHandlesUserCentralHubInitialDesigns;
+        _aiHandlesUserElementRefitDesignsPrev = _aiHandlesUserElementRefitDesigns;
+
+        _showFleetCoursePlotsPrev = _showFleetCoursePlots;
+        _showShipCoursePlotsPrev = _showShipCoursePlots;
+        _showFleetVelocityRaysPrev = _showFleetVelocityRays;
+        _showShipVelocityRaysPrev = _showShipVelocityRays;
+        _showFleetFormationStationsPrev = _showFleetFormationStations;
+        _showShipCollisionDetectionZonesPrev = _showShipCollisionDetectionZones;
+        _showShieldsPrev = _showShields;
+        _showSensorsPrev = _showSensors;
+        _showObstacleZonesPrev = _showObstacleZones;
+        _showSystemTrackingLabelsPrev = _showSystemTrackingLabels;
+        _showUnitTrackingLabelsPrev = _showUnitTrackingLabels;
+        _showElementIconsPrev = _showElementIcons;
+        _showPlanetIconsPrev = _showPlanetIcons;
+        _showStarIconsPrev = _showStarIcons;
     }
 
     #endregion
@@ -476,6 +548,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     }
 
     private void CheckValuesForChange() {
+        //D.Log("{0} is checking values for change.", DebugName);
         CheckShowFleetCoursePlots();
         CheckShowShipCoursePlots();
         CheckShowFleetVelocityRays();
@@ -495,9 +568,50 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
         CheckForChosenPlayerNameChanged();
         CheckForPlayerRelationsChange();
+
+        CheckAiHandlesUserCmdModuleInitialDesigns();
+        CheckAiHandlesUserCmdModuleRefitDesigns();
+        CheckAiHandlesUserCentralHubInitialDesigns();
+        CheckAiHandlesUserElementRefitDesigns();
     }
 
-    private bool _showFleetCoursePlotsPrev = false;
+    private bool _aiHandlesUserCmdModuleInitialDesignsPrev;
+    private void CheckAiHandlesUserCmdModuleInitialDesigns() {
+        if (_aiHandlesUserCmdModuleInitialDesigns != _aiHandlesUserCmdModuleInitialDesignsPrev) {
+            _aiHandlesUserCmdModuleInitialDesignsPrev = _aiHandlesUserCmdModuleInitialDesigns;
+            SynchronizePlayerPreferencesWithEditorFields();
+            OnAiHandlesUserCmdModuleInitialDesignsChanged();
+        }
+    }
+
+    private bool _aiHandlesUserCmdModuleRefitDesignsPrev;
+    private void CheckAiHandlesUserCmdModuleRefitDesigns() {
+        if (_aiHandlesUserCmdModuleRefitDesigns != _aiHandlesUserCmdModuleRefitDesignsPrev) {
+            _aiHandlesUserCmdModuleRefitDesignsPrev = _aiHandlesUserCmdModuleRefitDesigns;
+            SynchronizePlayerPreferencesWithEditorFields();
+            OnAiHandlesUserCmdModuleRefitDesignsChanged();
+        }
+    }
+
+    private bool _aiHandlesUserCentralHubInitialDesignsPrev;
+    private void CheckAiHandlesUserCentralHubInitialDesigns() {
+        if (_aiHandlesUserCentralHubInitialDesigns != _aiHandlesUserCentralHubInitialDesignsPrev) {
+            _aiHandlesUserCentralHubInitialDesignsPrev = _aiHandlesUserCentralHubInitialDesigns;
+            SynchronizePlayerPreferencesWithEditorFields();
+            OnAiHandlesUserCentralHubInitialDesignsChanged();
+        }
+    }
+
+    private bool _aiHandlesUserElementRefitDesignsPrev;
+    private void CheckAiHandlesUserElementRefitDesigns() {
+        if (_aiHandlesUserElementRefitDesigns != _aiHandlesUserElementRefitDesignsPrev) {
+            _aiHandlesUserElementRefitDesignsPrev = _aiHandlesUserElementRefitDesigns;
+            SynchronizePlayerPreferencesWithEditorFields();
+            OnAiHandlesUserElementRefitDesignsChanged();
+        }
+    }
+
+    private bool _showFleetCoursePlotsPrev;
     private void CheckShowFleetCoursePlots() {
         if (_showFleetCoursePlots != _showFleetCoursePlotsPrev) {
             //D.Log("{0}.ShowFleetCoursePlots has changed from {1} to {2}.", DebugName, _showFleetCoursePlotsPrev, _showFleetCoursePlots);
@@ -506,7 +620,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
-    private bool _showShipCoursePlotsPrev = false;
+    private bool _showShipCoursePlotsPrev;
     private void CheckShowShipCoursePlots() {
         if (_showShipCoursePlots != _showShipCoursePlotsPrev) {
             //D.Log("{0}.ShowShipCoursePlots has changed from {1} to {2}.", DebugName, _showShipCoursePlotsPrev, _showShipCoursePlots);
@@ -515,7 +629,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
-    private bool _showFleetVelocityRaysPrev = false;
+    private bool _showFleetVelocityRaysPrev;
     private void CheckShowFleetVelocityRays() {
         if (_showFleetVelocityRays != _showFleetVelocityRaysPrev) {
             //D.Log("{0}.ShowFleetVelocityRays has changed from {1} to {2}.", DebugName, _showFleetVelocityRaysPrev, _showFleetVelocityRays);
@@ -524,7 +638,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
-    private bool _showShipVelocityRaysPrev = false;
+    private bool _showShipVelocityRaysPrev;
     private void CheckShowShipVelocityRays() {
         if (_showShipVelocityRays != _showShipVelocityRaysPrev) {
             //D.Log("{0}.ShowShipVelocityRays has changed from {1} to {2}.", DebugName, _showShipVelocityRaysPrev, _showShipVelocityRays);
@@ -601,6 +715,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         if (_showElementIcons != _showElementIconsPrev) {
             //D.Log("{0}.ShowElementIcons has changed from {1} to {2}.", DebugName, _showElementIconsPrev, _showElementIcons);
             _showElementIconsPrev = _showElementIcons;
+            SynchronizePlayerPreferencesWithEditorFields();
             OnShowElementIcons();
         }
     }
@@ -623,10 +738,10 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
-    private string _chosenPlayerNamePrev = null;
+    private string _chosenPlayerDebugNamePrev = null;
     private void CheckForChosenPlayerNameChanged() {
-        if (_chosenPlayerName != _chosenPlayerNamePrev) {
-            _chosenPlayerNamePrev = _chosenPlayerName;
+        if (_chosenPlayerDebugName != _chosenPlayerDebugNamePrev) {
+            _chosenPlayerDebugNamePrev = _chosenPlayerDebugName;
             HandleChosenPlayerNameChanged();
         }
     }
@@ -642,6 +757,40 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     #endregion
 
     #region Event and Prop Change Handlers
+
+    private void OnPlayerPreferenceChanged() {
+        if (preferencePropertyChanged != null) {
+            preferencePropertyChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void PlayerPreferenceChangedHandler() {
+        HandlePlayerPreferenceChanged();
+    }
+
+    private void OnAiHandlesUserCmdModuleInitialDesignsChanged() {
+        if (aiHandlesUserCmdModuleInitialDesigns != null) {
+            aiHandlesUserCmdModuleInitialDesigns(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnAiHandlesUserCmdModuleRefitDesignsChanged() {
+        if (aiHandlesUserCmdModuleRefitDesigns != null) {
+            aiHandlesUserCmdModuleRefitDesigns(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnAiHandlesUserCentralHubInitialDesignsChanged() {
+        if (aiHandlesUserCentralHubInitialDesigns != null) {
+            aiHandlesUserCentralHubInitialDesigns(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnAiHandlesUserElementRefitDesignsChanged() {
+        if (aiHandlesUserElementRefitDesigns != null) {
+            aiHandlesUserElementRefitDesigns(Instance, EventArgs.Empty);
+        }
+    }
 
     private void OnShowFleetCoursePlotsChanged() {
         if (showFleetCoursePlots != null) {
@@ -757,6 +906,34 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
+    private void HandlePlayerPreferenceChanged() {
+        SynchronizeEditorFieldsWithPlayerPreferences();
+        OnPlayerPreferenceChanged();
+    }
+
+    private void SynchronizeEditorFieldsWithPlayerPreferences() {
+        if (_showElementIcons != _playerPrefsMgr.IsShowElementIconsEnabled) {
+            _showElementIconsPrev = _showElementIcons;
+            _showElementIcons = _playerPrefsMgr.IsShowElementIconsEnabled;
+        }
+        if (_aiHandlesUserCmdModuleInitialDesigns != _playerPrefsMgr.IsAiHandlesUserCmdModuleInitialDesignsEnabled) {
+            _aiHandlesUserCmdModuleInitialDesignsPrev = _aiHandlesUserCmdModuleInitialDesigns;
+            _aiHandlesUserCmdModuleInitialDesigns = _playerPrefsMgr.IsAiHandlesUserCmdModuleInitialDesignsEnabled;
+        }
+        if (_aiHandlesUserCmdModuleRefitDesigns != _playerPrefsMgr.IsAiHandlesUserCmdModuleRefitDesignsEnabled) {
+            _aiHandlesUserCmdModuleRefitDesignsPrev = _aiHandlesUserCmdModuleRefitDesigns;
+            _aiHandlesUserCmdModuleRefitDesigns = _playerPrefsMgr.IsAiHandlesUserCmdModuleRefitDesignsEnabled;
+        }
+        if (_aiHandlesUserCentralHubInitialDesigns != _playerPrefsMgr.IsAiHandlesUserCentralHubInitialDesignsEnabled) {
+            _aiHandlesUserCentralHubInitialDesignsPrev = _aiHandlesUserCentralHubInitialDesigns;
+            _aiHandlesUserCentralHubInitialDesigns = _playerPrefsMgr.IsAiHandlesUserCentralHubInitialDesignsEnabled;
+        }
+        if (_aiHandlesUserElementRefitDesigns != _playerPrefsMgr.IsAiHandlesUserElementRefitDesignsEnabled) {
+            _aiHandlesUserElementRefitDesignsPrev = _aiHandlesUserElementRefitDesigns;
+            _aiHandlesUserElementRefitDesigns = _playerPrefsMgr.IsAiHandlesUserElementRefitDesignsEnabled;
+        }
+    }
+
     #region User Relationship Change System
 
     /// <summary>
@@ -774,7 +951,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// <remarks>Serialized field so editor can find and assign it the selected player name.</remarks>
     /// </summary>
     [SerializeField]
-    private string _chosenPlayerName;
+    private string _chosenPlayerDebugName;
 #pragma warning restore 0649
 
     private Player _chosenPlayer;
@@ -784,7 +961,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         PlayersKnownToUser = PlayersKnownToUser ?? new List<string>();
         PlayersKnownToUser.Clear();
         _chosenPlayer = null;
-        _chosenPlayerName = null;
+        _chosenPlayerDebugName = null;
         _relationsOfPlayerToUser = DiplomaticRelationship.None;
         _playerUserRelationsChoice = UserRelationshipChoices.Neutral;
     }
@@ -817,11 +994,11 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         if (IsRelationsChgSystemEnabled) {
             Player priorChosenPlayer = _chosenPlayer;
             DiplomaticRelationship priorChosenPlayerUserRelations = _relationsOfPlayerToUser;
-            _chosenPlayer = GetPlayer(_chosenPlayerName);
+            _chosenPlayer = GetPlayer(_chosenPlayerDebugName);
             SyncUserRelationsFieldsTo(_chosenPlayer.UserRelations);
-            string priorChosenPlayerText = priorChosenPlayer != null ? priorChosenPlayer.DebugName : "null";
-            D.Log("{0}: Chosen player changed from {1} to {2}.", DebugName, priorChosenPlayerText, _chosenPlayer.DebugName);
-            D.Log("{0}: Chosen player user relations changed from {1} to {2}.", DebugName, priorChosenPlayerUserRelations.GetValueName(), _relationsOfPlayerToUser.GetValueName());
+            D.Log("{0}.RelationsChgSystem has changed the relations between {1} and the User {2} from {3} to {4}.", DebugName,
+                _chosenPlayer.DebugName, _gameMgr.UserPlayer.DebugName, priorChosenPlayerUserRelations.GetValueName(),
+                _relationsOfPlayerToUser.GetValueName());
         }
     }
 
@@ -849,13 +1026,13 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         _playerUserRelationsChoice = Convert(relations);
     }
 
-    private Player GetPlayer(string playerName) {
+    private Player GetPlayer(string playerDebugName) {
         foreach (var player in _gameMgr.AIPlayers) {
-            if (player.DebugName == playerName) {
+            if (player.DebugName == playerDebugName) {
                 return player;
             }
         }
-        D.Error("{0}: PlayerName: {1}, AllPlayerNames: {2}.", DebugName, playerName, _gameMgr.AIPlayers.Select(p => p.DebugName).Concatenate());
+        D.Error("{0}: PlayerDebugName: {1}, AllPlayerDebugNames: {2}.", DebugName, playerDebugName, _gameMgr.AIPlayers.Select(p => p.DebugName).Concatenate());
         return null;
     }
 
@@ -918,9 +1095,10 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #region Debug
 
+    [Obsolete("No longer used")]
     public void __EnableAiPicksInitialDesigns() {
-        _aiChoosesUserCentralHubInitialDesigns = true;
-        _aiChoosesUserCmdModInitialDesigns = true;
+        _aiHandlesUserCentralHubInitialDesigns = true;
+        _aiHandlesUserCmdModuleInitialDesigns = true;
     }
 
     public void __DisableUserSelectsTechs() {

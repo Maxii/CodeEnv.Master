@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     using Vectrosity;
 
     /// <summary>
-    /// Base class for 3D Vectrosity Classes that generate VectorObjects .
+    /// Base class for 3D Vectrosity Classes that generate VectorObjects.
     /// </summary>
     public abstract class A3DVectrosityBase : AVectrosityBase {
 
@@ -87,7 +87,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="lineType">Type of the line.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public A3DVectrosityBase(string name, List<Vector3> points, Transform target, Transform lineParent, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
+        public A3DVectrosityBase(string name, List<Vector3> points, Transform target, Transform lineParent,
+            LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
             : base(name) {
             _points = points;
             _target = target;
@@ -104,7 +105,6 @@ namespace CodeEnv.Master.GameContent {
              * GOTCHA! The new VectorLine 5.0 constructor relies on the capacity of the list when Points.Count is 0. 
              * If Points.Count is 0, new List(Points) creates an empty list with ZERO capacity, it DOES NOT copy the capacity of the Points list!
              *********************************************************************************************************************************************/
-
             var points = new List<Vector3>(Points.Capacity);
             points.AddRange(Points);
             //D.Log("List being used for Line creation: Capacity = {0}, Count = {1}.", points.Capacity, points.Count);
@@ -159,6 +159,22 @@ namespace CodeEnv.Master.GameContent {
             _line.rectTransform.SetParent(lineParent, worldPositionStays: true);
         }
 
+        #region Event and Property Change Handlers
+
+        private void ColorPropChangedHandler() {
+            HandleColorPropChanged();
+        }
+
+        private void LineWidthPropChangedHandler() {
+            HandleLineWidthPropChanged();
+        }
+
+        private void PointsPropChangedHandler() {
+            HandlePointsPropChanged();
+        }
+
+        #endregion
+
         /// <summary>
         /// Hook that is called immediately after the VectorLine _line is activated.
         /// Default does nothing.
@@ -171,21 +187,19 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected virtual void HandleLineDeactivated() { }
 
-        #region Event and Property Change Handlers
-
-        private void ColorPropChangedHandler() {
+        protected virtual void HandleColorPropChanged() {
             if (_line != null) {
                 _line.SetColor(Color.ToUnityColor());
             }
         }
 
-        private void LineWidthPropChangedHandler() {
+        protected virtual void HandleLineWidthPropChanged() {
             if (_line != null) {
                 _line.lineWidth = LineWidth;
             }
         }
 
-        private void PointsPropChangedHandler() {
+        protected virtual void HandlePointsPropChanged() {
             if (_line != null) {
                 _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
                 //D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", LineName, Points.Count);
@@ -193,14 +207,25 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #endregion
-
         protected override void Cleanup() {
             if (_line != null && _line.isAutoDrawing) {
                 _line.StopDrawing3DAuto();  // stop auto drawing before _line destroyed
             }
             base.Cleanup();
         }
+
+        #region Debug
+
+        [System.Obsolete("Not sure how, but duplicate waypoints in a path exist")]
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __ValidateNoDuplicateWaypoints(IList<Vector3> waypoints) {
+            Vector3 duplicate;
+            if (waypoints.ContainsDuplicates(out duplicate)) {
+                D.Error("{0}: Duplicate waypoint {1} found in {2}.", DebugName, duplicate, waypoints.Concatenate());
+            }
+        }
+
+        #endregion
 
     }
 }

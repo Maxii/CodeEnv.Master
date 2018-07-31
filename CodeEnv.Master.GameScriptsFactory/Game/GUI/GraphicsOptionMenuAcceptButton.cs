@@ -36,8 +36,7 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
     private string _qualitySetting;
-    // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
-    //private bool _isElementIconsEnabled;
+    private bool _isShowElementIconsEnabled;
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
         base.RecordPopupListState(popupListID, selection, convertedSelection);
@@ -53,9 +52,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
     protected override void RecordCheckboxState(GuiElementID checkboxID, bool isChecked) {
         base.RecordCheckboxState(checkboxID, isChecked);
         switch (checkboxID) {
-            case GuiElementID.ElementIconsCheckbox:
-                // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
-                //_isElementIconsEnabled = isChecked;
+            case GuiElementID.ShowElementIconsCheckbox:
+                _isShowElementIconsEnabled = isChecked;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
@@ -66,8 +64,7 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         base.HandleValidClick();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
             QualitySetting = _qualitySetting,
-            // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
-            //IsElementIconsEnabled = _isElementIconsEnabled
+            IsShowElementIconsEnabled = _isShowElementIconsEnabled
         };
         _playerPrefsMgr.RecordGraphicsOptions(settings);
     }
@@ -76,8 +73,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     #endregion
 
-    protected override void ValidateStateOnCapture() {
-        base.ValidateStateOnCapture();
+    protected override void __ValidateCapturedState() {
+        base.__ValidateCapturedState();
         if (!QualitySettings.names.ToList().Contains(_qualitySetting)) {
             D.Error("QualitySetting {0} not present among {1}.", _qualitySetting, QualitySettings.names.Concatenate());
         }

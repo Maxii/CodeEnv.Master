@@ -123,6 +123,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toOverride">if set to <c>true</c> [to override].</param>
         void RequestPauseStateChange(bool toPause, bool toOverride = false);
 
+        GameState __CurrentGameState { get; }
+
     }
 }
 

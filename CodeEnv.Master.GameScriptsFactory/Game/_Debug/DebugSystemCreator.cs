@@ -117,7 +117,7 @@ public class DebugSystemCreator : SystemCreator {
             FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
 
             var aSector = SectorGrid.Instance.GetSector(SectorID);
-            Sector sector = aSector as Sector;
+            CoreSector sector = aSector as CoreSector;
             D.AssertNotNull(sector);
             _systemFactory.PopulateSystemInstance(SystemName, sector, cameraStat, ref _system);
             if (!_system.gameObject.isStatic) {

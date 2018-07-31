@@ -26,6 +26,10 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AGuiMenuElement : ATextTooltip {
 
+    private const string DebugNameFormat = "{0}[{1}]";
+
+    public override string DebugName { get { return DebugNameFormat.Inject(base.DebugName, ElementID.GetValueName()); } }
+
     /// <summary>
     /// Unique ID for this Gui Element.
     /// </summary>

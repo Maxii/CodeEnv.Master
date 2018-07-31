@@ -30,9 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         public IntVector3 SectorID { get; private set; }
 
-        [Obsolete]
-        public SectorCategory Category { get; private set; }
-
         private int _capacity;
         public int Capacity {
             get { return _capacity; }
@@ -83,11 +80,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sector">The sector.</param>
         /// <param name="sectorID">The sectorID.</param>
-        /// <param name="category">The category.</param>
-        [Obsolete]
-        public SectorData(ISector sector, IntVector3 sectorID, SectorCategory category)
-            : this(sector, sectorID, TempGameValues.NoPlayer, category) { }
-
         public SectorData(ISector sector, IntVector3 sectorID)
             : this(sector, sectorID, TempGameValues.NoPlayer) {
         }
@@ -99,15 +91,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sector">The sector.</param>
         /// <param name="sectorID">The sectorID.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="category">The category.</param>
-        [Obsolete]
-        private SectorData(ISector sector, IntVector3 sectorID, Player owner, SectorCategory category)
-            : base(sector, owner) {
-            SectorID = sectorID;
-            Topography = Topography.OpenSpace;
-            Category = category;
-        }
-
         public SectorData(ISector sector, IntVector3 sectorID, Player owner)
             : base(sector, owner) {
             SectorID = sectorID;
@@ -142,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
             base.FinalInitialize();
             RecalcAllProperties();
             AssessIntelCoverage();
-            AssessOwnership();
+            AssessSectorAndSystemOwnership();
             AssessStarbasesCrippledState();
         }
 
@@ -160,96 +143,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private static IList<IntelCoverage> _allMemberIntelCoverages = new List<IntelCoverage>();
 
-        private void AssessIntelCoverage() {
-            foreach (Player player in _gameMgr.AllPlayers) {
-                AssessIntelCoverageFor(player);
-            }
-        }
-
-        private void AssessIntelCoverageFor(Player player) {
-            if (__debugCntls.IsAllIntelCoverageComprehensive) {
-                D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
-                return;
-            }
-
-            ////if (Category == SectorCategory.Rim || Category == SectorCategory.Peripheral) {
-            ////    // 6.28.18 All players have Comprehensive IntelCoverage of all non-Core Sectors so they will 
-            ////    // always be fully explored. This avoids the problem of moving to a non-Core Sector to explore it 
-            ////    // and finding that Sector.Position is outside the universe, throwing a course-plot error.
-            ////    SetIntelCoverage(player, IntelCoverage.Comprehensive);
-            ////    return;
-            ////}
-
-            if (Owner == player) {
-                D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
-                return;
-            }
-
-            if (GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
-                return; // no point in continuing as Coverage can't regress
-            }
-
-            _allMemberIntelCoverages.Clear();
-            if (SystemData != null) {
-                IntelCoverage playerSystemCoverage = SystemData.GetIntelCoverage(player);
-                _allMemberIntelCoverages.Add(playerSystemCoverage);
-            }
-
-            if (_allStarbasesData != null) {
-                foreach (var sBaseData in _allStarbasesData) {
-                    _allMemberIntelCoverages.Add(sBaseData.GetIntelCoverage(player));
-                }
-            }
-
-            // TODO add other members when they are incorporated into Sectors
-
-            IntelCoverage currentCoverage = GetIntelCoverage(player);
-
-            IntelCoverage lowestMemberCoverage = GameUtility.GetLowestCommonCoverage(_allMemberIntelCoverages);
-            SetIntelCoverage(player, lowestMemberCoverage);
-        }
-        ////private void AssessIntelCoverageFor(Player player) {
-        ////    if (__debugCntls.IsAllIntelCoverageComprehensive) {
-        ////        D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
-        ////        return;
-        ////    }
-
-        ////    if (Category == SectorCategory.Rim || Category == SectorCategory.Peripheral) {
-        ////        // 6.28.18 All players have Comprehensive IntelCoverage of all non-Core Sectors so they will 
-        ////        // always be fully explored. This avoids the problem of moving to a non-Core Sector to explore it 
-        ////        // and finding that Sector.Position is outside the universe, throwing a course-plot error.
-        ////        SetIntelCoverage(player, IntelCoverage.Comprehensive);
-        ////        return;
-        ////    }
-
-        ////    if (Owner == player) {
-        ////        D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
-        ////        return;
-        ////    }
-
-        ////    if (GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
-        ////        return; // no point in continuing as Coverage can't regress
-        ////    }
-
-        ////    _allMemberIntelCoverages.Clear();
-        ////    if (SystemData != null) {
-        ////        IntelCoverage playerSystemCoverage = SystemData.GetIntelCoverage(player);
-        ////        _allMemberIntelCoverages.Add(playerSystemCoverage);
-        ////    }
-
-        ////    if (_allStarbasesData != null) {
-        ////        foreach (var sBaseData in _allStarbasesData) {
-        ////            _allMemberIntelCoverages.Add(sBaseData.GetIntelCoverage(player));
-        ////        }
-        ////    }
-
-        ////    // TODO add other members when they are incorporated into Sectors
-
-        ////    IntelCoverage currentCoverage = GetIntelCoverage(player);
-
-        ////    IntelCoverage lowestMemberCoverage = GameUtility.GetLowestCommonCoverage(_allMemberIntelCoverages);
-        ////    SetIntelCoverage(player, lowestMemberCoverage);
-        ////}
 
         public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -257,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
             _allStarbasesData = _allStarbasesData ?? new List<StarbaseCmdData>();
             _allStarbasesData.Add(starbaseData);
             SubscribeToStarbaseDataValueChanges(starbaseData);
-            AssessOwnership();
+            AssessSectorAndSystemOwnership();
             AssessStarbasesCrippledState();
         }
 
@@ -265,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             bool isRemoved = _allStarbasesData.Remove(starbaseData);
             D.Assert(isRemoved);
             UnsubscribeFromStarbaseDataValueChanges(starbaseData);
-            AssessOwnership();
+            AssessSectorAndSystemOwnership();
         }
 
         #region Event and Property Change Handlers
@@ -279,7 +172,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void SystemDataPropSetHandler() {
-            ////__ValidateSystemPresence();
             HandleSystemDataSet();
         }
 
@@ -316,50 +208,89 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleStarbaseOwnerChanged() {
-            AssessOwnership();
+            AssessSectorAndSystemOwnership();
             AssessIntelCoverage();
             AssessStarbasesCrippledState();
         }
 
         private void HandleStarbaseIsEstablishedChanged() {
-            AssessOwnership();
+            AssessSectorAndSystemOwnership();
+        }
+
+        private void AssessIntelCoverage() {
+            foreach (Player player in _gameMgr.AllPlayers) {
+                AssessIntelCoverageFor(player);
+            }
+        }
+
+        private void AssessIntelCoverageFor(Player player) {
+            if (__debugCntls.IsAllIntelCoverageComprehensive) {
+                D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
+                return;
+            }
+
+            if (Owner == player) {
+                D.AssertEqual(GetIntelCoverage(player), IntelCoverage.Comprehensive);
+                return;
+            }
+
+            if (GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
+                return; // no point in continuing as Coverage can't regress
+            }
+
+            _allMemberIntelCoverages.Clear();
+            if (SystemData != null) {
+                IntelCoverage playerSystemCoverage = SystemData.GetIntelCoverage(player);
+                _allMemberIntelCoverages.Add(playerSystemCoverage);
+            }
+
+            if (_allStarbasesData != null) {
+                foreach (var sBaseData in _allStarbasesData) {
+                    _allMemberIntelCoverages.Add(sBaseData.GetIntelCoverage(player));
+                }
+            }
+
+            // TODO add other members when they are incorporated into Sectors
+
+            IntelCoverage currentCoverage = GetIntelCoverage(player);
+
+            IntelCoverage lowestMemberCoverage = GameUtility.GetLowestCommonCoverage(_allMemberIntelCoverages);
+            SetIntelCoverage(player, lowestMemberCoverage);
         }
 
         /// <summary>
-        /// Assesses whether to change the ownership of the sector, and if so, changes it.
-        /// <remarks>If a System is present and settled, that owner owns the sector. If not, then 
-        /// the owner is the owner of the largest established Starbase, if any. If neither
+        /// Assesses whether to change the ownership of the sector and its system if present, and if so, changes it.
+        /// <remarks>7.31.18 If the System is settled, that owner owns both the system and sector. If not settled, then 
+        /// the owner of both is the owner of the largest established Starbase in the Sector, if any. If neither
         /// of these conditions are true, then the owner is NoPlayer.</remarks>
-        /// <remarks>Public to allow SystemData to call it while propagating owner changes. Previous
-        /// approach subscribing to SystemOwner changes occurred too late, allowing IntelCoverage and
-        /// InfoAccess events to process before SectorOwnership was accessed.</remarks>
+        /// <remarks>Internal to allow SystemData to call it when it needs to determine its owner.</remarks>
         /// </summary>
-        public void AssessOwnership() {
-            if (SystemData != null) {
-                // Sector has a System
-                if (SystemData.Owner != TempGameValues.NoPlayer) {
-                    // System is settled so that specifies Sector owner
-                    if (Owner != SystemData.Owner) {
-                        Owner = SystemData.Owner;
-                        return;
+        internal void AssessSectorAndSystemOwnership() {
+            bool hasSystem = SystemData != null;
+            Player sectorAndSystemOwner = Owner;
+            if (hasSystem && SystemData.SettlementData != null) {
+                // Sector has a System with a Settlement so that specifies Sector owner
+                sectorAndSystemOwner = SystemData.SettlementData.Owner;
+            }
+            else {
+                // No System or System but no Settlement so sector and system Owner determined by largest established Starbase, if any
+                if (_allStarbasesData != null) {
+                    var establishedStarbases = _allStarbasesData.Where(sBaseData => sBaseData.IsEstablished);
+                    if (establishedStarbases.Any()) {
+                        var maxCategory = establishedStarbases.Max(sBaseData => sBaseData.Category);
+                        var maxCategoryStarbases = establishedStarbases.Where(sBaseData => sBaseData.Category == maxCategory);
+                        D.Assert(maxCategoryStarbases.Any());
+                        sectorAndSystemOwner = maxCategoryStarbases.MaxBy(sBaseData => sBaseData.Population).Owner;
                     }
                 }
             }
 
-            // No system or system owner
-            Player sectorOwner = Owner;
-            if (_allStarbasesData != null) {
-                var establishedStarbases = _allStarbasesData.Where(sBaseData => sBaseData.IsEstablished);
-                if (establishedStarbases.Any()) {
-                    var maxCategory = establishedStarbases.Max(sBaseData => sBaseData.Category);
-                    var maxCategoryStarbases = establishedStarbases.Where(sBaseData => sBaseData.Category == maxCategory);
-                    D.Assert(maxCategoryStarbases.Any());
-                    sectorOwner = maxCategoryStarbases.MaxBy(sBaseData => sBaseData.Population).Owner;
-                }
+            if (Owner != sectorAndSystemOwner) {
+                Owner = sectorAndSystemOwner;
             }
-
-            if (Owner != sectorOwner) {
-                Owner = sectorOwner;
+            if (hasSystem && SystemData.Owner != sectorAndSystemOwner) {
+                SystemData.Owner = sectorAndSystemOwner;
+                D.AssertEqual(Owner, SystemData.Owner);
             }
         }
 
@@ -381,8 +312,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void PropagateOwnerChange() {
             base.PropagateOwnerChange();
-            // nothing to propagate to yet. Starbases don't change ownership when Sector does and if System 
-            // is present and settled, it will already be the same owner
+            // Starbase ownership is not determined by the owner of the Sector.
+            // If System is present and settled, SystemOwner will already be the same owner. 
+            // If System is present and not settled SystemOwner has already been changed by AssessSectorAndSystemOwnership().
         }
 
         private void RecalcAllProperties() {
@@ -425,10 +357,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void Cleanup() {
-            Unsubscribe();
-        }
-
         private void Unsubscribe() {
             UnsubscribeFromSystemDataValueChanges();
             if (_allStarbasesData != null) {
@@ -438,15 +366,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #endregion
-
-        #region Debug
-
-        [Obsolete]
-        private void __ValidateSystemPresence() {
-            if (Category == SectorCategory.Peripheral || Category == SectorCategory.Rim) {
-                D.Warn("{0}: How did a system get placed in this sector with Category {1}?", DebugName, Category.GetValueName());
-            }
+        private void Cleanup() {
+            Unsubscribe();
         }
 
         #endregion

@@ -33,7 +33,7 @@ public class UserSettlementUnitHudForm : ABaseUnitHudForm {
     #region Pick Design Support
 
     protected override void ChooseCmdModuleDesignAndFormFleet() {
-        if (!DebugControls.Instance.AiChoosesUserCmdModInitialDesigns) {
+        if (!PlayerPrefsManager.Instance.IsAiHandlesUserCmdModuleInitialDesignsEnabled) {
             HaveUserPickCmdModDesignAndFormFleet();
         }
         else {
@@ -52,7 +52,7 @@ public class UserSettlementUnitHudForm : ABaseUnitHudForm {
     }
 
     protected override void ChooseDesignAndIssueRefitOrderFor(FacilityItem facility) {
-        if (!DebugControls.Instance.AiChoosesUserElementRefitDesigns) {
+        if (!PlayerPrefsManager.Instance.IsAiHandlesUserElementRefitDesignsEnabled) {
             HaveUserPickDesignAndIssueRefitOrder(facility);
         }
         else {
@@ -72,7 +72,7 @@ public class UserSettlementUnitHudForm : ABaseUnitHudForm {
     }
 
     protected override void ChooseDesignAndIssueRefitOrderFor(ShipItem ship) {
-        if (!DebugControls.Instance.AiChoosesUserElementRefitDesigns) {
+        if (!PlayerPrefsManager.Instance.IsAiHandlesUserElementRefitDesignsEnabled) {
             HaveUserPickDesignAndIssueRefitOrder(ship);
         }
         else {

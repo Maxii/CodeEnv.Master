@@ -129,6 +129,10 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
 
     #region Cleanup
 
+    protected override void DestroyApplicableParents(float delayInHours = Constants.ZeroF) {
+        GameUtility.Destroy(UnitContainer.gameObject, delayInHours);
+    }
+
     #endregion
 
     #region ISectorViewHighlightable Members

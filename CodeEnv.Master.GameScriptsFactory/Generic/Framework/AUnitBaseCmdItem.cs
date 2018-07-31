@@ -33,6 +33,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     IPatrollable, IFacilityRepairCapable, IConstructionManagerClient {
 
     /// <summary>
+    /// The multiplier to apply to the Base's CloseOrbitOuterRadius value to determine the Base's ClearanceRadius.
+    /// </summary>
+    private const float ClearanceRadiusMultiplier = 2F;
+
+    /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
     /// distance of the surrounding patrol stations from the item's position.
     /// </summary>
@@ -58,6 +63,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
+    public IntVector3 SectorID { get { return Data.SectorID; } }
+
     public new AUnitBaseCmdData Data {
         get { return base.Data as AUnitBaseCmdData; }
         set { base.Data = value; }
@@ -65,7 +72,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public BaseConstructionManager ConstructionMgr { get; private set; }
 
-    public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
+    public override float ClearanceRadius { get { return CloseOrbitOuterRadius * ClearanceRadiusMultiplier; } }
 
     public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
@@ -606,8 +613,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    protected override void ResetOrderAndState() {
-        base.ResetOrderAndState();
+    protected sealed override void ClearCurrentOrderAndIdle() {
+        D.Assert(!IsDead);
         _currentOrder = null;   // avoid order changed while paused system
         CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
         D.AssertDefault(_executingOrderID); // 1.22.18 _executingOrderID now reset to default(Guid) in _ExitState
@@ -976,7 +983,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ClearOrderAndStateForElementsExecuting(ref _executingOrderID);
         ResetAndValidateCommonNonCallableExitStateValues();
     }
 
@@ -1097,7 +1104,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ClearOrderAndStateForElementsExecuting(ref _executingOrderID);
         ResetAndValidateCommonNonCallableExitStateValues();
     }
 
@@ -1125,7 +1132,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         __ValidateCommonCallableEnterStateValues(CurrentState.GetValueName());
-        IRepairCapable thisRepairCapableBase = _fsmTgt as IRepairCapable;
+        IFacilityRepairCapable thisRepairCapableBase = _fsmTgt as IFacilityRepairCapable;
         D.Assert(thisRepairCapableBase.IsRepairingAllowedBy(Owner));
 
         DetermineFacilitiesToReceiveRepairOrder();
@@ -1165,7 +1172,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 D.Assert(isRemoved);
                 break;
             case OrderOutcome.Death:
-            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.OrdersChange:
                 isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
                 D.Assert(isRemoved);
                 break;
@@ -1183,6 +1190,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // UNCLEAR this base is dead
             case OrderOutcome.TgtRelationship:
             // UNCLEAR this base's owner just changed
+            case OrderOutcome.Disqualified:
             case OrderOutcome.TgtUnjoinable:
             case OrderOutcome.TgtUncatchable:
             case OrderOutcome.None:
@@ -1313,7 +1321,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             D.AssertNull(_chosenElementRefitDesign);
             var existingDesign = facility.Data.Design;
 
-            if (Owner.IsUser && !__debugCntls.AiChoosesUserElementRefitDesigns) {
+            if (Owner.IsUser && !_playerPrefsMgr.IsAiHandlesUserElementRefitDesignsEnabled) {
                 HaveUserPickRefitDesign(facility);
 
                 while (_chosenElementRefitDesign == null) {
@@ -1402,7 +1410,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
                 D.Assert(isRemoved);
                 break;
-            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.OrdersChange:
             // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
             // If scuttle received, callback will be Death
             case OrderOutcome.Ownership:
@@ -1414,6 +1422,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
             case OrderOutcome.NeedsRepair:
             // Should not occur as Facility knows finishing refit repairs all damage
+            case OrderOutcome.Disqualified:
             case OrderOutcome.TgtUnjoinable:
             case OrderOutcome.TgtUnreachable:
             case OrderOutcome.TgtUncatchable:
@@ -1497,7 +1506,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRefitOrder_ExitState() {
         LogEvent();
         StopEffectSequence(EffectSequenceID.Refitting);
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ClearOrderAndStateForElementsExecuting(ref _executingOrderID);
         ResetAndValidateCommonNonCallableExitStateValues();
         _chosenElementRefitDesign = null;
     }
@@ -1583,7 +1592,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // Base will change owner and ResetOrderAndState before this callback can occur.
             case OrderOutcome.ConstructionCanceled:
             // Should not occur as facility will not callback if canceled. It will die and rely on its Death callback
-            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.OrdersChange:
             // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
             // If scuttle received, callback will be Death
             case OrderOutcome.TgtDeath:
@@ -1592,6 +1601,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
             case OrderOutcome.NeedsRepair:
             // Should not occur as Facility knows finishing disband negates need for repairs
+            case OrderOutcome.Disqualified:
             case OrderOutcome.TgtUnjoinable:
             case OrderOutcome.TgtUnreachable:
             case OrderOutcome.TgtUncatchable:
@@ -1675,7 +1685,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_ExitState() {
         LogEvent();
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        ClearOrderAndStateForElementsExecuting(ref _executingOrderID);
         ResetAndValidateCommonNonCallableExitStateValues();
     }
 
@@ -1835,7 +1845,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 BaseOrder followonOrder = CurrentOrder.FollowonOrder;
                 if (followonOrder != null && followonOrder.Directive == BaseDirective.Repair) {
                     // Repair is already in the works
-                    isNeedForRepair = false; ;
+                    isNeedForRepair = false;
+                    ;
                 }
             }
         }
@@ -1901,6 +1912,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region Debug
+
+    protected sealed override bool __IsLastStateCalled { get { return IsCallableState(LastState); } }
 
     protected override void __ValidateCommonCallableEnterStateValues(string calledStateName, bool includeFsmTgt = true) {
         base.__ValidateCommonCallableEnterStateValues(calledStateName, includeFsmTgt);
@@ -2322,21 +2335,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return !Owner.IsEnemyOf(player);
     }
 
-    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
-        if (IsRepairingAllowedBy(cmdOwner)) {
-            float orbitFactor = 1F;
-            IShip_Ltd ship = hqElement as IShip_Ltd;
-            if (ship != null) {
-                orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
-                    : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
-            }
-            float basicValue = TempGameValues.RepairCapacityBaseline_Base_CmdModule;
-            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
-            return basicValue * relationsFactor * orbitFactor;
-        }
-        return Constants.ZeroF;
-    }
-
     #endregion
 
     #region IShipRepairCapable Members
@@ -2360,6 +2358,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return Constants.ZeroF;
     }
 
+    public float GetAvailableRepairCapacityFor(IFleetCmd_Ltd unusedFleetCmd, IShip_Ltd flagship, Player cmdOwner) {
+        D.Assert(flagship.IsHQ);
+        if (IsRepairingAllowedBy(cmdOwner)) {
+            float orbitFactor = IsInCloseOrbit(flagship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
+                    : IsInHighOrbit(flagship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2F;
+            float basicValue = TempGameValues.RepairCapacityBaseline_Base_CmdModule;
+            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
+            return basicValue * relationsFactor * orbitFactor;
+        }
+        return Constants.ZeroF;
+    }
+
     #endregion
 
     #region IFacilityRepairCapable Members
@@ -2369,6 +2379,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         float basicValue = TempGameValues.RepairCapacityBaseline_Base_Element;
         // TODO if in base defensive/repair formation and facility onStation, then 'orbit' bonuses
         float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // always self 2
+        return basicValue * relationsFactor;
+    }
+
+    public float GetAvailableRepairCapacityFor(IUnitBaseCmd_Ltd unusedBaseCmd, Player cmdOwner) {
+        D.AssertEqual(Owner, cmdOwner);
+        float basicValue = TempGameValues.RepairCapacityBaseline_Base_CmdModule;
+        float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
         return basicValue * relationsFactor;
     }
 

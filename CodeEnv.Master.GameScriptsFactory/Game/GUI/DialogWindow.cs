@@ -43,7 +43,7 @@ public class DialogWindow : AHudWindow<DialogWindow> {
     /// <param name="useUserActionButton">if set to <c>true</c> [use user action button].</param>
     public void HaveUserPickCmdModDesign(FormID formId, string text, EventDelegate cancelDelegate, Action<AUnitCmdModuleDesign> onPicked,
         bool useUserActionButton) {
-        D.Assert(!DebugControls.Instance.AiChoosesUserCmdModInitialDesigns);
+        D.Assert(!PlayerPrefsManager.Instance.IsAiHandlesUserCmdModuleInitialDesignsEnabled);
         // Can't Assert that _onPicked is null as cancelDialog is created in client and has no access to it
         _onCmdModDesignPicked = onPicked;
         EventDelegate acceptDelegate = new EventDelegate(this, "HandleUserPickedCmdModDesign");
@@ -71,7 +71,7 @@ public class DialogWindow : AHudWindow<DialogWindow> {
     /// <param name="useUserActionButton">if set to <c>true</c> [use user action button].</param>
     public void HaveUserPickCmdModRefitDesign(FormID formId, string text, EventDelegate cancelDelegate, AUnitCmdModuleDesign existingDesign,
         Action<AUnitCmdModuleDesign> onPicked, bool useUserActionButton) {
-        D.Assert(!DebugControls.Instance.AiChoosesUserCmdModRefitDesigns);
+        D.Assert(!PlayerPrefsManager.Instance.IsAiHandlesUserCmdModuleRefitDesignsEnabled);        ////D.Assert(!DebugControls.Instance.AiHandlesUserCmdModRefitDesigns);
         // Can't Assert that _onPicked is null as cancelDialog is created in client and has no access to it
         _onCmdModDesignPicked = onPicked;
         EventDelegate acceptDelegate = new EventDelegate(this, "HandleUserPickedCmdModDesign");
@@ -103,7 +103,7 @@ public class DialogWindow : AHudWindow<DialogWindow> {
     /// <param name="useUserActionButton">if set to <c>true</c> [use user action button].</param>
     public void HaveUserPickCentralHubFacilityDesign(string text, EventDelegate cancelDelegate, Action<AUnitElementDesign> onPicked,
         bool useUserActionButton) {
-        D.Assert(!DebugControls.Instance.AiChoosesUserCentralHubInitialDesigns);
+        D.Assert(!PlayerPrefsManager.Instance.IsAiHandlesUserCentralHubInitialDesignsEnabled);
         // Can't Assert that _onPicked is null as cancelDialog is created in client and has no access to it
         _onElementDesignPicked = onPicked;
         EventDelegate acceptDelegate = new EventDelegate(this, "HandleUserPickedElementDesign");
@@ -131,7 +131,7 @@ public class DialogWindow : AHudWindow<DialogWindow> {
     /// <param name="useUserActionButton">if set to <c>true</c> [use user action button].</param>
     public void HaveUserPickElementRefitDesign(FormID formId, string text, EventDelegate cancelDelegate, AUnitElementDesign existingDesign,
         Action<AUnitElementDesign> onPicked, bool useUserActionButton) {
-        D.Assert(!DebugControls.Instance.AiChoosesUserElementRefitDesigns);
+        D.Assert(!PlayerPrefsManager.Instance.IsAiHandlesUserElementRefitDesignsEnabled);
         // Can't Assert that _onPicked is null as cancelDialog is created in client and has no access to it
         _onElementDesignPicked = onPicked;
         EventDelegate acceptDelegate = new EventDelegate(this, "HandleUserPickedElementDesign");

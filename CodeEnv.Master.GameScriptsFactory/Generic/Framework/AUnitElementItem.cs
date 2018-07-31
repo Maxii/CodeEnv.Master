@@ -167,6 +167,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
+    protected PlayerPrefsManager _playerPrefsMgr;
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
 
@@ -174,6 +175,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
         WeaponRangeMonitors = new List<IWeaponRangeMonitor>();
         CountermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
         Shields = new List<IShield>();
@@ -216,7 +218,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected sealed override void InitializeDisplayMgr() {
         base.InitializeDisplayMgr();
-        // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
         InitializeIcon();
         DisplayMgr.MeshColor = Owner.Color;
     }
@@ -664,6 +665,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Event and Property Change Handlers
 
+    private void ShowElementIconsPrefChangedHandler() {
+        EnableIcon(_playerPrefsMgr.IsShowElementIconsEnabled);
+    }
+
     private void ReworkUnderwayPropChangedHandler() {
         HandleReworkUnderwayPropChanged();
     }
@@ -866,6 +871,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Clears the CurrentOrder and resets the CurrentState to Idling when the CurrentOrder has the provided <c>cmdOrderID</c>.
     /// If the cmdOrderID provided is the default, the CurrentOrder will be cleared and Idling state
     /// initiated no matter what CurrentOrder's CmdOrderID is.
+    /// <remarks>If this element qualifies to have its order cleared and state reset, it is done via ResetOrderAndState which
+    /// results in UponResetOrderAndState being called in the currently executing state before the state is set to Idling.</remarks>
     /// <remarks>Return value is primarily for debugging, returning <c>true</c> if the CurrentOrder was cleared (and Idled), <c>false</c> otherwise.</remarks>
     /// </summary>
     /// <param name="cmdOrderID">The command order identifier.</param>
@@ -879,7 +886,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         return toClearAndReset;
     }
 
-    protected virtual void ResetOrderAndState() {
+    private void ResetOrderAndState() {
         D.Assert(!IsDead);  // 1.25.18 Test to see if this can be called when already dead
         __ValidateCurrentStateNotACalledState();
         if (IsPaused) {
@@ -888,9 +895,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         UponResetOrderAndState();
         ResetOrdersReceivedWhilePausedSystem();
+        if (!IsDead) {   // 7.26.18 UponResetOrderAndState can set IsDead = true so don't switch to Idling from Dead!
+            NullCurrentOrderAndIdle();
+        }
     }
 
     protected abstract void ResetOrdersReceivedWhilePausedSystem();
+
+    protected abstract void NullCurrentOrderAndIdle();
 
     #endregion
 
@@ -947,8 +959,23 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponPreconfigureState();
     }
 
+    /// <summary>
+    /// 7.27.18 Initiates Idling as a safe state while delaying setting IsDead by 1 frame. If a Cmd's ExitState execution was
+    /// the cause of this element's death, and the element is the last element in the Cmd, then the Cmd will also die. 
+    /// This creates the condition in the FSM where a state change is caused by the execution of a non-IEnumerable method
+    /// in another state, effectively initiating the execution of a new state before the old one is done. I call it the 
+    /// 'Changing state during ConfigureCurrentState Error' which AMortalItemStateMachine checks every time there is a state change.
+    /// </summary>
+    protected void _DelayDeadStateWorkaround() {
+        _jobMgr.WaitForNextUpdate("DeathDelayWorkaroundJob", (jobWasKilled) => {
+            D.Warn(@"{0} is killing itself 1 frame late to avoid Cmd's death causing an illegal FSM condition.", DebugName);
+            IsDead = true;
+        });
+        __InitiateIdling();
+    }
+
     protected void Dead_ExitState() {
-        LogEventWarning();
+        D.Error("{0}.Dead_ExitState called. State changed to {1}.", DebugName, CurrentState.ToString());
     }
 
     #region FsmReturnHandler System
@@ -1197,8 +1224,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Show Icon
 
     private void InitializeIcon() {
-        __debugCntls.showElementIcons += ShowElementIconsChangedEventHandler;
-        if (__debugCntls.ShowElementIcons) {
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged(prefsMgr => prefsMgr.IsShowElementIconsEnabled, ShowElementIconsPrefChangedHandler));
+        if (_playerPrefsMgr.IsShowElementIconsEnabled) {
             EnableIcon(true);
         }
     }
@@ -1230,7 +1257,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
             }
             else {
-                D.Assert(!__debugCntls.ShowElementIcons);
+                D.Assert(!_playerPrefsMgr.IsShowElementIconsEnabled);
             }
         }
     }
@@ -1249,18 +1276,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected abstract TrackingIconInfo MakeIconInfo();
 
-    private void ShowElementIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(__debugCntls.ShowElementIcons);
-    }
-
     /// <summary>
     /// Cleans up any icon subscriptions.
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        if (__debugCntls != null) {
-            __debugCntls.showElementIcons -= ShowElementIconsChangedEventHandler;
-        }
         if (DisplayMgr != null) {
             var icon = DisplayMgr.TrackingIcon;
             if (icon != null) {
@@ -1276,64 +1296,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         iconEventListener.onDoubleClick -= DoubleClickEventHandler;
         iconEventListener.onPress -= PressEventHandler;
     }
-
-    #region Element Icon Preference Archive
-
-    // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
-    //  - Graphics Options Menu Window's ElementIcons Checkbox has been deactivated.
-    //  - PlayerPrefsMgr's preference value implementation has been commented out
-
-    //protected override void Subscribe() {
-    //    base.Subscribe();
-    //    _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, IsElementIconsEnabledPropChangedHandler));
-    //}
-
-    //protected sealed override void InitializeDisplayManager() {
-    //    base.InitializeDisplayManager();
-    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-    //        DisplayMgr.IconInfo = MakeIconInfo();
-    //        SubscribeToIconEvents(DisplayMgr.Icon);
-    //    }
-    //    DisplayMgr.MeshColor = Owner.Color;
-    //}
-
-    //private void IsElementIconsEnabledPropChangedHandler() {
-    //    if (DisplayMgr != null) {
-    //        AssessIcon();
-    //    }
-    //}
-
-    //private void AssessIcon() {
-    //    D.AssertNotNull(DisplayMgr);
-
-    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-    //        var iconInfo = RefreshIconInfo();
-    //        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
-    //            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
-    //            DisplayMgr.IconInfo = iconInfo;
-    //            SubscribeToIconEvents(DisplayMgr.Icon);
-    //        }
-    //    }
-    //    else {
-    //        if (DisplayMgr.Icon != null) {
-    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
-    //            DisplayMgr.IconInfo = default(IconInfo);
-    //        }
-    //    }
-    //}
-
-    //protected override void Unsubscribe() {
-    //    base.Unsubscribe();
-    //    if (DisplayMgr != null) {
-    //        var icon = DisplayMgr.Icon;
-    //        if (icon != null) {
-    //            UnsubscribeToIconEvents(icon);
-    //        }
-    //    }
-    //}
-
-    #endregion
 
     #endregion
 
@@ -1363,6 +1325,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #region Debug
+
+    protected abstract void __InitiateIdling();
 
     public bool __IsOwnerChgUnderway { get { return Data.__IsOwnerChgUnderway; } }
 
@@ -1439,6 +1403,64 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(!IsPaused);    // New orders aren't processed until unpaused
         Data.Owner = newOwner;
     }
+
+    #endregion
+
+    #region Element Icon Preference Archive
+
+    // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
+    //  - Graphics Options Menu Window's ElementIcons Checkbox has been deactivated.
+    //  - PlayerPrefsMgr's preference value implementation has been commented out
+
+    //protected override void Subscribe() {
+    //    base.Subscribe();
+    //    _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, IsElementIconsEnabledPropChangedHandler));
+    //}
+
+    //protected sealed override void InitializeDisplayManager() {
+    //    base.InitializeDisplayManager();
+    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+    //        DisplayMgr.IconInfo = MakeIconInfo();
+    //        SubscribeToIconEvents(DisplayMgr.Icon);
+    //    }
+    //    DisplayMgr.MeshColor = Owner.Color;
+    //}
+
+    //private void IsElementIconsEnabledPropChangedHandler() {
+    //    if (DisplayMgr != null) {
+    //        AssessIcon();
+    //    }
+    //}
+
+    //private void AssessIcon() {
+    //    D.AssertNotNull(DisplayMgr);
+
+    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+    //        var iconInfo = RefreshIconInfo();
+    //        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
+    //            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+    //            DisplayMgr.IconInfo = iconInfo;
+    //            SubscribeToIconEvents(DisplayMgr.Icon);
+    //        }
+    //    }
+    //    else {
+    //        if (DisplayMgr.Icon != null) {
+    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
+    //            DisplayMgr.IconInfo = default(IconInfo);
+    //        }
+    //    }
+    //}
+
+    //protected override void Unsubscribe() {
+    //    base.Unsubscribe();
+    //    if (DisplayMgr != null) {
+    //        var icon = DisplayMgr.Icon;
+    //        if (icon != null) {
+    //            UnsubscribeToIconEvents(icon);
+    //        }
+    //    }
+    //}
 
     #endregion
 
@@ -1606,9 +1628,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region ICameraFollowable Members
 
-    public float FollowDistanceDampener { get { return CameraStat.FollowDistanceDampener; } }
+    public float FollowDistanceDamper { get { return CameraStat.FollowDistanceDamper; } }
 
-    public float FollowRotationDampener { get { return CameraStat.FollowRotationDampener; } }
+    public float FollowRotationDamper { get { return CameraStat.FollowRotationDamper; } }
 
     #endregion
 

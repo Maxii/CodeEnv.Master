@@ -31,6 +31,7 @@ public class GameSettingsDebugControlEditor : Editor {
 
         serializedObject.Update();
 
+        // Begin disabled while playing group
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
             if (NGUIEditorTools.DrawHeader("New Game Debug Settings")) {
@@ -61,9 +62,9 @@ public class GameSettingsDebugControlEditor : Editor {
                         NGUIEditorTools.SetLabelWidth(120F);
                         NGUIEditorTools.DrawProperty("System Density", serializedObject, "_systemDensity");
                         NGUIEditorTools.DrawProperty("Starting Level", serializedObject, "_startLevel");
-                        NGUIEditorTools.SetLabelWidth(160F);
+                        NGUIEditorTools.SetLabelWidth(180F);
                         NGUIEditorTools.DrawProperty("Home System Desirability", serializedObject, "_homeSystemDesirability");
-                        NGUIEditorTools.DrawProperty("AI Separation from User", serializedObject, "_aiPlayersSeparationFromUser");
+                        NGUIEditorTools.DrawProperty("Separation between Players", serializedObject, "_playersSeparation");
                         NGUIEditorTools.SetLabelWidth(120F);
                         SerializedProperty addUserCreators = NGUIEditorTools.DrawProperty("Add User Creators", serializedObject, "_deployAdditionalUserCreators");
                         SerializedProperty addAiCreators = NGUIEditorTools.DrawProperty("Add AI Creators", serializedObject, "_deployAdditionalAiCreators");
@@ -91,9 +92,11 @@ public class GameSettingsDebugControlEditor : Editor {
             }
         }
         EditorGUI.EndDisabledGroup();
+        // End disabled while playing group
 
         GUILayout.Space(10F);
 
+        // Begin disabled while not playing group
         EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
         {
             if (GUILayout.Button(new GUIContent("Launch New Game", "Press to launch a new game with these debug settings"), GUILayout.MinWidth(140F))) {
@@ -101,6 +104,7 @@ public class GameSettingsDebugControlEditor : Editor {
             }
         }
         EditorGUI.EndDisabledGroup();
+        // End disabled while not playing group
 
         GUILayout.Space(5F);
 

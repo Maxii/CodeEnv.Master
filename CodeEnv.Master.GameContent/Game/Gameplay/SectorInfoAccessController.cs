@@ -62,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Owner:
                     // If gets here, Sector IntelCoverage is Basic, but a member could be allowing access.
                     // 6.16.18 Cntlr has multiple clients so can't consolidate logic in Item.AssessWhetherToFireOwnerInfoAccessChgdEventFor
+                    // 7.29.18 player has access to the sector owner if player has access to any of its members. The inverse is not necessarily true.
                     SectorData sectorData = _data as SectorData;
                     bool systemHasAccess = sectorData.SystemData != null ? sectorData.SystemData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID) : false;
                     if (systemHasAccess) {

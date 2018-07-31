@@ -121,7 +121,6 @@ public class NewGameUnitGenerator {
             if (TryMakeStarbaseCmdModDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Default, design: out starbaseCmdModDefaultDesign)) {
                 RegisterDesign(player, starbaseCmdModDefaultDesign, optionalRootDesignName: TempGameValues.StarbaseCmdModDefaultRootDesignName);
             }
-
         }
     }
 
@@ -191,14 +190,16 @@ public class NewGameUnitGenerator {
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
 
-        SettlementCmdModuleDesign cmdModDesign = MakeSettlementCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        SettlementCmdModuleDesign cmdModDesign = MakeSettlementCmdModDesign(owner, cmdPassiveCMQty, cmdSensorQty,
+            AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
         string cmdModDesignName = RegisterDesign(owner, cmdModDesign);
 
         var hullStats = GetCurrentFacilityHullStats(owner, editorSettings);
 
         IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
             editorSettings.LauncherLoadout, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement,
+            AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
@@ -829,10 +830,10 @@ public class NewGameUnitGenerator {
         SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
         var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
 
-        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        FtlDamperStat cmdsReqdFtlDamperStat = ownerDesigns.GetCurrentFtlDamperStat();
         FleetCmdModuleStat cmdStat = ownerDesigns.GetCurrentFleetCmdModuleStat();
 
-        FleetCmdModuleDesign design = new FleetCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+        FleetCmdModuleDesign design = new FleetCmdModuleDesign(owner, cmdsReqdFtlDamperStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -857,10 +858,10 @@ public class NewGameUnitGenerator {
         SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
         var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
 
-        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        FtlDamperStat cmdsReqdFtlDamperStat = ownerDesigns.GetCurrentFtlDamperStat();
         SettlementCmdModuleStat cmdStat = ownerDesigns.GetCurrentSettlementCmdModuleStat();
 
-        SettlementCmdModuleDesign design = new SettlementCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+        SettlementCmdModuleDesign design = new SettlementCmdModuleDesign(owner, cmdsReqdFtlDamperStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -887,9 +888,9 @@ public class NewGameUnitGenerator {
             SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
             var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
 
-            FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+            FtlDamperStat cmdsReqdFtlDamperStat = ownerDesigns.GetCurrentFtlDamperStat();
 
-            design = new StarbaseCmdModuleDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+            design = new StarbaseCmdModuleDesign(owner, cmdsReqdFtlDamperStat, cmdStat, reqdMrCmdSensorStat) {
                 Status = status
             };
             AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();

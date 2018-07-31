@@ -65,7 +65,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="ASector.cs" />
+    <Compile Include="Game\GUI\GuiPlayersSeparationPopupList.cs" />
+    <Compile Include="Generic\Framework\ASector.cs" />
     <Compile Include="Generic\Framework\ARuntimeUnitCreator.cs" />
     <Compile Include="Generic\Graphics\ASelectDesignDialogForm.cs" />
     <Compile Include="Generic\Graphics\APopupDialogForm.cs" />
@@ -116,7 +117,6 @@
     <Compile Include="Generic\Graphics\AEquipmentHoveredHudForm.cs" />
     <Compile Include="Generic\Graphics\ADesignHoveredHudForm.cs" />
     <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
-    <Compile Include="Game\Framework\FleetNavigator.cs" />
     <Compile Include="Game\Gameplay\KinematicProjectile.cs" />
     <Compile Include="Game\GUI\ShipDesignWindow.cs" />
     <Compile Include="Game\GUI\DesignEquipmentStorage.cs" />
@@ -156,7 +156,7 @@
     <Compile Include="Game\Framework\RuntimeStarbaseCreator.cs" />
     <Compile Include="Game\GUI\SelectFacilityDesignDialogForm.cs" />
     <Compile Include="Game\GUI\SelectShipDesignDialogForm.cs" />
-    <Compile Include="RimSector.cs" />
+    <Compile Include="Game\Framework\RimSector.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
@@ -324,7 +324,7 @@
     <Compile Include="Game\Gameplay\Missile.cs" />
     <Compile Include="Generic\Graphics\PooledSphericalHighlight.cs" />
     <Compile Include="Generic\Graphics\SphericalHighlight.cs" />
-    <Compile Include="Game\Framework\Sector.cs" />
+    <Compile Include="Game\Framework\CoreSector.cs" />
     <Compile Include="Game\GUI\GuiSystemDensityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerTeamPopupList.cs" />
     <Compile Include="Generic\Framework\NewGameUnitGenerator.cs" />

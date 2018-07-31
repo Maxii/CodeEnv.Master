@@ -29,7 +29,9 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="T"></typeparam>
     public class ValueRange<T> where T : IComparable<T> {
 
-        private static string _toStringFormat = "[{0}-{1}]";
+        private const string DebugNameFormat = "{0}[{1}-{2}]";
+
+        public string DebugName { get { return DebugNameFormat.Inject(GetType().Name, Minimum, Maximum); } }
 
         public T Minimum { get; private set; }
 
@@ -98,7 +100,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <returns>String representation of the Range</returns>
         public override string ToString() {
-            return _toStringFormat.Inject(Minimum, Maximum);
+            return DebugName;
         }
 
 

@@ -219,7 +219,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             return target.Name.SurroundWith(tgtAttractivenessColor);
         }
         if (directive == FleetDirective.FoundStarbase) {
-            GameColor tgtAttractivenessColor = (target as Sector).__GetFoundUserStarbaseAttractivenessColor();
+            GameColor tgtAttractivenessColor = (target as CoreSector).__GetFoundUserStarbaseAttractivenessColor();
             return target.Name.SurroundWith(tgtAttractivenessColor);
         }
         return base.GetTargetNameTextForSubmenuItem(directive, target);

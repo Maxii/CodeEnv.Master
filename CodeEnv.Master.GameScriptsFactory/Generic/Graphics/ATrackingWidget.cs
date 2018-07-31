@@ -104,7 +104,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
      * 11.13.16 For now, I've left the min/max show distance infrastructure in place here for all TrackingWidgets.
      * Currently, it is only utilized by UITrackingLabels which want the label to disappear when the camera gets
      * very close. ConstantSizeTrackingSprites currently use layers to stop rendering at a max distance. 
-     * AWorldTrackingWidgetVariableSize widgets aren't used at all.
+     * AWorldTrackingWidget_VariableSize widgets aren't used at all.
      * OPTIMIZE When I get close to release, I'll know whether any other tracking widgets want to make
      * use of this expensive feature. The TrackingWidgetFactory methods have been changed to reflect this change.
      **************************************************************************************************************/

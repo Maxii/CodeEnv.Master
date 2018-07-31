@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using System;
     using UnityEngine;
 
     /// <summary>
@@ -24,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface ICameraControl {
+
+        event EventHandler sectorIDChanged;
 
         /// <summary>
         /// The position of the camera in world space.
@@ -50,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sectorID">The sectorID.</param>
         /// <returns></returns>
-        bool TryGetSectorID(out IntVector3 sectorID);
+        bool TryGetValidSectorID(out IntVector3 sectorID);
 
     }
 }

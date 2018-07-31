@@ -108,7 +108,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private string ConstructCameraSectorText() {
         IntVector3 cameraSectorID;
-        if (_mainCameraCntl.TryGetSectorID(out cameraSectorID)) {
+        if (_mainCameraCntl.TryGetValidSectorID(out cameraSectorID)) {
             // camera is inside radius of universe
             return "Camera Sector: " + cameraSectorID.ToString();
         }

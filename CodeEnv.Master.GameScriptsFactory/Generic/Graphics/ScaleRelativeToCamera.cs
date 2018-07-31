@@ -22,9 +22,12 @@ using UnityEngine.Serialization;
 /// <summary>
 /// Scales an object relative to the distance to the camera. Gives the appearance of the object size being the same
 /// while the camera moves. Useful for GUI objects attached to game objects. Often useful when combined with Billboard.
-/// 
-///Usage: Place this script on the gameObject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
-///rather than the camera itself, and uses the initial scale as a basis. Use the public scaleFactor variable to adjust the object size on the screen.
+/// <remarks>7.20.18 Unsuccessfully attempted to add in a mode that allowed a distance range where scaling wasn't active
+/// thereby allowing the object to grow/shrink in size within this range. The transitions between grow/shrink and 
+/// fixed size where visually more jarring than I found acceptable.</remarks>
+/// <remarks>Usage: Place this script on the gameObject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
+/// rather than the camera itself, and uses the initial scale as a basis. Use _relativeScaleFactor to adjust the object size on the screen.
+/// </remarks>
 /// </summary>
 public class ScaleRelativeToCamera : AMonoBase {
 
@@ -59,13 +62,17 @@ public class ScaleRelativeToCamera : AMonoBase {
     private void CheckForUIPanelPresentInParents() {
         if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
-            D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
+            D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", DebugName);
         }
     }
+
+    #region Event and Property Change Handlers
 
     void Update() {
         RefreshScale();
     }
+
+    #endregion
 
     private void RefreshScale() {
         Scale = _initialScale * transform.DistanceToCamera() * _relativeScaleFactor;
@@ -78,22 +85,5 @@ public class ScaleRelativeToCamera : AMonoBase {
         return DebugName;
     }
 
-    #region Occasional RefreshScale Update Archive
-
-    //private const int ScaleRefreshCountThreshold = 4;
-
-    //private int _scaleRefreshCounter;
-
-    //protected override void Update() {
-    //    base.Update();
-    //    if (_scaleRefreshCounter >= ScaleRefreshCountThreshold) {
-    //        RefreshScale();
-    //        _scaleRefreshCounter = Constants.Zero;
-    //        return;
-    //    }
-    //    _scaleRefreshCounter++;
-    //}
-
-    #endregion
 }
 

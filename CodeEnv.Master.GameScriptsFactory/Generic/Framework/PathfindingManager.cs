@@ -20,6 +20,8 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using Pathfinding;
+using UnityEditor;
+using UnityEngine;
 
 // NOTE: Can't move this to GameScriptAssembly as it requires loose AStar scripts in Unity when compiled
 
@@ -34,6 +36,10 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     /// TODO fleets should re-plot their paths when this occurs.
     /// </summary>
     public event EventHandler graphUpdateCompleted;
+
+    [Tooltip("Check to exit editor play mode before Pathfinding scanning begins")]
+    [SerializeField]
+    private bool _abortScan = false;
 
     private string DebugName { get { return GetType().Name; } }
 
@@ -95,6 +101,13 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     private void GameStateChangedEventHandler(object sender, EventArgs e) {
         if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
+            if (_abortScan) {
+                D.LogBold("{0} is aborting scan and exiting Editor.Play.", DebugName);
+                // 7.11.18 ConstructSectors/DeployingSystemCreators can still take a lot of time on larger universes
+                // Gigantic ~ 50/200 seconds, Enormous ~ 20/80 seconds
+                EditorApplication.isPlaying = false;
+                return;
+            }
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
             //D.Log("{0} calling AstarPath.Scan on Frame {1}.", DebugName, Time.frameCount);
             _astarPath.Scan();

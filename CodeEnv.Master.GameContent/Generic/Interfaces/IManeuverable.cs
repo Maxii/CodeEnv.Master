@@ -44,11 +44,12 @@ namespace CodeEnv.Master.GameContent {
 
         new Vector3 Position { get; }
 
-        void HandleFtlDampenedBy(IUnitCmd_Ltd source, RangeCategory rangeCat);
+        void HandleFtlDampedBy(IUnitCmd_Ltd source, RangeCategory rangeCat);
 
-        void HandleFtlUndampenedBy(IUnitCmd_Ltd source, RangeCategory rangeCat);
+        void HandleFtlUndampedBy(IUnitCmd_Ltd source, RangeCategory rangeCat);
 
-        bool IsFtlDampenedBy(IUnitCmd_Ltd source);
+        [Obsolete("Not currently used")]
+        bool __IsFtlDampedBy(IUnitCmd_Ltd source);
 
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 

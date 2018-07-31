@@ -129,7 +129,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public WeaponRangeMonitor weaponRangeMonitor;
     public CmdSensorRangeMonitor cmdSensorRangeMonitor;
     public ElementSensorRangeMonitor elementSensorRangeMonitor;
-    public FtlDampenerRangeMonitor ftlDampenerRangeMonitor;
+    public FtlDamperRangeMonitor ftlDamperRangeMonitor;
 
     #endregion
 

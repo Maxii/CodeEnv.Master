@@ -47,7 +47,13 @@ public class SystemCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDContaining(transform.position); } }
+    protected IntVector3 SectorID {
+        get {
+            // 7.15.18 Should never fail as UniverseCreator always positions in a CoreSector.
+            // If DebugCreator and initially positioned incorrectly, UniverseCreator will warn and relocate properly
+            return SectorGrid.Instance.GetSectorIDContaining(transform.position);
+        }
+    }
 
     private SystemCreatorConfiguration _configuration;
     public SystemCreatorConfiguration Configuration {
@@ -110,9 +116,13 @@ public class SystemCreator : AMonoBase {
     protected virtual void MakeSystem() {
         LogEvent();
         FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
-        var aSector = SectorGrid.Instance.GetSector(SectorID);
-        Sector sector = aSector as Sector;
-        D.AssertNotNull(sector);
+        ASector aSector = SectorGrid.Instance.GetSector(SectorID);
+        CoreSector sector = aSector as CoreSector;
+        if (sector == null) {
+            D.Assert(aSector is RimSector);
+            D.Error("{0}.MakeSystem located in {1}?", DebugName, aSector.DebugName);
+        }
+        ////D.AssertNotNull(sector);
         _system = _systemFactory.MakeSystemInstance(SystemName, sector, gameObject, cameraStat);
         if (!_system.gameObject.isStatic) {
             D.Error("{0} should be static after being positioned.", _system.DebugName);

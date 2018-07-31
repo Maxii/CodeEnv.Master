@@ -56,6 +56,7 @@ namespace CodeEnv.Master.GameContent {
                 switch (infoID) {
                     case ItemInfoID.SectorID:
                         isSuccess = true;
+                        D.AssertNotDefault(report.SectorID);
                         colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
                         break;
                     case ItemInfoID.Capacity:
